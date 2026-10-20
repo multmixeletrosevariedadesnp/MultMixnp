@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="../favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="../apple-touch-icon.png"><title>MultMix · Sistema</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;display:flex;align-items:center;gap:14px;padding:12px 18px;flex-wrap:wrap}
+header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.5px}
+header h1 span{background:var(--tag);color:#101828;padding:0 6px;border-radius:6px;margin-left:2px}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav button{background:transparent;border:0;color:#fff;opacity:.75;font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
+nav button.on{opacity:1;background:rgba(255,255,255,.18)}
+main{max-width:1100px;margin:0 auto;padding:18px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%}
+.bar input{flex:1;min-width:200px;width:auto}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:5px 14px;border-radius:99px;cursor:pointer;font:inherit}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
+.card:focus-visible,button:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+.ph{aspect-ratio:4/3;background:var(--line) center/cover no-repeat;display:grid;place-items:center;color:var(--mut)}
+.cb{padding:12px 14px 14px}.cb h3{margin:0 0 6px;font-size:16px;line-height:1.25}
+.cash{display:inline-block;background:var(--tag);color:#101828;font-weight:800;font-size:20px;padding:1px 9px;border-radius:7px}
+.sm{color:var(--mut);font-size:13px;margin-top:6px}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.s{padding:4px 10px;font-size:13px}
+#modal{position:fixed;inset:0;background:rgba(10,14,28,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;z-index:20}
+#modal.open{display:flex}
+.box{background:var(--card);border-radius:16px;max-width:820px;width:100%;padding:20px;position:relative}
+.x{position:absolute;right:12px;top:10px;font-size:24px;background:none;border:0;color:var(--mut);cursor:pointer}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.main{aspect-ratio:1;background:var(--line) center/contain no-repeat;border-radius:12px}
+.th{display:flex;gap:6px;margin-top:8px}.th div{width:56px;height:56px;border-radius:8px;background:var(--line) center/cover;cursor:pointer;border:2px solid transparent}
+.th .on{border-color:var(--pri)}
+.prices{display:grid;gap:8px;margin:14px 0}
+.pr{display:flex;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.pr b{font-size:18px}.pr.k{background:var(--tag);color:#101828;border-color:var(--tag)}
+table{width:100%;border-collapse:collapse}td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px}
+.f label{font-size:13px;color:var(--mut);display:block}.w{grid-column:1/-1}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.sync{font-size:12px;opacity:.85}
+@media print{header,.noprint{display:none}}
+
+:root{--brand:#00468f;--pri:#00539f;--tag:#ffc21a}
+@media(prefers-color-scheme:dark){:root{--pri:#2b78d6}}
+header{background:linear-gradient(135deg,#002e68,var(--brand))}
+header h1{color:#e9eef6}
+header h1 span{background:none;color:var(--tag);padding:0;margin:0}
+.lg{width:44px;height:44px;border-radius:10px}
+#master{position:fixed;inset:0;background:rgba(10,14,28,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+#master.open{display:flex}
+.ibtn{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+.ibtn[hidden]{display:none}
+.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.brand{display:flex;align-items:center;gap:10px}header h1{margin:0}
+nav{display:flex;gap:4px;order:3;width:100%;margin:0;overflow-x:auto;flex-wrap:nowrap}
+nav button{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#fff}
+nav .grp{display:none}nav .out{opacity:.85}
+.sync{font-size:12px;opacity:.8}
+.bdg{background:var(--tag);color:#101828;border-radius:99px;padding:0 7px;font-size:12px;margin-left:2px}
+body.out header{display:none}
+.login{position:fixed;inset:0;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#001f4d,#00468f 60%,#00539f);z-index:30}
+.lbox{background:var(--card);border-radius:20px;padding:28px 26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.llogo{display:block;width:min(240px,70%);max-height:240px;object-fit:contain;margin:0 auto 14px;border-radius:24px}
+.lbox h2{margin:0;text-align:center}.lbox p.sm{text-align:center;margin:2px 0 14px}
+.lbox label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.pwd{display:flex;gap:8px}
+@media(min-width:900px){
+ body.in{display:grid;grid-template-columns:240px minmax(0,1fr)}
+ body.in header{position:sticky;top:0;align-self:start;height:100vh;flex-direction:column;align-items:stretch;flex-wrap:nowrap;padding:18px 12px;gap:6px;overflow-y:auto}
+ .brand{padding:2px 8px 16px}
+ nav{flex-direction:column;order:0;overflow:visible}
+ nav button{padding:10px 12px;width:100%;text-align:left}
+ nav .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;padding:12px 12px 4px}
+ nav button.on{box-shadow:inset 3px 0 0 var(--tag)}
+ nav .out{margin-top:14px;border-top:1px solid rgba(255,255,255,.2);border-radius:0}
+ .sync{margin-top:auto;padding:0 8px}
+ main{width:100%}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img class="lg" src="../logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
+  <nav id="nav"></nav>
+  <button class="ibtn" data-install hidden>Instalar app</button>
+  <span class="sync" id="sync"></span>
+</header>
+<main id="app"></main>
+<div id="modal"></div>
+<div id="master"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ========= CONFIG: preencha com os dados do seu projeto Supabase ========= */
+const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4',WHATS:'5593999999999',BUCKET:'produtos',MULTA:2,JURO_MES:1,ADMIN_EMAIL:'multmixeletrosevariedades@gmail.com'};
+/* Sem URL/KEY o sistema roda em modo demonstração (só neste navegador). */
+
+const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
+const T=['products','customers','sales','installments','orders','company'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const uid=()=>crypto.randomUUID();
+const now=()=>new Date().toISOString();
+
+/* ========= Banco local (cache offline) + fila de sincronização ========= */
+let db;
+try{db=JSON.parse(localStorage.mm)}catch(e){}
+if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:[],outbox:[]};
+ [['Smart TV 50" 4K','Eletros',2399,2599,2899,['Tela: 50" LED 4K','Smart: Android TV','HDMI: 3 portas','Voltagem: Bivolt'],'Tela 4K com apps de streaming.'],
+  ['Liquidificador 900W','Cozinha',169,179,199,['Potência: 900W','Copo: 2,2 L','Lâminas: aço inox','Voltagem: 127V'],'Potente e fácil de limpar.'],
+  ['Ventilador de Mesa 40cm','Variedades',119,129,139,['Hélices: 6','Velocidades: 3','Potência: 80W'],'Silencioso, ideal para o calor.']
+ ].forEach(p=>db.products.push({id:uid(),name:p[0],category:p[1],price_cash:p[2],price_card:p[3],price_credit:p[4],max_inst:10,stock:10,active:true,specs:p[5].map(s=>{const[k,...v]=s.split(':');return{k,v:v.join(':').trim()}}),photos:[],description:p[6],ncm:'',cfop:'5102',unit:'UN'}));}
+db.orders=db.orders||[];db.company=db.company||[];
+const save=()=>localStorage.mm=JSON.stringify(db);
+let session=null;
+let role=null;
+const isAdmin=()=>!sb||!!role;
+const ADM=()=>!sb||role==='admin';
+
+function put(t,row,q){ // grava local + fila
+  row.updated_at=now();
+  const i=db[t].findIndex(r=>r.id===row.id);
+  i<0?db[t].push(row):db[t][i]=row;
+  if(sb)db.outbox.push({t,row});
+  save();if(!q)sync();
+}
+let syncP=Promise.resolve();
+function sync(){return syncP=syncP.then(doSync,doSync)}
+async function doSync(){
+  if(!sb)return setSync('modo demo (local)');
+  try{
+    if(role){
+      while(db.outbox.length){
+        const t=db.outbox[0].t;let n=0;while(n<100&&db.outbox[n]&&db.outbox[n].t===t)n++;
+        const rows=[...new Map(db.outbox.slice(0,n).map(o=>[o.row.id,o.row])).values()];
+        const{error}=await sb.from(t).upsert(rows);if(error)throw error;db.outbox.splice(0,n);save();}
+    }
+    for(const t of role?T:['products','company']){
+      const{data,error}=await sb.from(t).select('*');if(error)throw error;
+      if(!db.outbox.length)db[t]=data;
+    }
+    save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSync('offline · '+db.outbox.length+' pendente(s)')}
+  render();
+}
+const setSync=t=>$('#sync').textContent=t;
+addEventListener('online',sync);
+
+/* ========= Dados da empresa ========= */
+const CO=()=>db.company[0]||{};
+const logoUrl=()=>CO().logo_url||'../logo.jpg';
+const waNum=()=>{const d=digits(CO().whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
+const fmtCnpj=v=>{const d=digits(v).slice(0,14);return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')};
+function okCnpj(v){
+  const c=digits(v);if(c.length!==14||/^(\d)\1+$/.test(c))return false;
+  const dv=n=>{let s=0,p=n-7;for(let i=0;i<n;i++){s+=c[i]*p--;if(p<2)p=9}const m=s%11;return m<2?0:11-m};
+  return dv(12)==c[12]&&dv(13)==c[13];
+}
+function coLine(){
+  const c=CO(),a=c.street?`${c.street}${c.number?', '+c.number:''}${c.district?' - '+c.district:''}, ${c.city||''}${c.uf?'/'+c.uf:''}${c.cep?' - CEP '+c.cep:''}`:'';
+  return [c.trade_name||c.legal_name||'MultMix',c.cnpj&&'CNPJ '+c.cnpj,a,c.phone].filter(Boolean).join(' · ');
+}
+const EMP=[['legal_name','Razão social',1],['trade_name','Nome fantasia',1],['cnpj','CNPJ'],['ie','Inscrição estadual'],['regime','Regime tributário','sel'],
+ ['cep','CEP'],['street','Rua / logradouro',1],['number','Número'],['complement','Complemento'],['district','Bairro'],['city','Cidade'],['uf','UF'],['ibge','Código IBGE do município'],
+ ['phone','Telefone'],['whatsapp','WhatsApp (com DDD)'],['email','E-mail'],['hours','Horário de atendimento',1],['instagram','Instagram (sem @)'],['nfe_series','Série da NF-e (padrão 1)'],['nfce_series','Série da NFC-e (padrão 1)']];
+function vEmp(){
+  const c=CO();
+  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Dados da empresa</h2>
+  <div class="f"><div class="w" style="display:flex;gap:14px;align-items:center"><img id="lgp" src="${esc(logoUrl())}" alt="Logo" style="width:90px;height:90px;object-fit:contain;border-radius:14px;background:var(--line)">
+  <div><label>Logo (PNG ou JPG)</label><input type="file" accept="image/*" onchange="upLogo(this)"><input type="hidden" id="e_logo_url" value="${esc(c.logo_url||'')}"></div></div>
+  ${EMP.map(([k,l,w])=>`<div class="${w===1?'w':''}"><label>${l}</label>${w==='sel'?`<select id="e_${k}">${['','Simples Nacional','MEI','Lucro Presumido','Lucro Real'].map(o=>`<option ${c[k]===o?'selected':''}>${o}</option>`).join('')}</select>`
+   :`<input id="e_${k}" value="${esc(c[k]||'')}" ${k==='cnpj'?'inputmode="numeric" oninput="this.value=fmtCnpj(this.value)"':''} ${k==='cep'?'inputmode="numeric" onblur="cepFill()"':''} ${k==='uf'?'maxlength="2" style="text-transform:uppercase"':''}>`}</div>`).join('')}</div>
+  <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
+  <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p></div>`;
+}
+async function cepFill(){
+  const c=digits($('#e_cep').value);if(c.length!==8)return;
+  try{const d=await(await fetch(`https://viacep.com.br/ws/${c}/json/`)).json();if(d.erro)return;
+    $('#e_street').value=d.logradouro||$('#e_street').value;$('#e_district').value=d.bairro||$('#e_district').value;$('#e_city').value=d.localidade||'';$('#e_uf').value=d.uf||'';$('#e_ibge').value=d.ibge||''}catch(e){}
+}
+async function upLogo(inp){
+  const f=inp.files[0];if(!f)return;
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(f)});
+  const k=Math.min(1,600/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+  cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+  const type=f.type==='image/png'?'image/png':'image/jpeg',blob=await new Promise(ok=>cv.toBlob(ok,type,.9));
+  let url;
+  if(sb){
+    const path='empresa/logo-'+Date.now()+(type==='image/png'?'.png':'.jpg');
+    const{error}=await sb.storage.from(CFG.BUCKET).upload(path,blob,{contentType:type});
+    if(error)return alert('Não foi possível enviar a logo: '+error.message);
+    url=sb.storage.from(CFG.BUCKET).getPublicUrl(path).data.publicUrl;
+  }else url=cv.toDataURL(type,.9);
+  $('#e_logo_url').value=url;$('#lgp').src=url;
+}
+function saveEmp(){
+  const row={id:1,logo_url:$('#e_logo_url').value};
+  EMP.forEach(([k])=>row[k]=$('#e_'+k).value.trim());
+  if(!row.trade_name&&!row.legal_name)return alert('Informe o nome fantasia ou a razão social.');
+  if(row.cnpj&&!okCnpj(row.cnpj))return alert('CNPJ inválido. Confira os 14 dígitos.');
+  row.uf=row.uf.toUpperCase();
+  master(()=>{put('company',row);alert('Dados da empresa salvos.');render()});
+}
+
+/* ========= Perfil e senha mestre ========= */
+async function loadRole(){
+  role=null;if(!sb||!session)return;
+  const{data}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+  role=data?.role||null;
+}
+let unlockUntil=0,masterFn=null;
+function master(fn){
+  if(!sb||Date.now()<unlockUntil)return fn();
+  masterFn=fn;
+  $('#master').innerHTML=`<div class="box" style="max-width:380px"><h2>Senha mestre</h2><p class="sm">O administrador precisa digitar a senha dele para autorizar esta ação.</p>
+  <input id="mp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')masterOk()">
+  <p><button class="btn" onclick="masterOk()">Autorizar</button> <button class="btn g" onclick="masterX()">Cancelar</button></p><p id="mer" class="bad"></p></div>`;
+  $('#master').classList.add('open');setTimeout(()=>$('#mp').focus(),50);
+}
+const masterX=()=>$('#master').classList.remove('open');
+async function masterOk(){
+  const email=role==='admin'?session.user.email:CFG.ADMIN_EMAIL;
+  if(!email)return $('#mer').textContent='Falta configurar ADMIN_EMAIL em sistema/index.html.';
+  const c=supabase.createClient(CFG.URL,CFG.KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'mm-master'}});
+  const{error}=await c.auth.signInWithPassword({email,password:$('#mp').value});
+  if(error)return $('#mer').textContent='Senha incorreta.';
+  unlockUntil=Date.now()+5*60000;masterX();const f=masterFn;masterFn=null;f&&f();
+}
+
+/* ========= Navegação ========= */
+let view='login',cat='Todos',q='';
+function go(v){view=v;render()}
+const NN=()=>db.orders.filter(o=>o.status==='novo').length;
+const ICON={box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
+ inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
+ file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
+ receipt:'<path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5z"/><path d="M9 8h6M9 12h6"/>',building:'<path d="M4 21V4a1 1 0 011-1h9a1 1 0 011 1v17M15 9h4a1 1 0 011 1v11M2 21h20M8 7h3M8 11h3M8 15h3"/>',
+ logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+function render(){
+  if(sb&&!role&&view!=='login')view='login';
+  if(['prod','cx','fis','emp'].includes(view)&&!ADM())view='pdv';
+  document.body.className=isAdmin()?'in':'out';
+  const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
+  let h='';
+  if(isAdmin()){
+    h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('emp','Empresa','building');
+    if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
+  }
+  $('#nav').innerHTML=h;
+  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,login:vLogin}[view]||vPdv)();
+}
+
+/* ========= Catálogo público ========= */
+const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
+function vCat(){
+  const act=db.products.filter(p=>p.active!==false);
+  const cats=['Todos',...new Set(act.map(p=>p.category).filter(Boolean))];
+  const list=act.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
+  $('#app').innerHTML=`<div class="bar"><input id="q" placeholder="Buscar produto" value="${esc(q)}" oninput="q=this.value;vCatList()"></div>
+  <div class="chips">${cats.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${esc(c)}';render()">${esc(c)}</button>`).join('')}</div>
+  <div class="grid" id="list"></div>`;
+  vCatList();
+}
+function vCatList(){
+  const list=db.products.filter(p=>p.active!==false&&(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
+  $('#list').innerHTML=list.map(p=>{const pr=prices(p);return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
+   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}</div>
+   <div class="cb"><h3>${esc(p.name)}</h3><span class="cash">${R(pr.cash)}</span> <small>à vista</small>
+   <div class="sm">Cartão ${R(pr.card)} · Carnê ${p.max_inst||10}x de ${R(pr.cred/(p.max_inst||10))}</div></div></div>`}).join('')||'<p>Nenhum produto encontrado.</p>';
+}
+function detail(id){
+  const p=db.products.find(x=>x.id===id),pr=prices(p),ph=p.photos||[];
+  const msg=encodeURIComponent(`Olá! Tenho interesse em: ${p.name}`);
+  modal(`<div class="two"><div><div class="main" id="mi" style="${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"></div>
+   <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" style="background-image:url('${esc(u)}')" onclick="mi.style.backgroundImage=\`url('${esc(u)}')\`;document.querySelectorAll('.th div').forEach(d=>d.classList.remove('on'));this.classList.add('on')"></div>`).join('')}</div></div>
+   <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span>
+   <p>${esc(p.description)}</p>
+   <div class="prices"><div class="pr k"><span>À vista</span><b>${R(pr.cash)}</b></div>
+   <div class="pr"><span>Cartão</span><b>${R(pr.card)}</b></div>
+   <div class="pr"><span>Carnê até ${p.max_inst||10}x</span><b>${R(pr.cred/(p.max_inst||10))}</b></div></div>
+   <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${msg}">Chamar no WhatsApp</a></div></div>
+   ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
+}
+function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
+function closeM(){$('#modal').classList.remove('open')}
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
+
+/* ========= Login ========= */
+function vLogin(){
+  $('#app').innerHTML=`<div class="login"><form class="lbox" onsubmit="login(event)">
+  <img src="${esc(logoUrl())}" alt="MultMix" class="llogo">
+  <h2>Acesso da equipe</h2><p class="sm">Entre com seu e-mail e senha.</p>
+  <label for="em">E-mail</label><input id="em" type="email" autocomplete="username" required>
+  <label for="pw">Senha</label><div class="pwd"><input id="pw" type="password" autocomplete="current-password" required>
+  <button type="button" class="btn g s" onclick="const p=$('#pw');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Mostrar':'Ocultar'">Mostrar</button></div>
+  <button class="btn" id="lb" style="width:100%;margin-top:16px">Entrar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em"></p></form></div>`;
+  setTimeout(()=>$('#em')&&$('#em').focus(),50);
+}
+async function login(e){
+  if(e)e.preventDefault();
+  const b=$('#lb');b.disabled=true;b.textContent='Entrando...';$('#err').textContent='';
+  const{data,error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+  b.disabled=false;b.textContent='Entrar';
+  if(error)return $('#err').textContent='E-mail ou senha incorretos.';
+  session=data.session;await loadRole();
+  if(!role){await sb.auth.signOut();session=null;return $('#err').textContent='Seu usuário ainda não tem permissão. Peça ao administrador.'}
+  view=ADM()?'prod':'pdv';render();sync();
+}
+async function logout(){await sb.auth.signOut();session=null;role=null;view='login';render()}
+
+/* ========= Produtos (admin) ========= */
+function vProd(){
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><span class="sm" style="align-self:center">${db.products.length} produtos</span></div>
+  <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Estoque</th><th></th></tr>
+  ${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${p.stock}</td>
+  <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join('')}</table>`;
+}
+/* ========= Importar produtos (xlsx / csv) ========= */
+const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const ALI={name:['nome','nome do produto','produto','item','descricao'],category:['categoria','grupo','departamento','setor'],
+ price_cash:['preco a vista','a vista','preco venda','preco de venda','preco','valor','venda'],price_card:['preco cartao','cartao'],
+ price_credit:['preco carne','preco crediario','carne','crediario'],stock:['estoque','quantidade','qtd','saldo'],ncm:['ncm'],cfop:['cfop'],
+ unit:['unidade','un','und'],max_inst:['parcelas','max parcelas','max inst'],description:['detalhes','descricao detalhada','observacao','descricao'],
+ photos:['fotos','foto','imagens','imagem','links','url'],specs:['especificacoes','ficha tecnica','caracteristicas']};
+function num(v){
+  if(typeof v==='number')return v;
+  let s=String(v??'').replace(/[R$\s]/g,'');if(!s)return 0;
+  if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+  return parseFloat(s)||0;
+}
+function csvParse(t,d){
+  const rows=[];let row=[],c='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;else if(ch===d){row.push(c);c=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;row.push(c);c='';if(row.some(x=>x!==''))rows.push(row);row=[]}
+    else c+=ch}
+  row.push(c);if(row.some(x=>x!==''))rows.push(row);
+  const h=rows.shift()||[];return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??''])));
+}
+function impMap(rows,existing,newId){
+  const hs=Object.keys(rows[0]||{}),nh=hs.map(norm),col={};
+  const find=(al,skip)=>{for(const a of al){const i=nh.indexOf(a);if(i>=0&&hs[i]!==skip)return hs[i]}};
+  col.name=find(ALI.name);
+  for(const k of Object.keys(ALI))if(k!=='name')col[k]=find(ALI[k],col.name);
+  const map=new Map();let skip=0;
+  rows.forEach(r=>{
+    const g=k=>col[k]!=null?r[col[k]]:undefined,has=k=>g(k)!=null&&String(g(k)).trim()!=='';
+    const name=String(g('name')??'').trim(),cash=num(g('price_cash'));
+    if(!name||!(cash>0)){skip++;return}
+    const key=name.toLowerCase();
+    const old=existing.find(p=>p.name.toLowerCase()===key)||map.get(key);
+    const card=col.price_card!=null?(num(g('price_card'))||null):(old?old.price_card??null:null),cred=col.price_credit!=null?(num(g('price_credit'))||null):(old?old.price_credit??null:null);
+    const photos=String(g('photos')??'').split(/[\s|;]+/).filter(u=>/^https?:\/\//.test(u)).slice(0,5);
+    const specs=String(g('specs')??'').split(/\||;|\n/).map(s=>s.trim()).filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}).filter(s=>s.k&&s.v);
+    map.set(key,{...(old||{id:newId(),active:true,cfop:'5102',unit:'UN',stock:0,max_inst:10,photos:[],specs:[]}),
+      name,price_cash:cash,price_card:card,price_credit:cred,
+      ...(has('category')?{category:String(g('category')).trim()}:{}),
+      ...(has('description')?{description:String(g('description')).trim()}:{}),
+      ...(has('ncm')?{ncm:String(g('ncm')).trim()}:{}),...(has('cfop')?{cfop:String(g('cfop')).trim()}:{}),
+      ...(has('unit')?{unit:String(g('unit')).trim().toUpperCase()}:{}),
+      ...(has('stock')?{stock:Math.round(num(g('stock')))}:{}),...(has('max_inst')?{max_inst:Math.round(num(g('max_inst')))||10}:{}),
+      ...(photos.length?{photos}:{}),...(specs.length?{specs}:{})});
+  });
+  return{out:[...map.values()],skip,cols:col};
+}
+let imp=[];
+function impOpen(){
+  modal(`<h2>Importar produtos</h2><p class="sm">Envie uma planilha (.xlsx ou .csv) com uma linha por produto. Colunas aceitas: nome, categoria, preço à vista, preço cartão, preço carnê, estoque, NCM, CFOP, unidade, parcelas, descrição, especificações (Chave: valor | Chave: valor) e fotos (links separados por espaço, até 5). Só nome e preço à vista são obrigatórios. Produtos com o mesmo nome são atualizados, não duplicados.</p>
+  <div class="row"><input type="file" id="impf" accept=".xlsx,.xls,.csv" onchange="impRead(this)" style="flex:1"><button class="btn g" onclick="impModel()">Baixar modelo</button></div><div id="impv" style="margin-top:12px"></div>`);
+}
+function impModel(){
+  const csv='nome;categoria;preço à vista;preço cartão;preço carnê;estoque;ncm;unidade;parcelas;descrição;especificações;fotos\n'+
+   'Liquidificador 900W;Cozinha;169,00;179,00;199,00;10;85094010;UN;10;Potente e fácil de limpar;Potência: 900W | Copo: 2,2 L;https://exemplo.com/foto1.jpg https://exemplo.com/foto2.jpg\n'+
+   'Ventilador de Mesa 40cm;Variedades;119,00;129,00;139,00;5;84145110;UN;10;Silencioso;Hélices: 6 | Velocidades: 3;\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='modelo-produtos.csv';a.click();
+}
+async function impRead(inp){
+  const f=inp.files[0];if(!f)return;
+  let rows;
+  try{
+    const buf=await f.arrayBuffer();
+    if(/\.csv$/i.test(f.name)){
+      let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){t=new TextDecoder('windows-1252').decode(buf)}
+      t=t.replace(/^\ufeff/,'');const l=t.split(/\r?\n/)[0]||'';
+      const d=[';','\t',','].map(x=>[x,l.split(x).length]).sort((a,b)=>b[1]-a[1])[0][0];
+      rows=csvParse(t,d);
+    }else{
+      if(typeof XLSX==='undefined')return alert('A biblioteca de planilhas não carregou. Verifique a internet.');
+      const wb=XLSX.read(buf,{type:'array'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:true});
+    }
+  }catch(e){return alert('Não consegui ler o arquivo.')}
+  if(!rows.length)return alert('A planilha está vazia.');
+  const{out,skip,cols}=impMap(rows,db.products,uid);
+  if(cols.name==null)return $('#impv').innerHTML='<p class="bad">Não achei a coluna do nome do produto. Use o modelo para conferir os títulos das colunas.</p>';
+  if(cols.price_cash==null)return $('#impv').innerHTML='<p class="bad">Não achei a coluna do preço à vista. Use o modelo para conferir os títulos das colunas.</p>';
+  imp=out;const novos=out.filter(p=>!db.products.some(x=>x.id===p.id)).length;
+  $('#impv').innerHTML=`<p><b>${novos} novos</b> · ${out.length-novos} atualizações · ${skip} linhas ignoradas (sem nome ou sem preço)</p>
+  <div style="overflow:auto;max-height:260px"><table><tr><th>Produto</th><th>Categoria</th><th>À vista</th><th>Estoque</th></tr>
+  ${out.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td>${R(p.price_cash)}</td><td>${p.stock}</td></tr>`).join('')}</table></div>
+  ${out.length>50?'<p class="sm">Mostrando os 50 primeiros.</p>':''}<p><button class="btn" onclick="impGo()">Importar ${out.length} produtos</button></p>`;
+}
+function impGo(){
+  const chg=imp.some(p=>{const o=db.products.find(x=>x.id===p.id);return o&&['price_cash','price_card','price_credit'].some(k=>(+o[k]||0)!==(+p[k]||0))});
+  const go=()=>{imp.forEach(p=>put('products',p,true));sync();closeM();alert(imp.length+' produtos importados.');imp=[];render()};
+  chg?master(go):go();
+}
+
+function prodForm(id){
+  const p=db.products.find(x=>x.id===id)||{photos:[],specs:[],max_inst:10,stock:0,cfop:'5102',unit:'UN',active:true};
+  const v=(k)=>esc(p[k]??'');
+  modal(`<h2>${id?'Editar':'Novo'} produto</h2><p class="sm">Cartão e carnê são opcionais: o catálogo mostra só as formas de pagamento que você preencher.</p><div class="f">
+   <div class="w"><label>Nome</label><input id="f_name" value="${v('name')}"></div>
+   <div><label>Categoria</label><input id="f_category" value="${v('category')}"></div>
+   <div><label>Estoque</label><input id="f_stock" type="number" value="${v('stock')}"></div>
+   <div><label>Preço à vista</label><input id="f_price_cash" type="number" step="0.01" value="${v('price_cash')}"></div>
+   <div><label>Preço cartão (opcional)</label><input id="f_price_card" type="number" step="0.01" value="${v('price_card')}"></div>
+   <div><label>Preço carnê total (opcional)</label><input id="f_price_credit" type="number" step="0.01" value="${v('price_credit')}"></div>
+   <div><label>Máx. parcelas do carnê</label><input id="f_max_inst" type="number" value="${v('max_inst')}"></div>
+   <div class="w"><label>Descrição</label><textarea id="f_description" rows="2">${v('description')}</textarea></div>
+   <div class="w"><label>Especificações (uma por linha, formato Nome: valor)</label><textarea id="f_specs" rows="4">${(p.specs||[]).map(s=>s.k+': '+s.v).join('\n')}</textarea></div>
+   <div class="w"><label>Fotos (até 5, um link por linha)</label><textarea id="f_photos" rows="3">${(p.photos||[]).join('\n')}</textarea>
+   ${sb?'<input type="file" id="up" accept="image/*" multiple onchange="upload(this)">':''}</div>
+   <div><label>NCM (fiscal)</label><input id="f_ncm" value="${v('ncm')}"></div>
+   <div><label>CFOP</label><input id="f_cfop" value="${v('cfop')}"></div>
+   <div><label>Unidade</label><input id="f_unit" value="${v('unit')}"></div>
+   <div><label>CEST (opcional)</label><input id="f_cest" value="${v('cest')}"></div>
+   <div><label>CSOSN / CST</label><input id="f_csosn" value="${v('csosn')||'102'}"></div>
+   <div><label>No catálogo?</label><select id="f_active"><option value="true" ${p.active!==false?'selected':''}>Sim</option><option value="false" ${p.active===false?'selected':''}>Não</option></select></div></div>
+   <button class="btn" onclick="saveProd('${p.id||''}')">Salvar produto</button>`);
+}
+async function upload(inp){
+  const ta=$('#f_photos');
+  for(const f of [...inp.files]){
+    if(ta.value.split('\n').filter(Boolean).length>=5)break;
+    const path=uid()+'-'+f.name.replace(/[^\w.]/g,'_');
+    const{error}=await sb.storage.from(CFG.BUCKET).upload(path,f);
+    if(!error)ta.value+=(ta.value?'\n':'')+sb.storage.from(CFG.BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+}
+function saveProd(id){
+  const g=k=>$('#f_'+k).value.trim();
+  if(!g('name')||!g('price_cash'))return alert('Informe nome e preço à vista.');
+  const row={id:id||uid(),name:g('name'),category:g('category'),description:g('description'),
+   price_cash:+g('price_cash'),price_card:+g('price_card')||null,price_credit:+g('price_credit')||null,
+   max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),
+   specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
+   photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
+  const old=db.products.find(x=>x.id===id);
+  const go=()=>{put('products',row);closeM();render()};
+  old&&['price_cash','price_card','price_credit'].some(k=>(+old[k]||0)!==(+row[k]||0))?master(go):go();
+}
+
+/* ========= Nova venda (PDV) ========= */
+let cart=[],pre=null,fromOrder=null;
+function vPdv(){
+  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Nova venda</h2>
+  <div class="f"><div class="w"><label>Produto</label><select id="s_p">${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} · estoque ${p.stock}</option>`).join('')}</select></div>
+  <div><label>Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
+  <div style="align-self:end"><button class="btn g" onclick="addCart()">Adicionar</button></div></div>
+  <div id="cartv"></div>
+  <div class="f"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
+  <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+  <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
+  <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
+  <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
+  <div class="f"><div><label>Cliente</label><input id="c_n" list="cl_dl" oninput="fillCli(this)"><datalist id="cl_dl">${db.customers.filter(c=>c.active!==false).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>CPF</label><input id="c_c"></div><div><label>Telefone</label><input id="c_p"></div></div>
+  <button class="btn" onclick="finish()">Finalizar venda</button></div>`;cartView();
+  if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
+}
+const unit=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
+const total=()=>cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),$('#s_t')?.value||'avista')*i.qty,0);
+function addCart(){const i=cart.find(x=>x.id===s_p.value);i?i.qty+=+s_q.value:cart.push({id:s_p.value,qty:+s_q.value});cartView()}
+function cartView(){
+  const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1;
+  document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
+  if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
+  $('#cartv').innerHTML=`<table>${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);return`<tr><td>${esc(p.name)}</td><td>${i.qty} × ${R(unit(p,t))}</td><td><button class="btn g s" onclick="cart.splice(${ix},1);cartView()">Remover</button></td></tr>`}).join('')}</table>
+  <p><b>Total: ${R(tot)}</b>${t==='crediario'&&tot?` · restante ${n}x de ${R((tot-e)/n)}`:''}</p>`;
+}
+function finish(){
+  if(!cart.length)return alert('Adicione ao menos um produto.');
+  const t=s_t.value,tot=total(),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;
+  let cid=null;
+  if(c_n.value.trim()){
+    let c=db.customers.find(x=>(c_c.value&&x.cpf===c_c.value)||x.name===c_n.value.trim())||{id:uid()};
+    Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});window.preAddr='';put('customers',c);cid=c.id;
+  }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
+  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:digits(c_c.value).length===14?'nfe':'nfce',nat_op:'Venda de mercadoria',freight:'9',created_at:now(),
+   items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
+  put('sales',sale);
+  cart.forEach(i=>{const p=db.products.find(x=>x.id===i.id);put('products',{...p,stock:p.stock-i.qty})});
+  if(t==='crediario'){
+    const per=Math.floor((tot-e)/n*100)/100;let d=new Date(s_d.value+'T12:00');
+    for(let k=1;k<=n;k++){
+      put('installments',{id:uid(),sale_id:sale.id,number:k,due_date:d.toISOString().slice(0,10),amount:k===n?+((tot-e)-per*(n-1)).toFixed(2):per,paid_at:null});
+      d=new Date(d);d.setMonth(d.getMonth()+1);
+    }
+  }
+  if(fromOrder){const o=db.orders.find(x=>x.id===fromOrder);if(o)put('orders',{...o,status:'convertido'});fromOrder=null}
+  cart=[];alert('Venda registrada.');view=t==='crediario'?'car':'pdv';render();
+}
+
+/* ========= Clientes ========= */
+let cq='',showInat=false;
+const digits=v=>(v||'').replace(/\D/g,'');
+const owed=id=>db.installments.filter(i=>!i.paid_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===id));
+function vCli(){
+  $('#app').innerHTML=`<div class="bar"><input placeholder="Buscar por nome, CPF ou telefone" value="${esc(cq)}" oninput="cq=this.value;cliList()"><button class="btn" onclick="cliForm()">Novo cliente</button><label class="sm" style="align-self:center"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label></div><div id="cl" style="overflow:auto"></div>`;cliList();
+}
+function cliList(){
+  const k=cq.toLowerCase(),d=digits(cq),today=now().slice(0,10);
+  const l=db.customers.filter(c=>(showInat||c.active!==false)&&(c.name.toLowerCase().includes(k)||(d&&(digits(c.cpf).includes(d)||digits(c.phone).includes(d))))).sort((a,b)=>a.name.localeCompare(b.name));
+  $('#cl').innerHTML=l.length?`<table><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Em aberto</th><th></th></tr>${l.map(c=>{const o=owed(c.id),late=o.some(i=>i.due_date<today);
+  return`<tr><td>${esc(c.name)} ${c.active===false?'<span class="tag">inativo</span>':''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td>
+  <td>${o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
+  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:'<p>Nenhum cliente encontrado. Use "Novo cliente" para cadastrar.</p>';
+}
+function cliForm(id){
+  const c=db.customers.find(x=>x.id===id)||{},v=k=>esc(c[k]??''),hist=id?db.sales.filter(s=>s.customer_id===id).sort((a,b)=>b.created_at.localeCompare(a.created_at)):[];
+  modal(`<h2>${id?'Cliente':'Novo cliente'}</h2><div class="f">
+   <div class="w"><label>Nome completo / razão social</label><input id="k_name" value="${v('name')}"></div>
+   <div><label>Tipo</label><select id="k_person_type"><option value="PF" ${c.person_type!=='PJ'?'selected':''}>Pessoa física</option><option value="PJ" ${c.person_type==='PJ'?'selected':''}>Pessoa jurídica</option></select></div>
+   <div><label>CPF ou CNPJ</label><input id="k_cpf" inputmode="numeric" value="${v('cpf')}"></div>
+   <div><label>Telefone / WhatsApp</label><input id="k_phone" inputmode="tel" value="${v('phone')}"></div>
+   <div><label>E-mail</label><input id="k_email" type="email" value="${v('email')}"></div>
+   <div><label>Inscrição estadual (PJ)</label><input id="k_ie" value="${v('ie')}" placeholder="ou ISENTO"></div>
+   <div><label>CEP</label><input id="k_cep" inputmode="numeric" value="${v('cep')}" onblur="cepCli()"></div>
+   <div class="w"><label>Rua / logradouro</label><input id="k_street" value="${v('street')}"></div>
+   <div><label>Número</label><input id="k_number" value="${v('number')}"></div>
+   <div><label>Complemento</label><input id="k_complement" value="${v('complement')}"></div>
+   <div><label>Bairro</label><input id="k_district" value="${v('district')}"></div>
+   <div><label>Cidade</label><input id="k_city" value="${v('city')}"></div>
+   <div><label>UF</label><input id="k_uf" maxlength="2" value="${v('uf')}"></div>
+   <div><label>Código IBGE</label><input id="k_ibge" inputmode="numeric" value="${v('ibge')}"></div>
+   <div class="w"><label>Endereço em texto livre (vem do pedido do catálogo)</label><input id="k_address" value="${v('address')}"></div></div>
+   <p class="sm">NF-e (modelo 55) exige CPF ou CNPJ e endereço completo do cliente. NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
+   <button class="btn" onclick="saveCli('${id||''}')">Salvar cliente</button>
+   ${id?`<button class="btn g" onclick="toggleCli('${id}')">${c.active===false?'Reativar':'Inativar'} cliente</button>`:''}
+   ${c.phone?` <a class="btn g" target="_blank" rel="noopener" href="https://wa.me/55${digits(c.phone)}">WhatsApp</a>`:''}
+   ${hist.length?`<h3>Compras</h3><table>${hist.map(s=>`<tr><td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td>
+   <td>${s.pay_type==='crediario'?`<button class="btn g s" onclick="carne('${s.id}')">Ver carnê</button>`:''}</td></tr>`).join('')}</table>`:''}`);
+}
+async function cepCli(){
+  const c=digits($('#k_cep').value);if(c.length!==8)return;
+  try{const d=await(await fetch(`https://viacep.com.br/ws/${c}/json/`)).json();if(d.erro)return;
+    $('#k_street').value=d.logradouro||$('#k_street').value;$('#k_district').value=d.bairro||$('#k_district').value;
+    $('#k_city').value=d.localidade||'';$('#k_uf').value=d.uf||'';$('#k_ibge').value=d.ibge||''}catch(e){}
+}
+function okCpf(v){
+  const c=digits(v);if(c.length!==11||/^(\d)\1+$/.test(c))return false;
+  const dv=n=>{let s=0;for(let i=0;i<n;i++)s+=c[i]*(n+1-i);const m=(s*10)%11;return m===10?0:m};
+  return dv(9)==c[9]&&dv(10)==c[10];
+}
+function saveCli(id){
+  const g=k=>$('#k_'+k).value.trim();
+  if(!g('name'))return alert('Informe o nome do cliente.');
+  if(g('cpf')&&db.customers.some(x=>x.id!==id&&digits(x.cpf)===digits(g('cpf'))))return alert('Já existe um cliente com este CPF.');
+  const c=db.customers.find(x=>x.id===id)||{id:uid()};
+  const dd=digits(g('cpf'));
+  if(dd&&!(dd.length===11?okCpf(dd):dd.length===14?okCnpj(dd):false))return alert('CPF ou CNPJ inválido. Confira os números.');
+  const row={...c,name:g('name'),person_type:g('person_type'),cpf:g('cpf'),phone:g('phone'),email:g('email'),ie:g('ie'),cep:g('cep'),street:g('street'),number:g('number'),
+    complement:g('complement'),district:g('district'),city:g('city'),uf:g('uf').toUpperCase(),ibge:g('ibge'),address:g('address')};
+  if(row.street&&!row.address)row.address=`${row.street}, ${row.number||'s/n'} - ${row.district}, ${row.city}/${row.uf}`;
+  put('customers',row);
+  closeM();render();
+}
+function toggleCli(id){
+  const c=db.customers.find(x=>x.id===id);
+  if(c.active!==false&&owed(id).length&&!confirm('Este cliente tem parcelas em aberto. Inativar mesmo assim?'))return;
+  master(()=>{put('customers',{...c,active:c.active===false});closeM();render()});
+}
+function fillCli(inp){const c=db.customers.find(x=>x.name===inp.value);if(c){c_c.value=c.cpf||'';c_p.value=c.phone||''}}
+
+/* ========= Carnês ========= */
+function vCar(){
+  const sales=db.sales.filter(s=>s.pay_type==='crediario').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  $('#app').innerHTML=sales.length?`<table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
+  ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=ins.some(i=>!i.paid_at&&i.due_date<now().slice(0,10));
+  return`<tr><td>${esc(c.name)} ${late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.length}</td>
+  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
+}
+/* ========= Carnê com multa e juros ========= */
+const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const days=d=>Math.floor((new Date(ld(now()))-new Date(d))/864e5);
+function due(i){
+  const dl=i.paid_at?0:days(i.due_date);
+  if(dl<=0)return{v:+i.amount,fee:0,dl:0};
+  const fee=+(i.amount*CFG.MULTA/100+i.amount*(CFG.JURO_MES/100)/30*dl).toFixed(2);
+  return{v:+(i.amount+fee).toFixed(2),fee,dl};
+}
+const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option>';
+function carne(id){
+  const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
+  const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
+  modal(`<p class="sm">${esc(coLine())}</p><h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
+  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);return`<tr><td>${i.number}/${ins.length}</td>
+  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
+  <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>
+  <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>`}</td></tr>`}).join('')}</table></div>
+  <p><button class="btn g noprint" onclick="window.print()">Imprimir carnê</button></p>`);
+}
+function payAsk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid),d=due(i);
+  modal(`<h2>Receber parcela ${i.number}</h2><p>Valor ${R(i.amount)}${d.fee?` + multa e juros ${R(d.fee)} (${d.dl} dias)`:''}</p>
+  <div class="f"><div><label>Valor recebido</label><input id="pv" type="number" step="0.01" value="${d.v}"></div><div><label>Meio</label><select id="pm">${METHODS}</select></div></div>
+  <button class="btn" onclick="pay('${iid}','${sid}')">Confirmar recebimento</button>`);
+}
+function pay(iid,sid){const i=db.installments.find(x=>x.id===iid);put('installments',{...i,paid_at:now(),paid_amount:+pv.value,method:pm.value});carne(sid);vCar()}
+
+/* ========= Pedidos do catálogo ========= */
+function vPed(){
+  const l=[...db.orders].sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const st={novo:'Novo',convertido:'Virou venda',cancelado:'Cancelado'};
+  $('#app').innerHTML=l.length?`<div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Total</th><th>Status</th><th></th></tr>
+  ${l.map(o=>`<tr><td>${new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+  <td>${esc(o.customer_name||'—')}<div class="sm">${esc(o.customer_phone||'')}</div></td>
+  <td>${o.items.map(i=>`${i.qty}x ${esc(i.name)}`).join('<br>')}</td>
+  <td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê '+(o.n_inst||1)+'x'}[o.pay_type]}</td><td>${R(o.total)}</td>
+  <td><span class="tag ${o.status==='novo'?'ok':''}">${st[o.status]||o.status}</span></td>
+  <td>${o.status==='novo'?`<button class="btn s" onclick="toSale('${o.id}')">Vender</button> <button class="btn g s" onclick="cancelOrder('${o.id}')">Cancelar</button>`:''}
+  ${o.customer_phone?` <a class="btn g s" target="_blank" rel="noopener" href="https://wa.me/55${digits(o.customer_phone)}">WhatsApp</a>`:''}</td></tr>`).join('')}</table></div>`
+  :'<p>Nenhum pedido ainda. Os pedidos feitos no catálogo aparecem aqui.</p>';
+}
+function toSale(id){
+  const o=db.orders.find(x=>x.id===id);
+  cart=o.items.filter(i=>db.products.some(p=>p.id===i.id)).map(i=>({id:i.id,qty:i.qty}));
+  pre=o;fromOrder=id;go('pdv');
+}
+function cancelOrder(id){if(confirm('Cancelar este pedido?'))master(()=>{put('orders',{...db.orders.find(x=>x.id===id),status:'cancelado'});vPed()})}
+setInterval(()=>{if(session&&view==='ped')sync()},30000);
+
+/* ========= Caixa e relatórios ========= */
+let cxd=ld(now());
+function vCx(){
+  const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
+  const sd=db.sales.filter(s=>day(s.created_at));
+  sd.forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
+  db.installments.filter(i=>day(i.paid_at)).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+  const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
+  const open=db.installments.filter(i=>!i.paid_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
+  const vm=db.sales.filter(s=>ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
+  $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value;vCx()"></div>
+  <div class="prices"><div class="pr k"><span>Recebido no dia</span><b>${R(tot)}</b></div>
+  ${Object.keys(by).map(m=>`<div class="pr"><span>${esc(m)}</span><b>${R(by[m])}</b></div>`).join('')}
+  <div class="pr"><span>Vendas do dia</span><b>${sd.length}</b></div>
+  <div class="pr"><span>Vendido no mês (${mes.split('-').reverse().join('/')})</span><b>${R(vm)}</b></div>
+  <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
+  <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
+  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td></tr>`).join('')}</table>`:''}`;
+}
+
+/* ========= Fiscal (controle de NFC-e) ========= */
+function fisCheck(s){
+  const p=[],c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),nfe=s.doc_type==='nfe',d=digits(c.cpf);
+  if(!okCnpj(co.cnpj))p.push('CNPJ da empresa');
+  if(!co.ie)p.push('Inscrição estadual da empresa');
+  if(!co.regime)p.push('Regime tributário da empresa');
+  if(!(co.street&&co.number&&co.district&&co.city&&co.uf&&co.cep&&co.ibge))p.push('Endereço da empresa (com código IBGE)');
+  s.items.forEach(i=>{const pr=db.products.find(x=>x.id===i.id)||{};
+    if(digits(i.ncm||pr.ncm).length!==8)p.push('NCM de '+i.name);
+    if(!(i.cfop||pr.cfop))p.push('CFOP de '+i.name);
+    if(/Simples|MEI/.test(co.regime||'')&&!(i.csosn||pr.csosn))p.push('CSOSN de '+i.name)});
+  if(nfe){
+    if(!c.id)p.push('Cliente (obrigatório na NF-e)');
+    else{
+      if(!(d.length===11?okCpf(d):d.length===14?okCnpj(d):false))p.push('CPF ou CNPJ válido do cliente');
+      if(!(c.street&&c.number&&c.district&&c.city&&c.uf&&c.cep&&c.ibge))p.push('Endereço completo do cliente (com IBGE)');
+      if(d.length===14&&!c.ie)p.push('Inscrição estadual do cliente (ou ISENTO)');
+    }
+  }else if(d&&!(d.length===11&&okCpf(d)))p.push('CPF do cliente inválido');
+  return[...new Set(p)];
+}
+const DOC={nfce:'NFC-e (65)',nfe:'NF-e (55)'};
+function vFis(){
+  const l=[...db.sales].sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const rows=l.map(s=>({s,p:s.fiscal_status==='emitida'?[]:fisCheck(s)}));
+  const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'),prontas=pend.filter(x=>!x.p.length).length;
+  $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). A emissão automática depende da integração com o microsserviço fiscal.</p>
+  <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button></div>
+  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
+  <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfce}</td>
+  <td>${em?'<span class="ok">Emitida</span>':p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
+  <td>${em?'':`<button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}</td></tr>`}).join('')}</table></div>`;
+}
+function fisEdit(id){
+  const s=db.sales.find(x=>x.id===id);
+  modal(`<h2>Documento fiscal da venda</h2><div class="f">
+  <div class="w"><label>Tipo de documento</label><select id="x_t"><option value="nfce" ${s.doc_type!=='nfe'?'selected':''}>NFC-e (modelo 65) · consumidor final</option><option value="nfe" ${s.doc_type==='nfe'?'selected':''}>NF-e (modelo 55) · cliente identificado</option></select></div>
+  <div class="w"><label>Cliente</label><select id="x_c"><option value="">Balcão (sem cliente)</option>${[...db.customers].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}" ${c.id===s.customer_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+  <div class="w"><label>Natureza da operação</label><input id="x_n" value="${esc(s.nat_op||'Venda de mercadoria')}"></div>
+  <div class="w"><label>Frete</label><select id="x_f">${[['9','Sem frete'],['0','Por conta do emitente'],['1','Por conta do destinatário']].map(([k,l])=>`<option value="${k}" ${(s.freight||'9')===k?'selected':''}>${l}</option>`).join('')}</select></div></div>
+  <button class="btn" onclick="fisEditSave('${id}')">Salvar</button>`);
+}
+function fisEditSave(id){
+  put('sales',{...db.sales.find(x=>x.id===id),doc_type:$('#x_t').value,customer_id:$('#x_c').value||null,nat_op:$('#x_n').value.trim()||'Venda de mercadoria',freight:$('#x_f').value});
+  closeM();vFis();
+}
+function fisAsk(id){modal(`<h2>Marcar como emitida</h2><label class="sm">Chave de acesso da nota (44 dígitos)</label><input id="fk" inputmode="numeric" maxlength="44"><p><button class="btn" onclick="fisSave('${id}')">Salvar</button></p>`)}
+function fisSave(id){
+  const k=digits(fk.value);if(k.length!==44)return alert('A chave de acesso tem 44 dígitos.');
+  master(()=>{put('sales',{...db.sales.find(x=>x.id===id),fiscal_status:'emitida',fiscal_key:k});closeM();vFis()});
+}
+function csvFis(){
+  const rows=[['data','documento','cliente','cpf_cnpj','ie','cep','endereco','numero','bairro','cidade','uf','ibge','natureza','frete','produto','ncm','cfop','csosn','un','qtd','valor_unit','valor_total']];
+  db.sales.filter(s=>s.fiscal_status!=='emitida').forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
+    s.items.forEach(i=>rows.push([s.created_at.slice(0,10),s.doc_type==='nfe'?'NF-e 55':'NFC-e 65',c.name||'',c.cpf||'',c.ie||'',c.cep||'',c.street||'',c.number||'',c.district||'',c.city||'',c.uf||'',c.ibge||'',s.nat_op||'Venda de mercadoria',s.freight||'9',i.name,i.ncm||'',i.cfop||'',i.csosn||'',i.unit||'UN',i.qty,i.price,(i.price*i.qty).toFixed(2)]))});
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();
+}
+
+/* ========= Início ========= */
+(async()=>{
+  if(sb){const{data}=await sb.auth.getSession();session=data.session;if(session)await loadRole()}
+  view=!sb?'prod':role?(ADM()?'prod':'pdv'):'login';
+  render();sync();
+})();
+</script>
+<script src="../pwa.js" defer></script>
+</body>
+</html>
