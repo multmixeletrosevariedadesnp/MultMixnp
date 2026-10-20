@@ -65,13 +65,13 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 <body>
 <header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
 <main>
-  <div class="hero"><img src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
+  <div class="hero"><img id="hlogo" src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
   <input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
   <div class="chips" id="chips"></div>
   <div class="grid" id="grid"></div>
 </main>
 <button class="btn" id="fab" onclick="bagView()"></button>
-<footer>Preços sujeitos a alteração e disponibilidade em estoque.</footer>
+<footer id="ft">Preços sujeitos a alteração e disponibilidade em estoque.</footer>
 <div id="modal"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -90,7 +90,17 @@ const saveBag=()=>{localStorage.mmbag=JSON.stringify(bag);fab()};
 const prod=id=>P.find(p=>p.id===id);
 const price=(p,t)=>+(t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash));
 const NAMES={avista:'À vista',cartao:'Cartão',crediario:'Carnê'};
-$('#zap').href='https://wa.me/'+CFG.WHATS;
+let CO={};
+const wa=()=>{const d=(CO.whatsapp||'').replace(/\D/g,'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
+$('#zap').href='https://wa.me/'+wa();
+function brand(){
+  $('#zap').href='https://wa.me/'+wa();
+  if(CO.logo_url)$('#hlogo').src=CO.logo_url;
+  const nm=CO.trade_name||CO.legal_name;if(nm)document.title=nm+' · Catálogo';
+  const ad=[CO.street&&`${CO.street}${CO.number?', '+CO.number:''}${CO.district?' - '+CO.district:''}`,CO.city&&`${CO.city}${CO.uf?'/'+CO.uf:''}`].filter(Boolean).join(' · ');
+  const ln=[nm,CO.cnpj&&'CNPJ '+CO.cnpj,ad,CO.phone,CO.hours,CO.instagram&&'@'+CO.instagram.replace('@','')].filter(Boolean).map(esc).join(' · ');
+  $('#ft').innerHTML=(ln?ln+'<br>':'')+'Preços sujeitos a alteração e disponibilidade em estoque.';
+}
 
 async function load(){
   try{P=JSON.parse(localStorage.mmcat||'[]')}catch(e){}
@@ -100,6 +110,10 @@ async function load(){
   }else{ // modo demo: usa os dados do index.html no mesmo navegador
     try{P=JSON.parse(localStorage.mm).products.filter(p=>p.active!==false)}catch(e){}
   }
+  try{CO=JSON.parse(localStorage.mmco||'{}')}catch(e){}
+  if(sb){const{data}=await sb.from('company').select('*').eq('id',1).maybeSingle();if(data){CO=data;localStorage.mmco=JSON.stringify(CO)}}
+  else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
+  brand();
   bag=bag.filter(i=>prod(i.id));saveBag();
   chips();list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);
@@ -144,7 +158,7 @@ function detail(id){
    <div class="pr"><span>Cartão</span><b>${R(price(p,'cartao'))}</b></div>
    <div class="pr"><span>Carnê até ${m}x</span><b>${R(price(p,'crediario')/m)}</b></div></div>
    <div class="row"><button class="btn" ${out?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>
-   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${CFG.WHATS}?text=${msg}">Chamar no WhatsApp</a></div></div></div>
+   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msg}">Chamar no WhatsApp</a></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 
@@ -176,7 +190,7 @@ function send(){
   let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`}).join('\n');
   t+=`\n\nCliente: ${cust.name} · ${cust.phone}`+(pay==='crediario'?`\nCPF: ${cust.cpf} · Endereço: ${cust.address}`:'');
   t+=`\n\nForma de pagamento: ${NAMES[pay]}${pay==='crediario'?` (${nin}x de ${R(tot/nin)})`:''}\nTotal: ${R(tot)}`;
-  window.open('https://wa.me/'+CFG.WHATS+'?text='+encodeURIComponent(t),'_blank','noopener');
+  window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(t),'_blank','noopener');
   if(sb)sb.from('orders').insert({id:crypto.randomUUID(),items:bag.map(i=>({id:i.id,name:prod(i.id).name,qty:i.qty,price:price(prod(i.id),pay)})),
     pay_type:pay,n_inst:pay==='crediario'?nin:1,total:tot,customer_name:cust.name,customer_phone:cust.phone,customer_cpf:cust.cpf||null,customer_address:cust.address||null,status:'novo'}).then(()=>{},()=>{});
   bag=[];saveBag();closeM();alert('Pedido enviado! Continue a conversa no WhatsApp.');

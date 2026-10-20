@@ -81,7 +81,7 @@ const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1N
 /* Sem URL/KEY o sistema roda em modo demonstração (só neste navegador). */
 
 const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
-const T=['products','customers','sales','installments','orders'];
+const T=['products','customers','sales','installments','orders','company'];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -91,12 +91,12 @@ const now=()=>new Date().toISOString();
 /* ========= Banco local (cache offline) + fila de sincronização ========= */
 let db;
 try{db=JSON.parse(localStorage.mm)}catch(e){}
-if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],outbox:[]};
+if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:[],outbox:[]};
  [['Smart TV 50" 4K','Eletros',2399,2599,2899,['Tela: 50" LED 4K','Smart: Android TV','HDMI: 3 portas','Voltagem: Bivolt'],'Tela 4K com apps de streaming.'],
   ['Liquidificador 900W','Cozinha',169,179,199,['Potência: 900W','Copo: 2,2 L','Lâminas: aço inox','Voltagem: 127V'],'Potente e fácil de limpar.'],
   ['Ventilador de Mesa 40cm','Variedades',119,129,139,['Hélices: 6','Velocidades: 3','Potência: 80W'],'Silencioso, ideal para o calor.']
  ].forEach(p=>db.products.push({id:uid(),name:p[0],category:p[1],price_cash:p[2],price_card:p[3],price_credit:p[4],max_inst:10,stock:10,active:true,specs:p[5].map(s=>{const[k,...v]=s.split(':');return{k,v:v.join(':').trim()}}),photos:[],description:p[6],ncm:'',cfop:'5102',unit:'UN'}));}
-db.orders=db.orders||[];
+db.orders=db.orders||[];db.company=db.company||[];
 const save=()=>localStorage.mm=JSON.stringify(db);
 let session=null;
 let role=null;
@@ -117,7 +117,7 @@ async function sync(){
       while(db.outbox.length){const o=db.outbox[0];
         const{error}=await sb.from(o.t).upsert(o.row);if(error)throw error;db.outbox.shift();save();}
     }
-    for(const t of role?T:['products']){
+    for(const t of role?T:['products','company']){
       const{data,error}=await sb.from(t).select('*');if(error)throw error;
       if(!db.outbox.length)db[t]=data;
     }
@@ -127,6 +127,62 @@ async function sync(){
 }
 const setSync=t=>$('#sync').textContent=t;
 addEventListener('online',sync);
+
+/* ========= Dados da empresa ========= */
+const CO=()=>db.company[0]||{};
+const logoUrl=()=>CO().logo_url||'logo.jpg';
+const waNum=()=>{const d=digits(CO().whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
+const fmtCnpj=v=>{const d=digits(v).slice(0,14);return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')};
+function okCnpj(v){
+  const c=digits(v);if(c.length!==14||/^(\d)\1+$/.test(c))return false;
+  const dv=n=>{let s=0,p=n-7;for(let i=0;i<n;i++){s+=c[i]*p--;if(p<2)p=9}const m=s%11;return m<2?0:11-m};
+  return dv(12)==c[12]&&dv(13)==c[13];
+}
+function coLine(){
+  const c=CO(),a=c.street?`${c.street}${c.number?', '+c.number:''}${c.district?' - '+c.district:''}, ${c.city||''}${c.uf?'/'+c.uf:''}${c.cep?' - CEP '+c.cep:''}`:'';
+  return [c.trade_name||c.legal_name||'MultMix',c.cnpj&&'CNPJ '+c.cnpj,a,c.phone].filter(Boolean).join(' · ');
+}
+const EMP=[['legal_name','Razão social',1],['trade_name','Nome fantasia',1],['cnpj','CNPJ'],['ie','Inscrição estadual'],['regime','Regime tributário','sel'],
+ ['cep','CEP'],['street','Rua / logradouro',1],['number','Número'],['complement','Complemento'],['district','Bairro'],['city','Cidade'],['uf','UF'],
+ ['phone','Telefone'],['whatsapp','WhatsApp (com DDD)'],['email','E-mail'],['hours','Horário de atendimento',1],['instagram','Instagram (sem @)']];
+function vEmp(){
+  const c=CO();
+  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Dados da empresa</h2>
+  <div class="f"><div class="w" style="display:flex;gap:14px;align-items:center"><img id="lgp" src="${esc(logoUrl())}" alt="Logo" style="width:90px;height:90px;object-fit:contain;border-radius:14px;background:var(--line)">
+  <div><label>Logo (PNG ou JPG)</label><input type="file" accept="image/*" onchange="upLogo(this)"><input type="hidden" id="e_logo_url" value="${esc(c.logo_url||'')}"></div></div>
+  ${EMP.map(([k,l,w])=>`<div class="${w===1?'w':''}"><label>${l}</label>${w==='sel'?`<select id="e_${k}">${['','Simples Nacional','MEI','Lucro Presumido','Lucro Real'].map(o=>`<option ${c[k]===o?'selected':''}>${o}</option>`).join('')}</select>`
+   :`<input id="e_${k}" value="${esc(c[k]||'')}" ${k==='cnpj'?'inputmode="numeric" oninput="this.value=fmtCnpj(this.value)"':''} ${k==='cep'?'inputmode="numeric" onblur="cepFill()"':''} ${k==='uf'?'maxlength="2" style="text-transform:uppercase"':''}>`}</div>`).join('')}</div>
+  <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
+  <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p></div>`;
+}
+async function cepFill(){
+  const c=digits($('#e_cep').value);if(c.length!==8)return;
+  try{const d=await(await fetch(`https://viacep.com.br/ws/${c}/json/`)).json();if(d.erro)return;
+    $('#e_street').value=d.logradouro||$('#e_street').value;$('#e_district').value=d.bairro||$('#e_district').value;$('#e_city').value=d.localidade||'';$('#e_uf').value=d.uf||''}catch(e){}
+}
+async function upLogo(inp){
+  const f=inp.files[0];if(!f)return;
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(f)});
+  const k=Math.min(1,600/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+  cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+  const type=f.type==='image/png'?'image/png':'image/jpeg',blob=await new Promise(ok=>cv.toBlob(ok,type,.9));
+  let url;
+  if(sb){
+    const path='empresa/logo-'+Date.now()+(type==='image/png'?'.png':'.jpg');
+    const{error}=await sb.storage.from(CFG.BUCKET).upload(path,blob,{contentType:type});
+    if(error)return alert('Não foi possível enviar a logo: '+error.message);
+    url=sb.storage.from(CFG.BUCKET).getPublicUrl(path).data.publicUrl;
+  }else url=cv.toDataURL(type,.9);
+  $('#e_logo_url').value=url;$('#lgp').src=url;
+}
+function saveEmp(){
+  const row={id:1,logo_url:$('#e_logo_url').value};
+  EMP.forEach(([k])=>row[k]=$('#e_'+k).value.trim());
+  if(!row.trade_name&&!row.legal_name)return alert('Informe o nome fantasia ou a razão social.');
+  if(row.cnpj&&!okCnpj(row.cnpj))return alert('CNPJ inválido. Confira os 14 dígitos.');
+  row.uf=row.uf.toUpperCase();
+  master(()=>{put('company',row);alert('Dados da empresa salvos.');render()});
+}
 
 /* ========= Perfil e senha mestre ========= */
 async function loadRole(){
@@ -158,12 +214,12 @@ let view='cat',cat='Todos',q='';
 function go(v){view=v;render()}
 const NN=()=>db.orders.filter(o=>o.status==='novo').length;
 function render(){
-  if(['prod','cx','fis'].includes(view)&&!ADM())view='cat';
+  if(['prod','cx','fis','emp'].includes(view)&&!ADM())view='cat';
   const tabs=[['cat','Catálogo']];
-  if(isAdmin())tabs.push(...(ADM()?[['prod','Produtos']]:[]),['pdv','Nova venda'],['ped','Pedidos'+(NN()?` (${NN()})`:'')],['cli','Clientes'],['car','Carnês'],...(ADM()?[['cx','Caixa'],['fis','Fiscal']]:[]));
+  if(isAdmin())tabs.push(...(ADM()?[['prod','Produtos']]:[]),['pdv','Nova venda'],['ped','Pedidos'+(NN()?` (${NN()})`:'')],['cli','Clientes'],['car','Carnês'],...(ADM()?[['cx','Caixa'],['fis','Fiscal'],['emp','Empresa']]:[]));
   tabs.push(sb&&!session?['login','Entrar']:sb?['out','Sair']:['','']);
   $('#nav').innerHTML=tabs.filter(t=>t[0]).map(t=>`<button class="${view===t[0]?'on':''}" onclick="${t[0]==='out'?'logout()':`go('${t[0]}')`}">${t[1]}</button>`).join('');
-  ({cat:vCat,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,login:vLogin}[view]||vCat)();
+  ({cat:vCat,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,login:vLogin}[view]||vCat)();
 }
 
 /* ========= Catálogo público ========= */
@@ -194,7 +250,7 @@ function detail(id){
    <div class="prices"><div class="pr k"><span>À vista</span><b>${R(pr.cash)}</b></div>
    <div class="pr"><span>Cartão</span><b>${R(pr.card)}</b></div>
    <div class="pr"><span>Carnê até ${p.max_inst||10}x</span><b>${R(pr.cred/(p.max_inst||10))}</b></div></div>
-   <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${CFG.WHATS}?text=${msg}">Chamar no WhatsApp</a></div></div>
+   <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${msg}">Chamar no WhatsApp</a></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
@@ -202,7 +258,7 @@ function closeM(){$('#modal').classList.remove('open')}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
 
 /* ========= Login ========= */
-function vLogin(){$('#app').innerHTML=`<div class="box" style="margin:auto"><img src="logo.jpg" alt="MultMix" style="width:150px;border-radius:16px;display:block;margin:0 auto 10px"><h2>Entrar na equipe</h2>
+function vLogin(){$('#app').innerHTML=`<div class="box" style="margin:auto"><img src="${logoUrl()}" alt="MultMix" style="width:150px;border-radius:16px;display:block;margin:0 auto 10px"><h2>Entrar na equipe</h2>
  <div class="f"><div class="w"><label>E-mail</label><input id="em" type="email"></div><div class="w"><label>Senha</label><input id="pw" type="password"></div></div>
  <button class="btn" onclick="login()">Entrar</button> <span id="err" class="bad"></span></div>`}
 async function login(){
@@ -378,7 +434,7 @@ const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão déb
 function carne(id){
   const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
   const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
-  modal(`<h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
+  modal(`<p class="sm">${esc(coLine())}</p><h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
   <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);return`<tr><td>${i.number}/${ins.length}</td>
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
   <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>

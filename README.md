@@ -7,7 +7,7 @@ Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estátic
 - `index.html`: sistema da loja (login da equipe).
 
 ## Configurar
-1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) e `supabase-v4.sql` (dados do cliente no pedido).
+1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) e `supabase-v5.sql` (dados da empresa).
 2. Storage: crie o bucket público `produtos`.
 3. Authentication: crie o usuário da equipe (e-mail e senha).
 4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` do `index.html` **e** do `catalogo.html`.
@@ -25,3 +25,4 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 - **Vendedor:** vende, atende pedidos, cadastra clientes e recebe carnês. Não vê Caixa nem Fiscal e não muda preços (bloqueado no banco).
 - **Senha mestre:** ações sensíveis (mudar preço, inativar cliente, cancelar pedido, marcar nota emitida) pedem a senha do administrador. Vale por 5 minutos. Para o vendedor usar, preencha `ADMIN_EMAIL` no `index.html`.
 - Novo vendedor: crie o usuário em Authentication e rode o comando comentado no fim do `supabase-v3.sql`.
+- **Empresa:** o administrador preenche logo, CNPJ, razão social, endereço, telefone e WhatsApp na aba Empresa. O catálogo e o carnê usam esses dados.
