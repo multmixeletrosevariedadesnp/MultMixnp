@@ -15,15 +15,20 @@
 @media(prefers-color-scheme:dark){#instbar{background:#161d30;color:#eef1f8}#instbar span,#instbar .ix{color:#98a2b8}}`;
     document.head.appendChild(s);
     el=document.createElement('div');el.id='instbar';el.setAttribute('role','dialog');el.setAttribute('aria-label','Instalar aplicativo');
-    el.innerHTML=`<img src="icon-192.png" alt=""><div><b>Instalar ${cat?'o catálogo':'o sistema'} MultMix</b><span>${ios?'Toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'Abra direto da tela inicial, como um aplicativo.'}</span></div>${ios?'':'<button class="ib">Instalar</button>'}<button class="ix" aria-label="Agora não">✕</button>`;
+    el.innerHTML=`<img src="${new URL('../icon-192.png',location.href).href}" alt=""><div><b>Instalar ${cat?'o catálogo':'o sistema'} MultMix</b><span>${ios?'Toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'Abra direto da tela inicial, como um aplicativo.'}</span></div>${ios?'':'<button class="ib">Instalar</button>'}<button class="ix" aria-label="Agora não">✕</button>`;
     document.body.appendChild(el);
     el.querySelector('.ix').onclick=()=>{localStorage[KEY]=Date.now();hide()};
     const b=el.querySelector('.ib');
     if(b)b.onclick=async()=>{if(!dip)return;dip.prompt();await dip.userChoice.catch(()=>{});dip=null;hide()};
   }
   const hide=()=>{if(el){el.remove();el=null}};
-  addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;bar(false)});
-  addEventListener('appinstalled',hide);
+  const btns=()=>document.querySelectorAll('[data-install]');
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  function wire(){if(standalone())return;btns().forEach(b=>{if(!dip&&!ios)return;b.hidden=false;b.onclick=async()=>{
+    if(dip){dip.prompt();await dip.userChoice.catch(()=>{});dip=null;btns().forEach(x=>x.hidden=true);hide()}
+    else alert('No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”.')}})}
+  addEventListener('DOMContentLoaded',wire);
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;bar(false);wire()});
+  addEventListener('appinstalled',()=>{hide();btns().forEach(x=>x.hidden=true)});
   if(ios)setTimeout(()=>bar(true),2500);
 })();

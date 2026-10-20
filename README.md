@@ -3,14 +3,15 @@
 Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estático (GitHub Pages) com Supabase e cache offline no navegador.
 
 ## Páginas
-- `catalogo.html`: vitrine pública para os clientes (sacola e pedido pelo WhatsApp). Divulgue este link.
-- `index.html`: sistema da loja (login da equipe).
+- `catalogo/`: vitrine pública para os clientes (sacola e pedido pelo WhatsApp). Divulgue este link: `.../catalogo/`.
+- `sistema/`: sistema da loja (login da equipe): `.../sistema/`.
+- `index.html` e `catalogo.html` na raiz só redirecionam para as pastas acima (links antigos continuam funcionando).
 
 ## Configurar
 1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) e `supabase-v5.sql` (dados da empresa).
 2. Storage: crie o bucket público `produtos`.
 3. Authentication: crie o usuário da equipe (e-mail e senha).
-4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` do `index.html` **e** do `catalogo.html`.
+4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` de `sistema/index.html` **e** de `catalogo/index.html`.
 
 ## Publicar
 GitHub > Settings > Pages > Deploy from a branch > `main` / root.
@@ -23,8 +24,8 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 ## Acesso
 - **Administrador:** vê tudo (Produtos, Caixa, Fiscal) e muda nomes e preços.
 - **Vendedor:** vende, atende pedidos, cadastra clientes e recebe carnês. Não vê Caixa nem Fiscal e não muda preços (bloqueado no banco).
-- **Senha mestre:** ações sensíveis (mudar preço, inativar cliente, cancelar pedido, marcar nota emitida) pedem a senha do administrador. Vale por 5 minutos. Para o vendedor usar, preencha `ADMIN_EMAIL` no `index.html`.
+- **Senha mestre:** ações sensíveis (mudar preço, inativar cliente, cancelar pedido, marcar nota emitida) pedem a senha do administrador. Vale por 5 minutos. Para o vendedor usar, preencha `ADMIN_EMAIL` em `sistema/index.html`.
 - Novo vendedor: crie o usuário em Authentication e rode o comando comentado no fim do `supabase-v3.sql`.
 - **Empresa:** o administrador preenche logo, CNPJ, razão social, endereço, telefone e WhatsApp na aba Empresa. O catálogo e o carnê usam esses dados.
-- **App instalável:** `index.html` (sistema) e `catalogo.html` (catálogo) abrem como aplicativo. Ao abrir o link, o navegador oferece a instalação (no iPhone aparece a dica de Compartilhar > Adicionar à Tela de Início). Arquivos: `manifest-*.json`, `sw.js`, `pwa.js` e os ícones.
+- **App instalável:** O sistema e o catálogo são dois aplicativos independentes (cada um com seu manifest, service worker e escopo) e se instalam separadamente. Ao abrir o link, o navegador oferece a instalação (no iPhone aparece a dica de Compartilhar > Adicionar à Tela de Início). Arquivos: `sistema/` e `catalogo/` (manifest.json e sw.js de cada um), `pwa.js` e os ícones na raiz.
 - **Preços no catálogo:** só aparecem as formas de pagamento preenchidas no produto (cartão e carnê são opcionais).
