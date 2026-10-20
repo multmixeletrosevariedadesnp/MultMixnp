@@ -75,6 +75,7 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 <div id="master"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ========= CONFIG: preencha com os dados do seu projeto Supabase ========= */
 const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4',WHATS:'5593999999999',BUCKET:'produtos',MULTA:2,JURO_MES:1,ADMIN_EMAIL:'multmixeletrosevariedades@gmail.com'};
@@ -103,19 +104,23 @@ let role=null;
 const isAdmin=()=>!sb||!!role;
 const ADM=()=>!sb||role==='admin';
 
-function put(t,row){ // grava local + fila
+function put(t,row,q){ // grava local + fila
   row.updated_at=now();
   const i=db[t].findIndex(r=>r.id===row.id);
   i<0?db[t].push(row):db[t][i]=row;
   if(sb)db.outbox.push({t,row});
-  save();sync();
+  save();if(!q)sync();
 }
-async function sync(){
+let syncP=Promise.resolve();
+function sync(){return syncP=syncP.then(doSync,doSync)}
+async function doSync(){
   if(!sb)return setSync('modo demo (local)');
   try{
     if(role){
-      while(db.outbox.length){const o=db.outbox[0];
-        const{error}=await sb.from(o.t).upsert(o.row);if(error)throw error;db.outbox.shift();save();}
+      while(db.outbox.length){
+        const t=db.outbox[0].t;let n=0;while(n<100&&db.outbox[n]&&db.outbox[n].t===t)n++;
+        const rows=[...new Map(db.outbox.slice(0,n).map(o=>[o.row.id,o.row])).values()];
+        const{error}=await sb.from(t).upsert(rows);if(error)throw error;db.outbox.splice(0,n);save();}
     }
     for(const t of role?T:['products','company']){
       const{data,error}=await sb.from(t).select('*');if(error)throw error;
@@ -272,11 +277,102 @@ async function logout(){await sb.auth.signOut();session=null;role=null;view='cat
 
 /* ========= Produtos (admin) ========= */
 function vProd(){
-  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="prodForm()">Novo produto</button></div>
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><span class="sm" style="align-self:center">${db.products.length} produtos</span></div>
   <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Estoque</th><th></th></tr>
   ${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${R(p.price_card)}</td><td>${R(p.price_credit)}</td><td>${p.stock}</td>
   <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join('')}</table>`;
 }
+/* ========= Importar produtos (xlsx / csv) ========= */
+const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const ALI={name:['nome','nome do produto','produto','item','descricao'],category:['categoria','grupo','departamento','setor'],
+ price_cash:['preco a vista','a vista','preco venda','preco de venda','preco','valor','venda'],price_card:['preco cartao','cartao'],
+ price_credit:['preco carne','preco crediario','carne','crediario'],stock:['estoque','quantidade','qtd','saldo'],ncm:['ncm'],cfop:['cfop'],
+ unit:['unidade','un','und'],max_inst:['parcelas','max parcelas','max inst'],description:['detalhes','descricao detalhada','observacao','descricao'],
+ photos:['fotos','foto','imagens','imagem','links','url'],specs:['especificacoes','ficha tecnica','caracteristicas']};
+function num(v){
+  if(typeof v==='number')return v;
+  let s=String(v??'').replace(/[R$\s]/g,'');if(!s)return 0;
+  if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+  return parseFloat(s)||0;
+}
+function csvParse(t,d){
+  const rows=[];let row=[],c='',q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch==='"')q=true;else if(ch===d){row.push(c);c=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;row.push(c);c='';if(row.some(x=>x!==''))rows.push(row);row=[]}
+    else c+=ch}
+  row.push(c);if(row.some(x=>x!==''))rows.push(row);
+  const h=rows.shift()||[];return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??''])));
+}
+function impMap(rows,existing,newId){
+  const hs=Object.keys(rows[0]||{}),nh=hs.map(norm),col={};
+  const find=(al,skip)=>{for(const a of al){const i=nh.indexOf(a);if(i>=0&&hs[i]!==skip)return hs[i]}};
+  col.name=find(ALI.name);
+  for(const k of Object.keys(ALI))if(k!=='name')col[k]=find(ALI[k],col.name);
+  const map=new Map();let skip=0;
+  rows.forEach(r=>{
+    const g=k=>col[k]!=null?r[col[k]]:undefined,has=k=>g(k)!=null&&String(g(k)).trim()!=='';
+    const name=String(g('name')??'').trim(),cash=num(g('price_cash'));
+    if(!name||!(cash>0)){skip++;return}
+    const key=name.toLowerCase();
+    const old=existing.find(p=>p.name.toLowerCase()===key)||map.get(key);
+    const card=num(g('price_card'))||cash,cred=num(g('price_credit'))||card;
+    const photos=String(g('photos')??'').split(/[\s|;]+/).filter(u=>/^https?:\/\//.test(u)).slice(0,5);
+    const specs=String(g('specs')??'').split(/\||;|\n/).map(s=>s.trim()).filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}).filter(s=>s.k&&s.v);
+    map.set(key,{...(old||{id:newId(),active:true,cfop:'5102',unit:'UN',stock:0,max_inst:10,photos:[],specs:[]}),
+      name,price_cash:cash,price_card:card,price_credit:cred,
+      ...(has('category')?{category:String(g('category')).trim()}:{}),
+      ...(has('description')?{description:String(g('description')).trim()}:{}),
+      ...(has('ncm')?{ncm:String(g('ncm')).trim()}:{}),...(has('cfop')?{cfop:String(g('cfop')).trim()}:{}),
+      ...(has('unit')?{unit:String(g('unit')).trim().toUpperCase()}:{}),
+      ...(has('stock')?{stock:Math.round(num(g('stock')))}:{}),...(has('max_inst')?{max_inst:Math.round(num(g('max_inst')))||10}:{}),
+      ...(photos.length?{photos}:{}),...(specs.length?{specs}:{})});
+  });
+  return{out:[...map.values()],skip,cols:col};
+}
+let imp=[];
+function impOpen(){
+  modal(`<h2>Importar produtos</h2><p class="sm">Envie uma planilha (.xlsx ou .csv) com uma linha por produto. Colunas aceitas: nome, categoria, preço à vista, preço cartão, preço carnê, estoque, NCM, CFOP, unidade, parcelas, descrição, especificações (Chave: valor | Chave: valor) e fotos (links separados por espaço, até 5). Só nome e preço à vista são obrigatórios. Produtos com o mesmo nome são atualizados, não duplicados.</p>
+  <div class="row"><input type="file" id="impf" accept=".xlsx,.xls,.csv" onchange="impRead(this)" style="flex:1"><button class="btn g" onclick="impModel()">Baixar modelo</button></div><div id="impv" style="margin-top:12px"></div>`);
+}
+function impModel(){
+  const csv='nome;categoria;preço à vista;preço cartão;preço carnê;estoque;ncm;unidade;parcelas;descrição;especificações;fotos\n'+
+   'Liquidificador 900W;Cozinha;169,00;179,00;199,00;10;85094010;UN;10;Potente e fácil de limpar;Potência: 900W | Copo: 2,2 L;https://exemplo.com/foto1.jpg https://exemplo.com/foto2.jpg\n'+
+   'Ventilador de Mesa 40cm;Variedades;119,00;129,00;139,00;5;84145110;UN;10;Silencioso;Hélices: 6 | Velocidades: 3;\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='modelo-produtos.csv';a.click();
+}
+async function impRead(inp){
+  const f=inp.files[0];if(!f)return;
+  let rows;
+  try{
+    const buf=await f.arrayBuffer();
+    if(/\.csv$/i.test(f.name)){
+      let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){t=new TextDecoder('windows-1252').decode(buf)}
+      t=t.replace(/^\ufeff/,'');const l=t.split(/\r?\n/)[0]||'';
+      const d=[';','\t',','].map(x=>[x,l.split(x).length]).sort((a,b)=>b[1]-a[1])[0][0];
+      rows=csvParse(t,d);
+    }else{
+      if(typeof XLSX==='undefined')return alert('A biblioteca de planilhas não carregou. Verifique a internet.');
+      const wb=XLSX.read(buf,{type:'array'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:true});
+    }
+  }catch(e){return alert('Não consegui ler o arquivo.')}
+  if(!rows.length)return alert('A planilha está vazia.');
+  const{out,skip,cols}=impMap(rows,db.products,uid);
+  if(cols.name==null)return $('#impv').innerHTML='<p class="bad">Não achei a coluna do nome do produto. Use o modelo para conferir os títulos das colunas.</p>';
+  if(cols.price_cash==null)return $('#impv').innerHTML='<p class="bad">Não achei a coluna do preço à vista. Use o modelo para conferir os títulos das colunas.</p>';
+  imp=out;const novos=out.filter(p=>!db.products.some(x=>x.id===p.id)).length;
+  $('#impv').innerHTML=`<p><b>${novos} novos</b> · ${out.length-novos} atualizações · ${skip} linhas ignoradas (sem nome ou sem preço)</p>
+  <div style="overflow:auto;max-height:260px"><table><tr><th>Produto</th><th>Categoria</th><th>À vista</th><th>Estoque</th></tr>
+  ${out.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.category||'')}</td><td>${R(p.price_cash)}</td><td>${p.stock}</td></tr>`).join('')}</table></div>
+  ${out.length>50?'<p class="sm">Mostrando os 50 primeiros.</p>':''}<p><button class="btn" onclick="impGo()">Importar ${out.length} produtos</button></p>`;
+}
+function impGo(){
+  const chg=imp.some(p=>{const o=db.products.find(x=>x.id===p.id);return o&&['price_cash','price_card','price_credit'].some(k=>+o[k]!==p[k])});
+  const go=()=>{imp.forEach(p=>put('products',p,true));sync();closeM();alert(imp.length+' produtos importados.');imp=[];render()};
+  chg?master(go):go();
+}
+
 function prodForm(id){
   const p=db.products.find(x=>x.id===id)||{photos:[],specs:[],max_inst:10,stock:0,cfop:'5102',unit:'UN',active:true};
   const v=(k)=>esc(p[k]??'');
