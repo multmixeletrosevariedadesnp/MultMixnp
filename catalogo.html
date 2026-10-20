@@ -71,19 +71,39 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .g-list{grid-template-columns:1fr;gap:10px}
 .g-list .card{display:flex}.g-list .ph{width:112px;aspect-ratio:1;flex:none}
 .g-list .cb{flex:1;align-self:center}
+.chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;margin:10px 0 4px;padding:2px 1px 6px}
+.chips::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;scroll-snap-align:start;padding:7px 14px;font-size:14px}
+.chip i{font-style:normal;font-size:12px;opacity:.6}.chip.on i{opacity:.85}
+.chip:hover:not(.on){border-color:var(--pri)}
+.cats{position:relative}
+.cats::before,.cats::after{content:'';position:absolute;top:0;bottom:6px;width:32px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:1}
+.cats::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.cats::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.cats.fl::before,.cats.fr::after{opacity:1}
+.cats .arr{display:none;position:absolute;top:2px;z-index:2;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);place-items:center;font-size:18px;line-height:1}
+.cats .arr.l{left:0}.cats .arr.r{right:0}
+@media(hover:hover){.cats.fl .arr.l,.cats.fr .arr.r{display:grid}}
+.rs{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--mut);font-size:13px;min-height:26px;padding-bottom:4px}
+.rs b{color:var(--ink)}
+.lnk{background:none;border:0;color:var(--pri);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:2px 4px}
+.empty{grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--mut)}
+.empty p{margin:0 0 10px}.empty b{color:var(--ink)}
+@media(min-width:700px){#filters{position:sticky;top:var(--hh,64px);z-index:4;background:var(--bg);margin:-18px -18px 8px;padding:12px 18px 4px}}
 </style>
 </head>
 <body>
 <header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
 <main>
   <div class="hero"><img id="hlogo" src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
-  <div class="tools"><input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
+  <div id="filters"><div class="tools"><input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
     <div class="vm" role="group" aria-label="Modo de visualização">
       <button data-m="big" title="Cartões grandes" aria-label="Cartões grandes" onclick="setVm('big')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
       <button data-m="small" title="Compacto (mais produtos na tela)" aria-label="Compacto" onclick="setVm('small')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg></button>
       <button data-m="list" title="Lista" aria-label="Lista" onclick="setVm('list')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1.5"/><rect x="3" y="10" width="18" height="4" rx="1.5"/><rect x="3" y="16" width="18" height="4" rx="1.5"/></svg></button>
     </div></div>
-  <div class="chips" id="chips"></div>
+  <div class="cats"><button class="arr l" aria-label="Rolar categorias para a esquerda" onclick="chipScroll(-1)">‹</button><div class="chips" id="chips" role="group" aria-label="Categorias"></div><button class="arr r" aria-label="Rolar categorias para a direita" onclick="chipScroll(1)">›</button></div>
+  <div class="rs" id="rs" aria-live="polite"></div></div>
   <div class="grid" id="grid"></div>
 </main>
 <button class="btn" id="fab" onclick="bagView()"></button>
@@ -134,19 +154,35 @@ async function load(){
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
   brand();
   bag=bag.filter(i=>prod(i.id));saveBag();
-  chips();list();
+  list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);
 }
 function chips(){
-  const cats=['Todos',...new Set(P.map(p=>p.category).filter(Boolean))];
-  $('#chips').innerHTML=cats.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${esc(c)}';chips();list()">${esc(c)}</button>`).join('');
+  const sq=q.toLowerCase(),base=P.filter(p=>p.name.toLowerCase().includes(sq)),cnt={};
+  base.forEach(p=>{if(p.category)cnt[p.category]=(cnt[p.category]||0)+1});
+  const names=[...new Set([...Object.keys(cnt),...(cat!=='Todos'?[cat]:[])])].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const chip=(c,n)=>`<button class="chip ${c===cat?'on':''}" data-c="${esc(c)}" aria-pressed="${c===cat}" onclick="setCat(this.dataset.c)">${esc(c)}<i>${n}</i></button>`;
+  $('#chips').innerHTML=chip('Todos',base.length)+names.map(c=>chip(c,cnt[c]||0)).join('');
+  $('.cats').style.display=names.length<2&&cat==='Todos'?'none':'';
+  edges();
 }
+function setCat(c){cat=c;list();const b=document.querySelector('.chip.on');if(b)b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})}
+function edges(){const c=$('#chips'),w=$('.cats');w.classList.toggle('fl',c.scrollLeft>4);w.classList.toggle('fr',c.scrollLeft+c.clientWidth<c.scrollWidth-4)}
+function chipScroll(d){const c=$('#chips');c.scrollBy({left:d*c.clientWidth*.6,behavior:'smooth'})}
+function summary(n){
+  const f=cat!=='Todos'||q.trim();
+  $('#rs').innerHTML=`<span>${n} ${n===1?'produto':'produtos'}${cat!=='Todos'?` em <b>${esc(cat)}</b>`:''}${q.trim()?` para “${esc(q.trim())}”`:''}</span>${f?'<button class="lnk" onclick="clearF()">Limpar filtros</button>':''}`;
+}
+function clearF(){q='';cat='Todos';$('#q').value='';list()}
+const EMPTY='<div class="empty"><p><b>Nenhum produto encontrado.</b></p><p>Tente outra palavra ou veja todas as categorias.</p><button class="btn g" onclick="clearF()">Limpar filtros</button></div>';
 function list(){
+  chips();
   const l=P.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
+  summary(l.length);
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3><span class="cash">${R(price(p,'avista'))}</span> <small>à vista</small>
-   <div class="sm">${p.stock<=0?'Esgotado':offers(p)}</div></div></div>`}).join('')||'<p>Nenhum produto encontrado.</p>';
+   <div class="sm">${p.stock<=0?'Esgotado':offers(p)}</div></div></div>`}).join('')||EMPTY;
   fab();
 }
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none'}
@@ -221,6 +257,8 @@ function applyVm(){
   document.querySelectorAll('.vm button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===vm));
 }
 function setVm(m){vm=m;localStorage.mmvm=m;applyVm()}
+const hh=()=>document.documentElement.style.setProperty('--hh',document.querySelector('header').offsetHeight+'px');
+hh();addEventListener('resize',()=>{hh();edges()});$('#chips').addEventListener('scroll',edges,{passive:true});
 applyVm();
 load();
 </script>
