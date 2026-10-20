@@ -7,7 +7,7 @@ Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estátic
 - `index.html`: sistema da loja (login da equipe).
 
 ## Configurar
-1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor).
+1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) e `supabase-v4.sql` (dados do cliente no pedido).
 2. Storage: crie o bucket público `produtos`.
 3. Authentication: crie o usuário da equipe (e-mail e senha).
 4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` do `index.html` **e** do `catalogo.html`.

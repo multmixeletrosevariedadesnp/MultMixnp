@@ -279,7 +279,7 @@ function vPdv(){
   <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
   <div class="f"><div><label>Cliente</label><input id="c_n" list="cl_dl" oninput="fillCli(this)"><datalist id="cl_dl">${db.customers.filter(c=>c.active!==false).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>CPF</label><input id="c_c"></div><div><label>Telefone</label><input id="c_p"></div></div>
   <button class="btn" onclick="finish()">Finalizar venda</button></div>`;cartView();
-  if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
+  if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
 }
 const unit=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
 const total=()=>cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),$('#s_t')?.value||'avista')*i.qty,0);
@@ -297,7 +297,7 @@ function finish(){
   let cid=null;
   if(c_n.value.trim()){
     let c=db.customers.find(x=>(c_c.value&&x.cpf===c_c.value)||x.name===c_n.value.trim())||{id:uid()};
-    Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim()});put('customers',c);cid=c.id;
+    Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit}})};

@@ -56,12 +56,16 @@ header h1{color:#e9eef6}
 header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .lg{width:44px;height:44px;border-radius:10px}
 .hero{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#002e68,var(--brand));color:#fff;border-radius:16px;padding:14px 18px;margin-bottom:14px}.hero img{width:76px;height:76px;border-radius:14px}.hero b{font-size:20px;display:block}.hero span{opacity:.85}
+.ph,.main{position:relative}
+.ar{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:0;width:38px;height:38px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer}
+.ar.l{left:8px}.ar.r{right:8px}
+.cnt{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:1px 9px;border-radius:99px}
 </style>
 </head>
 <body>
 <header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
 <main>
-  <div class="hero"><img src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Compre à vista, no cartão ou parcele no carnê. Peça pelo WhatsApp.</span></div></div>
+  <div class="hero"><img src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
   <input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
   <div class="chips" id="chips"></div>
   <div class="grid" id="grid"></div>
@@ -78,7 +82,9 @@ const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-let P=[],cat='Todos',q='',pay='avista',nin=0,cn='',cph='';
+let P=[],cat='Todos',q='',pay='avista',nin=0;
+let cust=(()=>{try{return JSON.parse(localStorage.mmcli||'{}')}catch(e){return{}}})();
+const setC=(k,v)=>{cust[k]=v;localStorage.mmcli=JSON.stringify(cust)};
 let bag=[];try{bag=JSON.parse(localStorage.mmbag||'[]')}catch(e){}
 const saveBag=()=>{localStorage.mmbag=JSON.stringify(bag);fab()};
 const prod=id=>P.find(p=>p.id===id);
@@ -105,7 +111,7 @@ function chips(){
 function list(){
   const l=P.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
-   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}</div>
+   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3><span class="cash">${R(price(p,'avista'))}</span> <small>à vista</small>
    <div class="sm">${p.stock<=0?'Esgotado':`Cartão ${R(price(p,'cartao'))} · Carnê ${m}x de ${R(price(p,'crediario')/m)}`}</div></div></div>`}).join('')||'<p>Nenhum produto encontrado.</p>';
   fab();
@@ -113,15 +119,25 @@ function list(){
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none'}
 
 /* ---- Produto ---- */
+let gal=[],gi=0,sx=0;
+function showImg(i){
+  if(!gal.length||!$('#mi'))return;
+  gi=(i+gal.length)%gal.length;$('#mi').style.backgroundImage=`url('${gal[gi].replace(/'/g,'%27')}')`;
+  const c=$('#cnt');if(c)c.textContent=(gi+1)+'/'+gal.length;
+  document.querySelectorAll('.th div').forEach((d,k)=>d.classList.toggle('on',k===gi));
+}
+addEventListener('keydown',e=>{if(!$('#modal').classList.contains('open'))return;
+  if(e.key==='ArrowRight')showImg(gi+1);if(e.key==='ArrowLeft')showImg(gi-1);if(e.key==='Escape')closeM()});
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
 function closeM(){$('#modal').classList.remove('open');if(location.hash)history.replaceState(null,'',location.pathname)}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
 function detail(id){
   const p=prod(id),ph=(p.photos||[]).slice(0,5),m=p.max_inst||10,out=p.stock<=0;
-  history.replaceState(null,'','#p='+id);
+  history.replaceState(null,'','#p='+id);gal=ph;gi=0;
+  setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
   const msg=encodeURIComponent(`Olá, MultMix! Tenho interesse em: ${p.name}\nÀ vista ${R(price(p,'avista'))} · Cartão ${R(price(p,'cartao'))} · Carnê ${m}x de ${R(price(p,'crediario')/m)}\nAinda está disponível?`);
-  modal(`<div class="two"><div><div class="main" id="mi" style="${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"></div>
-   <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" style="background-image:url('${esc(u)}')" onclick="mi.style.backgroundImage=\`url('${esc(u)}')\`;document.querySelectorAll('.th div').forEach(d=>d.classList.remove('on'));this.classList.add('on')"></div>`).join('')}</div></div>
+  modal(`<div class="two"><div><div class="main" id="mi" style="${ph[0]?`background-image:url('${esc(ph[0])}')`:''}">${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
+   <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
    <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${out?'<span class="tag">Esgotado</span>':''}
    <p>${esc(p.description)}</p>
    <div class="prices"><div class="pr k"><span>À vista</span><b>${R(price(p,'avista'))}</b></div>
@@ -146,19 +162,23 @@ function bagView(){
    <td><span class="qty"><button aria-label="Menos" onclick="qty('${i.id}',-1)">−</button>${i.qty}<button aria-label="Mais" onclick="qty('${i.id}',1)">+</button></span></td><td><b>${R(price(p,pay)*i.qty)}</b></td></tr>`}).join('')}</table>
    <div class="chips" style="margin-top:14px">${Object.keys(NAMES).map(t=>`<button class="chip ${t===pay?'on':''}" onclick="setPay('${t}')">${NAMES[t]}</button>`).join('')}</div>
    ${pay==='crediario'?`<label class="sm">Parcelas</label><select onchange="nin=+this.value;bagView()">${Array.from({length:mx},(_,k)=>k+1).map(n=>`<option ${n===nin?'selected':''} value="${n}">${n}x de ${R(tot/n)}</option>`).join('')}</select>`:''}
-   <div class="row"><input placeholder="Seu nome" value="${esc(cn)}" oninput="cn=this.value" style="flex:1;min-width:150px"><input placeholder="Seu WhatsApp (DDD)" inputmode="tel" value="${esc(cph)}" oninput="cph=this.value" style="flex:1;min-width:150px"></div>
+   <h3 style="margin:14px 0 6px">Seus dados para o pedido</h3>
+   <div class="row"><input placeholder="Nome completo *" autocomplete="name" value="${esc(cust.name)}" oninput="setC('name',this.value)" style="flex:1;min-width:150px"><input placeholder="WhatsApp com DDD *" inputmode="tel" autocomplete="tel" value="${esc(cust.phone)}" oninput="setC('phone',this.value)" style="flex:1;min-width:150px"></div>
+   ${pay==='crediario'?`<div class="row"><input placeholder="CPF *" inputmode="numeric" value="${esc(cust.cpf)}" oninput="setC('cpf',this.value)" style="flex:1;min-width:150px"><input placeholder="Endereço completo *" autocomplete="street-address" value="${esc(cust.address)}" oninput="setC('address',this.value)" style="flex:2;min-width:200px"></div><p class="sm">Para o carnê precisamos do CPF e do endereço. O cadastro fica salvo neste aparelho para as próximas compras.</p>`:''}
    <p style="font-size:20px"><b>Total: ${R(tot)}</b></p>
    <div class="row"><button class="btn wa" onclick="send()">Enviar pedido no WhatsApp</button><button class="btn g" onclick="closeM()">Continuar vendo</button></div>
    <p class="sm">O pedido vai para a loja pelo WhatsApp. Pagamento e entrega são combinados lá. Carnê sujeito a análise de cadastro.</p>`);
 }
 function send(){
-  const tot=total();
+  const tot=total(),dg=v=>(v||'').replace(/\D/g,'');
+  if((cust.name||'').trim().length<3||dg(cust.phone).length<10)return alert('Preencha seu nome e WhatsApp com DDD para fazer o pedido.');
+  if(pay==='crediario'&&(dg(cust.cpf).length!==11||(cust.address||'').trim().length<5))return alert('Para o carnê, informe o CPF (11 dígitos) e o endereço.');
   let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`}).join('\n');
-  if(cn)t+=`\n\nNome: ${cn}`;
+  t+=`\n\nCliente: ${cust.name} · ${cust.phone}`+(pay==='crediario'?`\nCPF: ${cust.cpf} · Endereço: ${cust.address}`:'');
   t+=`\n\nForma de pagamento: ${NAMES[pay]}${pay==='crediario'?` (${nin}x de ${R(tot/nin)})`:''}\nTotal: ${R(tot)}`;
   window.open('https://wa.me/'+CFG.WHATS+'?text='+encodeURIComponent(t),'_blank','noopener');
   if(sb)sb.from('orders').insert({id:crypto.randomUUID(),items:bag.map(i=>({id:i.id,name:prod(i.id).name,qty:i.qty,price:price(prod(i.id),pay)})),
-    pay_type:pay,n_inst:pay==='crediario'?nin:1,total:tot,customer_name:cn,customer_phone:cph,status:'novo'}).then(()=>{},()=>{});
+    pay_type:pay,n_inst:pay==='crediario'?nin:1,total:tot,customer_name:cust.name,customer_phone:cust.phone,customer_cpf:cust.cpf||null,customer_address:cust.address||null,status:'novo'}).then(()=>{},()=>{});
   bag=[];saveBag();closeM();alert('Pedido enviado! Continue a conversa no WhatsApp.');
 }
 load();
