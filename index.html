@@ -311,16 +311,98 @@ function vCar(){
   return`<tr><td>${esc(c.name)} ${late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.length}</td>
   <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
 }
+/* ========= Carnê com multa e juros ========= */
+const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const days=d=>Math.floor((new Date(ld(now()))-new Date(d))/864e5);
+function due(i){
+  const dl=i.paid_at?0:days(i.due_date);
+  if(dl<=0)return{v:+i.amount,fee:0,dl:0};
+  const fee=+(i.amount*CFG.MULTA/100+i.amount*(CFG.JURO_MES/100)/30*dl).toFixed(2);
+  return{v:+(i.amount+fee).toFixed(2),fee,dl};
+}
+const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option>';
 function carne(id){
   const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
-  const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number),today=now().slice(0,10);
-  modal(`<h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)}</p>
-  <table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th></th></tr>${ins.map(i=>`<tr><td>${i.number}/${ins.length}</td>
-  <td class="${!i.paid_at&&i.due_date<today?'bad':''}">${i.due_date.split('-').reverse().join('/')}</td><td>${R(i.amount)}</td>
-  <td>${i.paid_at?'<span class="ok">Paga</span>':`<button class="btn s" onclick="pay('${i.id}','${id}')">Receber</button>`}</td></tr>`).join('')}</table>
+  const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
+  modal(`<h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
+  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);return`<tr><td>${i.number}/${ins.length}</td>
+  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
+  <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>
+  <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>`}</td></tr>`}).join('')}</table></div>
   <p><button class="btn g noprint" onclick="window.print()">Imprimir carnê</button></p>`);
 }
-function pay(iid,sid){const i=db.installments.find(x=>x.id===iid);put('installments',{...i,paid_at:now()});carne(sid);vCar()}
+function payAsk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid),d=due(i);
+  modal(`<h2>Receber parcela ${i.number}</h2><p>Valor ${R(i.amount)}${d.fee?` + multa e juros ${R(d.fee)} (${d.dl} dias)`:''}</p>
+  <div class="f"><div><label>Valor recebido</label><input id="pv" type="number" step="0.01" value="${d.v}"></div><div><label>Meio</label><select id="pm">${METHODS}</select></div></div>
+  <button class="btn" onclick="pay('${iid}','${sid}')">Confirmar recebimento</button>`);
+}
+function pay(iid,sid){const i=db.installments.find(x=>x.id===iid);put('installments',{...i,paid_at:now(),paid_amount:+pv.value,method:pm.value});carne(sid);vCar()}
+
+/* ========= Pedidos do catálogo ========= */
+function vPed(){
+  const l=[...db.orders].sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const st={novo:'Novo',convertido:'Virou venda',cancelado:'Cancelado'};
+  $('#app').innerHTML=l.length?`<div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Total</th><th>Status</th><th></th></tr>
+  ${l.map(o=>`<tr><td>${new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+  <td>${esc(o.customer_name||'—')}<div class="sm">${esc(o.customer_phone||'')}</div></td>
+  <td>${o.items.map(i=>`${i.qty}x ${esc(i.name)}`).join('<br>')}</td>
+  <td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê '+(o.n_inst||1)+'x'}[o.pay_type]}</td><td>${R(o.total)}</td>
+  <td><span class="tag ${o.status==='novo'?'ok':''}">${st[o.status]||o.status}</span></td>
+  <td>${o.status==='novo'?`<button class="btn s" onclick="toSale('${o.id}')">Vender</button> <button class="btn g s" onclick="cancelOrder('${o.id}')">Cancelar</button>`:''}
+  ${o.customer_phone?` <a class="btn g s" target="_blank" rel="noopener" href="https://wa.me/55${digits(o.customer_phone)}">WhatsApp</a>`:''}</td></tr>`).join('')}</table></div>`
+  :'<p>Nenhum pedido ainda. Os pedidos feitos no catálogo aparecem aqui.</p>';
+}
+function toSale(id){
+  const o=db.orders.find(x=>x.id===id);
+  cart=o.items.filter(i=>db.products.some(p=>p.id===i.id)).map(i=>({id:i.id,qty:i.qty}));
+  pre=o;fromOrder=id;go('pdv');
+}
+function cancelOrder(id){if(confirm('Cancelar este pedido?')){put('orders',{...db.orders.find(x=>x.id===id),status:'cancelado'});vPed()}}
+setInterval(()=>{if(session&&view==='ped')sync()},30000);
+
+/* ========= Caixa e relatórios ========= */
+let cxd=ld(now());
+function vCx(){
+  const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
+  const sd=db.sales.filter(s=>day(s.created_at));
+  sd.forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
+  db.installments.filter(i=>day(i.paid_at)).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+  const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
+  const open=db.installments.filter(i=>!i.paid_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
+  const vm=db.sales.filter(s=>ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
+  $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value;vCx()"></div>
+  <div class="prices"><div class="pr k"><span>Recebido no dia</span><b>${R(tot)}</b></div>
+  ${Object.keys(by).map(m=>`<div class="pr"><span>${esc(m)}</span><b>${R(by[m])}</b></div>`).join('')}
+  <div class="pr"><span>Vendas do dia</span><b>${sd.length}</b></div>
+  <div class="pr"><span>Vendido no mês (${mes.split('-').reverse().join('/')})</span><b>${R(vm)}</b></div>
+  <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
+  <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
+  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td></tr>`).join('')}</table>`:''}`;
+}
+
+/* ========= Fiscal (controle de NFC-e) ========= */
+function vFis(){
+  const l=[...db.sales].sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  $('#app').innerHTML=`<p class="sm">A emissão automática da NFC-e exige um emissor homologado (por exemplo Focus NFe, eNotas ou Nuvem Fiscal) e certificado digital. Aqui você controla o que falta emitir e exporta os dados para o emissor ou contador.</p>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button></div>
+  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Situação</th><th></th></tr>${l.map(s=>{const sn=s.items.filter(i=>!i.ncm).length;return`<tr>
+  <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${R(s.total)}</td>
+  <td>${s.fiscal_status==='emitida'?'<span class="ok">Emitida</span>':`Pendente${sn?` <span class="bad">· ${sn} item(ns) sem NCM</span>`:''}`}</td>
+  <td>${s.fiscal_status==='emitida'?'':`<button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}</td></tr>`}).join('')}</table></div>`;
+}
+function fisAsk(id){modal(`<h2>Marcar como emitida</h2><label class="sm">Chave de acesso da nota (44 dígitos)</label><input id="fk" inputmode="numeric" maxlength="44"><p><button class="btn" onclick="fisSave('${id}')">Salvar</button></p>`)}
+function fisSave(id){
+  const k=digits(fk.value);if(k.length!==44)return alert('A chave de acesso tem 44 dígitos.');
+  put('sales',{...db.sales.find(x=>x.id===id),fiscal_status:'emitida',fiscal_key:k});closeM();vFis();
+}
+function csvFis(){
+  const rows=[['data','cliente','cpf','produto','ncm','cfop','un','qtd','valor_unit','valor_total']];
+  db.sales.filter(s=>s.fiscal_status!=='emitida').forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
+    s.items.forEach(i=>rows.push([s.created_at.slice(0,10),c.name||'',c.cpf||'',i.name,i.ncm||'',i.cfop||'',i.unit||'UN',i.qty,i.price,(i.price*i.qty).toFixed(2)]))});
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();
+}
 
 /* ========= Início ========= */
 (async()=>{
