@@ -8,7 +8,7 @@ Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estátic
 - `index.html` e `catalogo.html` na raiz só redirecionam para as pastas acima (links antigos continuam funcionando).
 
 ## Configurar
-1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) `supabase-v5.sql` (dados da empresa) e `supabase-v6.sql` (dados fiscais NFC-e/NF-e).
+1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) `supabase-v5.sql` (dados da empresa) `supabase-v6.sql` (dados fiscais NFC-e/NF-e) e `supabase-v7.sql` (preços visíveis no catálogo).
 2. Storage: crie o bucket público `produtos`.
 3. Authentication: crie o usuário da equipe (e-mail e senha).
 4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` de `sistema/index.html` **e** de `catalogo/index.html`.
@@ -30,3 +30,4 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 - **App instalável:** O sistema e o catálogo são dois aplicativos independentes (cada um com seu manifest, service worker e escopo) e se instalam separadamente. Ao abrir o link, o navegador oferece a instalação (no iPhone aparece a dica de Compartilhar > Adicionar à Tela de Início). Arquivos: `sistema/` e `catalogo/` (manifest.json e sw.js de cada um), `pwa.js` e os ícones na raiz.
 - **Preços no catálogo:** só aparecem as formas de pagamento preenchidas no produto (cartão e carnê são opcionais).
 - **Fiscal (NFC-e 65 e NF-e 55):** a aba Fiscal confere, venda a venda, se faltam dados da empresa, dos produtos (NCM, CFOP, CSOSN) e do cliente (CPF/CNPJ, IE e endereço com IBGE na NF-e). A emissão depende da integração com o microsserviço fiscal.
+- **Catálogo:** botão de voltar ao topo, foto ampliada em tela cheia (com setas, deslizar e botão Voltar) e escolha, na aba Empresa, de quais preços aparecem (à vista, cartão, carnê).

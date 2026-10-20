@@ -165,6 +165,7 @@ addEventListener('online',sync);
 /* ========= Dados da empresa ========= */
 const CO=()=>db.company[0]||{};
 const logoUrl=()=>CO().logo_url||'../logo.jpg';
+const logoIcon=()=>CO().logo_url||'../logo-icon.png';
 const waNum=()=>{const d=digits(CO().whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
 const fmtCnpj=v=>{const d=digits(v).slice(0,14);return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')};
 function okCnpj(v){
@@ -186,6 +187,11 @@ function vEmp(){
   <div><label>Logo (PNG ou JPG)</label><input type="file" accept="image/*" onchange="upLogo(this)"><input type="hidden" id="e_logo_url" value="${esc(c.logo_url||'')}"></div></div>
   ${EMP.map(([k,l,w])=>`<div class="${w===1?'w':''}"><label>${l}</label>${w==='sel'?`<select id="e_${k}">${['','Simples Nacional','MEI','Lucro Presumido','Lucro Real'].map(o=>`<option ${c[k]===o?'selected':''}>${o}</option>`).join('')}</select>`
    :`<input id="e_${k}" value="${esc(c[k]||'')}" ${k==='cnpj'?'inputmode="numeric" oninput="this.value=fmtCnpj(this.value)"':''} ${k==='cep'?'inputmode="numeric" onblur="cepFill()"':''} ${k==='uf'?'maxlength="2" style="text-transform:uppercase"':''}>`}</div>`).join('')}</div>
+  <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
+  <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_card" style="width:auto" ${c.show_card!==false?'checked':''}> Preço no cartão</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_credit" style="width:auto" ${c.show_credit!==false?'checked':''}> Preço no carnê</label></div>
   <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
   <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p></div>`;
 }
@@ -215,6 +221,8 @@ function saveEmp(){
   if(!row.trade_name&&!row.legal_name)return alert('Informe o nome fantasia ou a razão social.');
   if(row.cnpj&&!okCnpj(row.cnpj))return alert('CNPJ inválido. Confira os 14 dígitos.');
   row.uf=row.uf.toUpperCase();
+  row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
+  if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
   master(()=>{put('company',row);alert('Dados da empresa salvos.');render()});
 }
 
@@ -611,7 +619,7 @@ const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão déb
 function carne(id){
   const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
   const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
-  modal(`<p class="sm">${esc(coLine())}</p><h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
+  modal(`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${esc(logoIcon())}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"><p class="sm" style="margin:0">${esc(coLine())}</p></div><h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
   <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);return`<tr><td>${i.number}/${ins.length}</td>
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
   <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>

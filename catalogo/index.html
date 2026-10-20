@@ -91,6 +91,18 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .empty p{margin:0 0 10px}.empty b{color:var(--ink)}
 @media(min-width:700px){#filters{position:sticky;top:var(--hh,64px);z-index:4;background:var(--bg);margin:-18px -18px 8px;padding:12px 18px 4px}}
 .ibtn{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer}.ibtn[hidden]{display:none}.ibtn+#zap{margin-left:0}
+.cash.ask{font-size:14px;font-weight:700}
+#top{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:46px;height:46px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
+#top.on{opacity:1;pointer-events:auto;transform:none}
+#top svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.zm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 10px;border-radius:99px;pointer-events:none}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:none;align-items:center;justify-content:center;touch-action:pan-y pinch-zoom}
+#lb.open{display:flex}
+#lbi{max-width:100%;max-height:100%;object-fit:contain;user-select:none}
+.lbx{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:99px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+.lbn{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:28px;line-height:1;cursor:pointer}
+.lbn.l{left:10px}.lbn.r{right:10px}
+#lbc{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.55);padding:2px 12px;border-radius:99px;font-size:13px}
 </style>
 </head>
 <body>
@@ -110,6 +122,8 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 <button class="btn" id="fab" onclick="bagView()"></button>
 <footer id="ft">Preços sujeitos a alteração e disponibilidade em estoque.</footer>
 <div id="modal"></div>
+<div id="lb" role="dialog" aria-label="Foto ampliada"><img id="lbi" alt=""><button class="lbx" onclick="closeLb()">✕ Voltar</button><button class="lbn l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="lbn r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span id="lbc"></span></div>
+<button id="top" aria-label="Voltar ao topo" onclick="scrollTo({top:0,behavior:'smooth'})"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -125,9 +139,16 @@ const setC=(k,v)=>{cust[k]=v;localStorage.mmcli=JSON.stringify(cust)};
 let bag=[];try{bag=JSON.parse(localStorage.mmbag||'[]')}catch(e){}
 const saveBag=()=>{localStorage.mmbag=JSON.stringify(bag);fab()};
 const prod=id=>P.find(p=>p.id===id);
-const has=(p,t)=>t==='avista'?+p.price_cash>0:t==='cartao'?+p.price_card>0:+p.price_credit>0;
+const SHOW=t=>CO[{avista:'show_cash',cartao:'show_card',crediario:'show_credit'}[t]]!==false;
+const has=(p,t)=>(t==='avista'?+p.price_cash>0:t==='cartao'?+p.price_card>0:+p.price_credit>0)&&SHOW(t);
+const vis=p=>['avista','cartao','crediario'].filter(t=>has(p,t));
+const txt=(p,t)=>{const m=p.max_inst||10;return t==='avista'?'À vista '+R(price(p,t)):t==='cartao'?'Cartão '+R(price(p,t)):`Carnê ${m}x de ${R(price(p,t)/m)}`};
+function mainPrice(p){
+  const v=vis(p),m=p.max_inst||10;if(!v.length)return'<span class="cash ask">Consulte o preço</span>';
+  const f=v[0];return f==='crediario'?`<span class="cash">${R(price(p,f)/m)}</span> <small>${m}x no carnê</small>`:`<span class="cash">${R(price(p,f))}</span> <small>${f==='avista'?'à vista':'no cartão'}</small>`;
+}
 const price=(p,t)=>has(p,t)?+(t==='avista'?p.price_cash:t==='cartao'?p.price_card:p.price_credit):0;
-function offers(p){const m=p.max_inst||10,a=[];if(has(p,'cartao'))a.push('Cartão '+R(price(p,'cartao')));if(has(p,'crediario'))a.push(`Carnê ${m}x de ${R(price(p,'crediario')/m)}`);return a.join(' · ')}
+function offers(p){return vis(p).slice(1).map(t=>txt(p,t)).join(' · ')}
 const opts=()=>Object.keys(NAMES).filter(t=>bag.every(i=>has(prod(i.id),t)));
 const NAMES={avista:'À vista',cartao:'Cartão',crediario:'Carnê'};
 let CO={};
@@ -182,7 +203,7 @@ function list(){
   summary(l.length);
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}</div>
-   <div class="cb"><h3>${esc(p.name)}</h3><span class="cash">${R(price(p,'avista'))}</span> <small>à vista</small>
+   <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
    <div class="sm">${p.stock<=0?'Esgotado':offers(p)}</div></div></div>`}).join('')||EMPTY;
   fab();
 }
@@ -190,14 +211,23 @@ function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacol
 
 /* ---- Produto ---- */
 let gal=[],gi=0,sx=0;
+function lbShow(){$('#lbi').src=gal[gi];$('#lbc').textContent=gal.length>1?(gi+1)+' / '+gal.length:''}
+function openLb(){
+  if(!gal.length)return;
+  document.querySelectorAll('.lbn').forEach(b=>b.style.display=gal.length>1?'':'none');
+  $('#lb').classList.add('open');history.pushState({lb:1},'');lbShow();
+}
+function closeLb(){if($('#lb').classList.contains('open')){$('#lb').classList.remove('open');if(history.state&&history.state.lb)history.back()}}
+addEventListener('popstate',()=>$('#lb').classList.remove('open'));
 function showImg(i){
   if(!gal.length||!$('#mi'))return;
   gi=(i+gal.length)%gal.length;$('#mi').style.backgroundImage=`url('${gal[gi].replace(/'/g,'%27')}')`;
   const c=$('#cnt');if(c)c.textContent=(gi+1)+'/'+gal.length;
+  if($('#lb').classList.contains('open'))lbShow();
   document.querySelectorAll('.th div').forEach((d,k)=>d.classList.toggle('on',k===gi));
 }
 addEventListener('keydown',e=>{if(!$('#modal').classList.contains('open'))return;
-  if(e.key==='ArrowRight')showImg(gi+1);if(e.key==='ArrowLeft')showImg(gi-1);if(e.key==='Escape')closeM()});
+  if(e.key==='ArrowRight')showImg(gi+1);if(e.key==='ArrowLeft')showImg(gi-1);if(e.key==='Escape')($('#lb').classList.contains('open')?closeLb():closeM())});
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
 function closeM(){$('#modal').classList.remove('open');if(location.hash)history.replaceState(null,'',location.pathname)}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
@@ -205,15 +235,13 @@ function detail(id){
   const p=prod(id),ph=(p.photos||[]).slice(0,5),m=p.max_inst||10,out=p.stock<=0;
   history.replaceState(null,'','#p='+id);gal=ph;gi=0;
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
-  const msg=encodeURIComponent(`Olá, MultMix! Tenho interesse em: ${p.name}\nÀ vista ${R(price(p,'avista'))}${offers(p)?' · '+offers(p):''}\nAinda está disponível?`);
-  modal(`<div class="two"><div><div class="main" id="mi" style="${ph[0]?`background-image:url('${esc(ph[0])}')`:''}">${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
+  const msg=encodeURIComponent(`Olá, MultMix! Tenho interesse em: ${p.name}\n${vis(p).map(t=>txt(p,t)).join(' · ')||'Qual o valor?'}\nAinda está disponível?`);
+  modal(`<div class="two"><div><div class="main" id="mi" role="button" tabindex="0" aria-label="Ampliar foto" onclick="if(!event.target.closest('.ar'))openLb()" onkeydown="if(event.key==='Enter')openLb()" style="cursor:zoom-in;${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"><span class="zm">⤢ Ampliar</span>${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
    <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
    <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${out?'<span class="tag">Esgotado</span>':''}
    <p>${esc(p.description)}</p>
-   <div class="prices"><div class="pr k"><span>À vista</span><b>${R(price(p,'avista'))}</b></div>
-   ${has(p,'cartao')?`<div class="pr"><span>Cartão</span><b>${R(price(p,'cartao'))}</b></div>`:''}
-   ${has(p,'crediario')?`<div class="pr"><span>Carnê até ${m}x</span><b>${R(price(p,'crediario')/m)}</b></div>`:''}</div>
-   <div class="row"><button class="btn" ${out?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>
+   <div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
+   <div class="row"><button class="btn" ${out||!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>
    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msg}">Chamar no WhatsApp</a></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
@@ -226,7 +254,7 @@ const total=()=>bag.reduce((s,i)=>s+price(prod(i.id),pay)*i.qty,0);
 function setPay(t){pay=t;bagView()}
 function bagView(){
   if(!bag.length){modal('<h2>Sua sacola</h2><p>Ela está vazia. Escolha um produto no catálogo.</p>');return}
-  if(!opts().includes(pay))pay='avista';
+  if(!opts().includes(pay))pay=opts()[0]||'avista';
   const mx=maxInst();if(!nin||nin>mx)nin=mx;
   const tot=total();
   modal(`<h2>Sua sacola</h2><table>${bag.map(i=>{const p=prod(i.id);return`<tr><td>${esc(p.name)}<div class="sm">${R(price(p,pay))} cada</div></td>
@@ -236,7 +264,7 @@ function bagView(){
    <h3 style="margin:14px 0 6px">Seus dados para o pedido</h3>
    <div class="row"><input placeholder="Nome completo *" autocomplete="name" value="${esc(cust.name)}" oninput="setC('name',this.value)" style="flex:1;min-width:150px"><input placeholder="WhatsApp com DDD *" inputmode="tel" autocomplete="tel" value="${esc(cust.phone)}" oninput="setC('phone',this.value)" style="flex:1;min-width:150px"></div>
    ${pay==='crediario'?`<div class="row"><input placeholder="CPF *" inputmode="numeric" value="${esc(cust.cpf)}" oninput="setC('cpf',this.value)" style="flex:1;min-width:150px"><input placeholder="Endereço completo *" autocomplete="street-address" value="${esc(cust.address)}" oninput="setC('address',this.value)" style="flex:2;min-width:200px"></div><p class="sm">Para o carnê precisamos do CPF e do endereço. O cadastro fica salvo neste aparelho para as próximas compras.</p>`:''}
-   <p style="font-size:20px"><b>Total: ${R(tot)}</b></p>
+   <p style="font-size:20px"><b>Total${opts().length<2?' ('+NAMES[pay].toLowerCase()+')':''}: ${R(tot)}</b></p>
    <div class="row"><button class="btn wa" onclick="send()">Enviar pedido no WhatsApp</button><button class="btn g" onclick="closeM()">Continuar vendo</button></div>
    <p class="sm">O pedido vai para a loja pelo WhatsApp. Pagamento e entrega são combinados lá. Carnê sujeito a análise de cadastro.</p>`);
 }
@@ -260,6 +288,11 @@ function applyVm(){
 function setVm(m){vm=m;localStorage.mmvm=m;applyVm()}
 const hh=()=>document.documentElement.style.setProperty('--hh',document.querySelector('header').offsetHeight+'px');
 hh();addEventListener('resize',()=>{hh();edges()});$('#chips').addEventListener('scroll',edges,{passive:true});
+const lb=$('#lb');
+lb.ontouchstart=e=>sx=e.touches[0].clientX;
+lb.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)showImg(gi+(d<0?1:-1))};
+lb.onclick=e=>{if(e.target===lb)closeLb()};
+addEventListener('scroll',()=>$('#top').classList.toggle('on',scrollY>500),{passive:true});
 applyVm();
 load();
 </script>
