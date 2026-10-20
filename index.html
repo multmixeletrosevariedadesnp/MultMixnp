@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="favicon.png"><title>MultMix · Eletros e Variedades</title>
+<link rel="icon" href="favicon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -62,13 +62,39 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .lg{width:44px;height:44px;border-radius:10px}
 #master{position:fixed;inset:0;background:rgba(10,14,28,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
 #master.open{display:flex}
+.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.brand{display:flex;align-items:center;gap:10px}header h1{margin:0}
+nav{display:flex;gap:4px;order:3;width:100%;margin:0;overflow-x:auto;flex-wrap:nowrap}
+nav button{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#fff}
+nav .grp{display:none}nav .out{opacity:.85}
+.sync{font-size:12px;opacity:.8}
+.bdg{background:var(--tag);color:#101828;border-radius:99px;padding:0 7px;font-size:12px;margin-left:2px}
+body.out header{display:none}
+.login{position:fixed;inset:0;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#001f4d,#00468f 60%,#00539f);z-index:30}
+.lbox{background:var(--card);border-radius:20px;padding:28px 26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.llogo{display:block;width:min(240px,70%);max-height:240px;object-fit:contain;margin:0 auto 14px;border-radius:24px}
+.lbox h2{margin:0;text-align:center}.lbox p.sm{text-align:center;margin:2px 0 14px}
+.lbox label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.pwd{display:flex;gap:8px}
+@media(min-width:900px){
+ body.in{display:grid;grid-template-columns:240px minmax(0,1fr)}
+ body.in header{position:sticky;top:0;align-self:start;height:100vh;flex-direction:column;align-items:stretch;flex-wrap:nowrap;padding:18px 12px;gap:6px;overflow-y:auto}
+ .brand{padding:2px 8px 16px}
+ nav{flex-direction:column;order:0;overflow:visible}
+ nav button{padding:10px 12px;width:100%;text-align:left}
+ nav .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;padding:12px 12px 4px}
+ nav button.on{box-shadow:inset 3px 0 0 var(--tag)}
+ nav .out{margin-top:14px;border-top:1px solid rgba(255,255,255,.2);border-radius:0}
+ .sync{margin-top:auto;padding:0 8px}
+ main{width:100%}
+}
 </style>
 </head>
 <body>
 <header>
-  <img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1>
-  <span class="sync" id="sync"></span>
+  <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
   <nav id="nav"></nav>
+  <span class="sync" id="sync"></span>
 </header>
 <main id="app"></main>
 <div id="modal"></div>
@@ -215,16 +241,28 @@ async function masterOk(){
 }
 
 /* ========= Navegação ========= */
-let view='cat',cat='Todos',q='';
+let view='login',cat='Todos',q='';
 function go(v){view=v;render()}
 const NN=()=>db.orders.filter(o=>o.status==='novo').length;
+const ICON={box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
+ inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
+ file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
+ receipt:'<path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5z"/><path d="M9 8h6M9 12h6"/>',building:'<path d="M4 21V4a1 1 0 011-1h9a1 1 0 011 1v17M15 9h4a1 1 0 011 1v11M2 21h20M8 7h3M8 11h3M8 15h3"/>',
+ logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 function render(){
-  if(['prod','cx','fis','emp'].includes(view)&&!ADM())view='cat';
-  const tabs=[['cat','Catálogo']];
-  if(isAdmin())tabs.push(...(ADM()?[['prod','Produtos']]:[]),['pdv','Nova venda'],['ped','Pedidos'+(NN()?` (${NN()})`:'')],['cli','Clientes'],['car','Carnês'],...(ADM()?[['cx','Caixa'],['fis','Fiscal'],['emp','Empresa']]:[]));
-  tabs.push(sb&&!session?['login','Entrar']:sb?['out','Sair']:['','']);
-  $('#nav').innerHTML=tabs.filter(t=>t[0]).map(t=>`<button class="${view===t[0]?'on':''}" onclick="${t[0]==='out'?'logout()':`go('${t[0]}')`}">${t[1]}</button>`).join('');
-  ({cat:vCat,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,login:vLogin}[view]||vCat)();
+  if(sb&&!role&&view!=='login')view='login';
+  if(['prod','cx','fis','emp'].includes(view)&&!ADM())view='pdv';
+  document.body.className=isAdmin()?'in':'out';
+  const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
+  let h='';
+  if(isAdmin()){
+    h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('emp','Empresa','building');
+    if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
+  }
+  $('#nav').innerHTML=h;
+  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,login:vLogin}[view]||vPdv)();
 }
 
 /* ========= Catálogo público ========= */
@@ -263,17 +301,27 @@ function closeM(){$('#modal').classList.remove('open')}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
 
 /* ========= Login ========= */
-function vLogin(){$('#app').innerHTML=`<div class="box" style="margin:auto"><img src="${logoUrl()}" alt="MultMix" style="width:150px;border-radius:16px;display:block;margin:0 auto 10px"><h2>Entrar na equipe</h2>
- <div class="f"><div class="w"><label>E-mail</label><input id="em" type="email"></div><div class="w"><label>Senha</label><input id="pw" type="password"></div></div>
- <button class="btn" onclick="login()">Entrar</button> <span id="err" class="bad"></span></div>`}
-async function login(){
-  const{data,error}=await sb.auth.signInWithPassword({email:em.value,password:pw.value});
-  if(error)return err.textContent='E-mail ou senha incorretos.';
-  session=data.session;await loadRole();
-  if(!role){alert('Seu usuário ainda não tem permissão. Peça ao administrador.');return logout()}
-  view=ADM()?'prod':'pdv';sync();
+function vLogin(){
+  $('#app').innerHTML=`<div class="login"><form class="lbox" onsubmit="login(event)">
+  <img src="${esc(logoUrl())}" alt="MultMix" class="llogo">
+  <h2>Acesso da equipe</h2><p class="sm">Entre com seu e-mail e senha.</p>
+  <label for="em">E-mail</label><input id="em" type="email" autocomplete="username" required>
+  <label for="pw">Senha</label><div class="pwd"><input id="pw" type="password" autocomplete="current-password" required>
+  <button type="button" class="btn g s" onclick="const p=$('#pw');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Mostrar':'Ocultar'">Mostrar</button></div>
+  <button class="btn" id="lb" style="width:100%;margin-top:16px">Entrar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em"></p></form></div>`;
+  setTimeout(()=>$('#em')&&$('#em').focus(),50);
 }
-async function logout(){await sb.auth.signOut();session=null;role=null;view='cat';render()}
+async function login(e){
+  if(e)e.preventDefault();
+  const b=$('#lb');b.disabled=true;b.textContent='Entrando...';$('#err').textContent='';
+  const{data,error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+  b.disabled=false;b.textContent='Entrar';
+  if(error)return $('#err').textContent='E-mail ou senha incorretos.';
+  session=data.session;await loadRole();
+  if(!role){await sb.auth.signOut();session=null;return $('#err').textContent='Seu usuário ainda não tem permissão. Peça ao administrador.'}
+  view=ADM()?'prod':'pdv';render();sync();
+}
+async function logout(){await sb.auth.signOut();session=null;role=null;view='login';render()}
 
 /* ========= Produtos (admin) ========= */
 function vProd(){
@@ -613,6 +661,7 @@ function csvFis(){
 /* ========= Início ========= */
 (async()=>{
   if(sb){const{data}=await sb.auth.getSession();session=data.session;if(session)await loadRole()}
+  view=!sb?'prod':role?(ADM()?'prod':'pdv'):'login';
   render();sync();
 })();
 </script>
