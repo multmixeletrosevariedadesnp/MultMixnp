@@ -92,8 +92,9 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 @media(min-width:700px){#filters{position:sticky;top:var(--hh,64px);z-index:4;background:var(--bg);margin:-18px -18px 8px;padding:12px 18px 4px}}
 .ibtn{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer}.ibtn[hidden]{display:none}.ibtn+#zap{margin-left:0}
 .cash.ask{font-size:14px;font-weight:700}
-#top{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:46px;height:46px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
+#top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:46px;height:46px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
 #top.on{opacity:1;pointer-events:auto;transform:none}
+body.hasbag #top{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 #top svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .zm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 10px;border-radius:99px;pointer-events:none}
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:none;align-items:center;justify-content:center;touch-action:pan-y pinch-zoom}
@@ -127,7 +128,7 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 <footer id="ft">Preços sujeitos a alteração e disponibilidade em estoque.</footer>
 <div id="modal"></div>
 <div id="lb" role="dialog" aria-label="Foto ampliada"><img id="lbi" alt=""><button class="lbx" onclick="closeLb()">✕ Voltar</button><button class="lbn l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="lbn r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span id="lbc"></span></div>
-<button id="top" aria-label="Voltar ao topo" onclick="scrollTo({top:0,behavior:'smooth'})"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+<button id="top" aria-label="Voltar ao topo" onclick="toTop()"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -211,9 +212,20 @@ function list(){
    <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div></div></div>`}).join('')||EMPTY;
   fab();
 }
-function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none'}
+function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none';document.body.classList.toggle('hasbag',n>0)}
 
 /* ---- Produto ---- */
+const pageUrl=id=>location.origin+location.pathname+'#p='+id;
+function productText(p,head){
+  const l=[head,'','*'+p.name+'*'];
+  if(p.category)l.push(p.category);
+  const d=(p.description||'').trim();if(d)l.push(d.length>220?d.slice(0,217)+'...':d);
+  const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
+  const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
+  l.push('');const ph=(p.photos||[])[0];if(ph)l.push('Foto: '+ph);
+  l.push('Ver no catálogo: '+pageUrl(p.id));
+  return l.join('\n');
+}
 let gal=[],gi=0,sx=0;
 function lbShow(){$('#lbi').src=gal[gi];$('#lbc').textContent=gal.length>1?(gi+1)+' / '+gal.length:''}
 function openLb(){
@@ -239,8 +251,8 @@ function detail(id){
   const p=prod(id),ph=(p.photos||[]).slice(0,5),m=p.max_inst||10,out=p.stock<=0;
   history.replaceState(null,'','#p='+id);gal=ph;gi=0;
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
-  const msgW=encodeURIComponent(`Olá, MultMix! Quero ser avisado quando o produto chegar: ${p.name}`);
-  const msg=encodeURIComponent(`Olá, MultMix! Tenho interesse em: ${p.name}\n${vis(p).map(t=>txt(p,t)).join(' · ')||'Qual o valor?'}\nAinda está disponível?`);
+  const msgW=encodeURIComponent(productText(p,'Olá, MultMix! Quero ser avisado quando este produto chegar:'));
+  const msg=encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?');
   modal(`<div class="two"><div><div class="main" id="mi" role="button" tabindex="0" aria-label="Ampliar foto" onclick="if(!event.target.closest('.ar'))openLb()" onkeydown="if(event.key==='Enter')openLb()" style="cursor:zoom-in;${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"><span class="zm">⤢ Ampliar</span>${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
    <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
    <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${out?'<span class="tag">Indisponível</span>':''}
@@ -278,7 +290,7 @@ function send(){
   const tot=total(),dg=v=>(v||'').replace(/\D/g,'');
   if((cust.name||'').trim().length<3||dg(cust.phone).length<10)return alert('Preencha seu nome e WhatsApp com DDD para fazer o pedido.');
   if(pay==='crediario'&&(dg(cust.cpf).length!==11||(cust.address||'').trim().length<5))return alert('Para o carnê, informe o CPF (11 dígitos) e o endereço.');
-  let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`}).join('\n');
+  let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`+((p.photos||[])[0]?`\n   Foto: ${p.photos[0]}`:'')+`\n   ${pageUrl(p.id)}`}).join('\n');
   t+=`\n\nCliente: ${cust.name} · ${cust.phone}`+(pay==='crediario'?`\nCPF: ${cust.cpf} · Endereço: ${cust.address}`:'');
   t+=`\n\nForma de pagamento: ${NAMES[pay]}${pay==='crediario'?` (${nin}x de ${R(tot/nin)})`:''}\nTotal: ${R(tot)}`;
   window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(t),'_blank','noopener');
@@ -298,7 +310,9 @@ const lb=$('#lb');
 lb.ontouchstart=e=>sx=e.touches[0].clientX;
 lb.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)showImg(gi+(d<0?1:-1))};
 lb.onclick=e=>{if(e.target===lb)closeLb()};
-addEventListener('scroll',()=>$('#top').classList.toggle('on',scrollY>500),{passive:true});
+function toTop(){'scrollBehavior' in document.documentElement.style?window.scrollTo({top:0,behavior:'smooth'}):window.scrollTo(0,0)}
+const topVis=()=>$('#top').classList.toggle('on',(window.pageYOffset||document.documentElement.scrollTop||0)>400);
+addEventListener('scroll',topVis,{passive:true});topVis();
 applyVm();
 load();
 </script>
