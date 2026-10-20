@@ -90,6 +90,7 @@ body.out header{display:none}
  .sync{margin-top:auto;padding:0 8px}
  main{width:100%}
 }
+.cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
 </style>
 </head>
 <body>
@@ -478,8 +479,9 @@ function saveProd(id){
 }
 
 /* ========= Nova venda (PDV) ========= */
-let cart=[],pre=null,fromOrder=null;
+let cart=[],pre=null,fromOrder=null,selCli=null;
 function vPdv(){
+  selCli=null;
   $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Nova venda</h2>
   <div class="f"><div class="w"><label>Produto</label><select id="s_p">${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} · estoque ${p.stock}</option>`).join('')}</select></div>
   <div><label>Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
@@ -490,7 +492,8 @@ function vPdv(){
   <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
   <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
   <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
-  <div class="f"><div><label>Cliente</label><input id="c_n" list="cl_dl" oninput="fillCli(this)"><datalist id="cl_dl">${db.customers.filter(c=>c.active!==false).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>CPF</label><input id="c_c"></div><div><label>Telefone</label><input id="c_p"></div></div>
+  <div class="f"><div><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c')"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
+  <div id="cs" class="cs" aria-live="polite"></div>
   <button class="btn" onclick="finish()">Finalizar venda</button></div>`;cartView();
   if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
 }
@@ -509,7 +512,7 @@ function finish(){
   const t=s_t.value,tot=total(),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;
   let cid=null;
   if(c_n.value.trim()){
-    let c=db.customers.find(x=>(c_c.value&&x.cpf===c_c.value)||x.name===c_n.value.trim())||{id:uid()};
+    let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:digits(c_c.value).length===14?'nfe':'nfce',nat_op:'Venda de mercadoria',freight:'9',created_at:now(),
@@ -528,26 +531,51 @@ function finish(){
 }
 
 /* ========= Clientes ========= */
-let cq='',showInat=false;
+let cq='',showInat=false,ckind='todos';
 const digits=v=>(v||'').replace(/\D/g,'');
 const owed=id=>db.installments.filter(i=>!i.paid_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===id));
+function cliFilter(){
+  const k=norm(cq),d=digits(cq);
+  return db.customers.filter(c=>(showInat||c.active!==false)&&(ckind==='todos'||(c.kind||'cliente')===ckind)&&
+    (!cq.trim()||norm([c.name,c.trade_name,c.email,c.city,c.district,c.ie].join(' ')).includes(k)||(d&&(digits(c.cpf).includes(d)||digits(c.phone).includes(d)))))
+    .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
 function vCli(){
-  $('#app').innerHTML=`<div class="bar"><input placeholder="Buscar por nome, CPF ou telefone" value="${esc(cq)}" oninput="cq=this.value;cliList()"><button class="btn" onclick="cliForm()">Novo cliente</button><label class="sm" style="align-self:center"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label></div><div id="cl" style="overflow:auto"></div>`;cliList();
+  $('#app').innerHTML=`<div class="bar"><input placeholder="Buscar por nome, fantasia, CPF/CNPJ, telefone, e-mail ou cidade" value="${esc(cq)}" oninput="cq=this.value;cliList()">
+  <select style="max-width:170px" onchange="ckind=this.value;cliList()"><option value="todos" ${ckind==='todos'?'selected':''}>Todos</option><option value="cliente" ${ckind==='cliente'?'selected':''}>Clientes</option><option value="fornecedor" ${ckind==='fornecedor'?'selected':''}>Fornecedores</option></select>
+  <button class="btn" onclick="cliForm()">Novo cadastro</button></div>
+  <div class="bar"><label class="sm" style="align-self:center"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label>
+  <button class="btn g s" onclick="cliExport('xlsx')">Exportar Excel</button><button class="btn g s" onclick="cliExport('csv')">Exportar CSV</button><span class="sm" id="cn" style="align-self:center"></span></div>
+  <div id="cl" style="overflow:auto"></div>`;cliList();
 }
 function cliList(){
-  const k=cq.toLowerCase(),d=digits(cq),today=now().slice(0,10);
-  const l=db.customers.filter(c=>(showInat||c.active!==false)&&(c.name.toLowerCase().includes(k)||(d&&(digits(c.cpf).includes(d)||digits(c.phone).includes(d))))).sort((a,b)=>a.name.localeCompare(b.name));
-  $('#cl').innerHTML=l.length?`<table><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Em aberto</th><th></th></tr>${l.map(c=>{const o=owed(c.id),late=o.some(i=>i.due_date<today);
-  return`<tr><td>${esc(c.name)} ${c.active===false?'<span class="tag">inativo</span>':''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td>
-  <td>${o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
-  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:'<p>Nenhum cliente encontrado. Use "Novo cliente" para cadastrar.</p>';
+  const l=cliFilter(),today=now().slice(0,10);
+  $('#cn').textContent=l.length+(l.length===1?' cadastro':' cadastros');
+  $('#cl').innerHTML=l.length?`<table><tr><th>Nome</th><th>CPF / CNPJ</th><th>Telefone</th><th>Cidade</th><th>Em aberto</th><th></th></tr>${l.map(c=>{const o=owed(c.id),late=o.some(i=>i.due_date<today),forn=c.kind==='fornecedor';
+  return`<tr><td>${esc(c.name)} ${forn?'<span class="tag">fornecedor</span>':''}${c.person_type==='PJ'?' <span class="tag">PJ</span>':''}${c.active===false?' <span class="tag">inativo</span>':''}${c.trade_name?`<div class="sm">${esc(c.trade_name)}</div>`:''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td><td>${esc(c.city||'')}${c.uf?'/'+esc(c.uf):''}</td>
+  <td>${forn?'—':o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
+  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:'<p>Nenhum cadastro encontrado. Use "Novo cadastro" para incluir.</p>';
+}
+function cliExport(fmt){
+  const l=cliFilter();if(!l.length)return alert('Não há cadastros na lista para exportar.');
+  const rows=l.map(c=>{const ss=db.sales.filter(s=>s.customer_id===c.id),o=owed(c.id);return{
+    'Cadastro':c.kind==='fornecedor'?'Fornecedor':'Cliente','Pessoa':c.person_type==='PJ'?'Jurídica':'Física','Nome / Razão social':c.name||'','Nome fantasia':c.trade_name||'',
+    'CPF / CNPJ':c.cpf||'','Inscrição estadual':c.ie||'','Telefone':c.phone||'','E-mail':c.email||'','CEP':c.cep||'','Endereço':c.street||c.address||'','Número':c.number||'',
+    'Complemento':c.complement||'','Bairro':c.district||'','Cidade':c.city||'','UF':c.uf||'','IBGE':c.ibge||'','Situação':c.active===false?'Inativo':'Ativo',
+    'Compras (qtd)':ss.length,'Total comprado':+ss.reduce((a,s)=>a+ +s.total,0).toFixed(2),'Carnê em aberto':+o.reduce((a,i)=>a+ +i.amount,0).toFixed(2)}});
+  const nome='cadastros-multmix-'+ld(now());
+  if(fmt==='xlsx'&&typeof XLSX!=='undefined'){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'Cadastros');XLSX.writeFile(wb,nome+'.xlsx');return}
+  const h=Object.keys(rows[0]),csv=[h,...rows.map(r=>h.map(k=>typeof r[k]==='number'?String(r[k]).replace('.',','):r[k]))].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=nome+'.csv';a.click();
 }
 function cliForm(id){
   const c=db.customers.find(x=>x.id===id)||{},v=k=>esc(c[k]??''),hist=id?db.sales.filter(s=>s.customer_id===id).sort((a,b)=>b.created_at.localeCompare(a.created_at)):[];
-  modal(`<h2>${id?'Cliente':'Novo cliente'}</h2><div class="f">
+  modal(`<h2>${id?'Cadastro':'Novo cadastro'}</h2><div class="f">
+   <div><label>Cadastro</label><select id="k_kind"><option value="cliente" ${(c.kind||'cliente')==='cliente'?'selected':''}>Cliente</option><option value="fornecedor" ${c.kind==='fornecedor'?'selected':''}>Fornecedor</option></select></div>
+   <div><label>Tipo de pessoa</label><select id="k_person_type"><option value="PF" ${c.person_type!=='PJ'?'selected':''}>Pessoa física</option><option value="PJ" ${c.person_type==='PJ'?'selected':''}>Pessoa jurídica</option></select></div>
+   <div class="w"><label>CPF ou CNPJ</label><div class="pwd"><input id="k_cpf" inputmode="numeric" value="${esc(fmtDoc(c.cpf||''))}" oninput="cpfIn(this)" placeholder="Digite o CNPJ e os dados são preenchidos sozinhos"><button type="button" class="btn g s" onclick="cnpjLookup(true)">Buscar CNPJ</button></div><div id="k_st" class="sm" role="status"></div></div>
    <div class="w"><label>Nome completo / razão social</label><input id="k_name" value="${v('name')}"></div>
-   <div><label>Tipo</label><select id="k_person_type"><option value="PF" ${c.person_type!=='PJ'?'selected':''}>Pessoa física</option><option value="PJ" ${c.person_type==='PJ'?'selected':''}>Pessoa jurídica</option></select></div>
-   <div><label>CPF ou CNPJ</label><input id="k_cpf" inputmode="numeric" value="${v('cpf')}"></div>
+   <div class="w"><label>Nome fantasia</label><input id="k_trade_name" value="${v('trade_name')}"></div>
    <div><label>Telefone / WhatsApp</label><input id="k_phone" inputmode="tel" value="${v('phone')}"></div>
    <div><label>E-mail</label><input id="k_email" type="email" value="${v('email')}"></div>
    <div><label>Inscrição estadual (PJ)</label><input id="k_ie" value="${v('ie')}" placeholder="ou ISENTO"></div>
@@ -560,7 +588,7 @@ function cliForm(id){
    <div><label>UF</label><input id="k_uf" maxlength="2" value="${v('uf')}"></div>
    <div><label>Código IBGE</label><input id="k_ibge" inputmode="numeric" value="${v('ibge')}"></div>
    <div class="w"><label>Endereço em texto livre (vem do pedido do catálogo)</label><input id="k_address" value="${v('address')}"></div></div>
-   <p class="sm">NF-e (modelo 55) exige CPF ou CNPJ e endereço completo do cliente. NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
+   <p class="sm">Ao digitar um CNPJ válido, razão social, endereço, telefone e e-mail vêm da Receita Federal. Complete a inscrição estadual. NF-e (modelo 55) exige CPF ou CNPJ e endereço completo; NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
    <button class="btn" onclick="saveCli('${id||''}')">Salvar cliente</button>
    ${id?`<button class="btn g" onclick="toggleCli('${id}')">${c.active===false?'Reativar':'Inativar'} cliente</button>`:''}
    ${c.phone?` <a class="btn g" target="_blank" rel="noopener" href="https://wa.me/55${digits(c.phone)}">WhatsApp</a>`:''}
@@ -573,6 +601,44 @@ async function cepCli(){
     $('#k_street').value=d.logradouro||$('#k_street').value;$('#k_district').value=d.bairro||$('#k_district').value;
     $('#k_city').value=d.localidade||'';$('#k_uf').value=d.uf||'';$('#k_ibge').value=d.ibge||''}catch(e){}
 }
+const tc=s=>(s||'').toLowerCase().replace(/(^|[\s\/-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(Da|De|Do|Das|Dos|E)\b/g,x=>x.toLowerCase());
+function fmtDoc(v){
+  const d=digits(v).slice(0,14);
+  return d.length<=11?d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'):fmtCnpj(d);
+}
+function cnpjFields(j){
+  const ty=(j.descricao_tipo_de_logradouro||j.descricao_tipo_logradouro||'').trim(),lg=(j.logradouro||'').trim();
+  const cep=digits(j.cep),ph=digits(j.ddd_telefone_1);
+  return{name:j.razao_social||'',trade_name:j.nome_fantasia||'',cep:cep.replace(/^(\d{5})(\d{3})$/,'$1-$2'),
+    street:tc(lg.toUpperCase().startsWith(ty.toUpperCase())?lg:(ty+' '+lg).trim()),number:j.numero||'',complement:tc(j.complemento),
+    district:tc(j.bairro),city:tc(j.municipio),uf:j.uf||'',ibge:String(j.codigo_municipio_ibge||''),
+    phone:ph.length>=10?`(${ph.slice(0,2)}) ${ph.slice(2,ph.length-4)}-${ph.slice(-4)}`:ph,email:(j.email||'').toLowerCase()};
+}
+let cnpjT=null;
+function cpfIn(el){
+  el.value=fmtDoc(el.value);const d=digits(el.value),st=$('#k_st');
+  if(d.length>11)$('#k_person_type').value='PJ';
+  clearTimeout(cnpjT);st.className='sm';st.textContent='';
+  if(d.length===14){
+    if(okCnpj(d))cnpjT=setTimeout(()=>cnpjLookup(false),250);
+    else{st.className='sm bad';st.textContent='CNPJ inválido. Confira os números.'}
+  }
+}
+async function cnpjLookup(force){
+  const d=digits($('#k_cpf').value),st=$('#k_st');
+  if(d.length!==14||!okCnpj(d)){st.className='sm bad';st.textContent='Digite um CNPJ válido para buscar.';return}
+  st.className='sm';st.textContent='Buscando dados na Receita Federal...';
+  let j=null;
+  for(const u of ['https://brasilapi.com.br/api/cnpj/v1/'+d,'https://minhareceita.org/'+d]){
+    try{const res=await fetch(u);if(res.ok){j=await res.json();break}}catch(e){}
+  }
+  if(!j){st.className='sm bad';st.textContent='Não consegui consultar agora (sem internet ou CNPJ não encontrado). Preencha manualmente.';return}
+  const F=cnpjFields(j);$('#k_person_type').value='PJ';
+  Object.entries(F).forEach(([k,v])=>{const e=$('#k_'+k);if(e&&v&&(force||!e.value.trim()))e.value=v});
+  const sit=j.descricao_situacao_cadastral||'';
+  st.className='sm '+(sit&&sit.toUpperCase()!=='ATIVA'?'bad':'ok');
+  st.textContent='Dados preenchidos pela Receita Federal'+(sit?'. Situação cadastral: '+sit:'')+'. Confira e informe a inscrição estadual.';
+}
 function okCpf(v){
   const c=digits(v);if(c.length!==11||/^(\d)\1+$/.test(c))return false;
   const dv=n=>{let s=0;for(let i=0;i<n;i++)s+=c[i]*(n+1-i);const m=(s*10)%11;return m===10?0:m};
@@ -581,11 +647,11 @@ function okCpf(v){
 function saveCli(id){
   const g=k=>$('#k_'+k).value.trim();
   if(!g('name'))return alert('Informe o nome do cliente.');
-  if(g('cpf')&&db.customers.some(x=>x.id!==id&&digits(x.cpf)===digits(g('cpf'))))return alert('Já existe um cliente com este CPF.');
+  if(g('cpf')&&db.customers.some(x=>x.id!==id&&digits(x.cpf)===digits(g('cpf'))))return alert('Já existe um cadastro com este CPF/CNPJ.');
   const c=db.customers.find(x=>x.id===id)||{id:uid()};
   const dd=digits(g('cpf'));
   if(dd&&!(dd.length===11?okCpf(dd):dd.length===14?okCnpj(dd):false))return alert('CPF ou CNPJ inválido. Confira os números.');
-  const row={...c,name:g('name'),person_type:g('person_type'),cpf:g('cpf'),phone:g('phone'),email:g('email'),ie:g('ie'),cep:g('cep'),street:g('street'),number:g('number'),
+  const row={...c,kind:g('kind'),trade_name:g('trade_name'),name:g('name'),person_type:g('person_type'),cpf:g('cpf'),phone:g('phone'),email:g('email'),ie:g('ie'),cep:g('cep'),street:g('street'),number:g('number'),
     complement:g('complement'),district:g('district'),city:g('city'),uf:g('uf').toUpperCase(),ibge:g('ibge'),address:g('address')};
   if(row.street&&!row.address)row.address=`${row.street}, ${row.number||'s/n'} - ${row.district}, ${row.city}/${row.uf}`;
   put('customers',row);
@@ -595,6 +661,23 @@ function toggleCli(id){
   const c=db.customers.find(x=>x.id===id);
   if(c.active!==false&&owed(id).length&&!confirm('Este cliente tem parcelas em aberto. Inativar mesmo assim?'))return;
   master(()=>{put('customers',{...c,active:c.active===false});closeM();render()});
+}
+function cliMatch(q){
+  const k=norm(q),d=digits(q);if(!k&&!d)return[];
+  return db.customers.filter(c=>c.active!==false&&(c.kind||'cliente')==='cliente'&&(norm([c.name,c.trade_name,c.email,c.city,c.ie].join(' ')).includes(k)||(d.length>=2&&(digits(c.cpf).includes(d)||digits(c.phone).includes(d)))))
+    .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function cliSug(field){
+  const q=$('#'+field).value.trim(),box=$('#cs');
+  if(q.length<2){box.innerHTML='';return}
+  const l=cliMatch(q).slice(0,6);
+  box.innerHTML=l.length?l.map(c=>{const o=owed(c.id);return`<button type="button" onclick="pickCli('${c.id}')"><span>${esc(c.name)}${c.trade_name?` <small>${esc(c.trade_name)}</small>`:''}</span><small>${esc(c.cpf||c.phone||'')}${o.length?' · <b class="bad">'+o.length+' parc. em aberto</b>':''}</small></button>`}).join('')
+    :'<p class="sm">Nenhum cliente salvo com esse dado. Ele será cadastrado ao finalizar a venda.</p>';
+}
+function pickCli(id){
+  const c=db.customers.find(x=>x.id===id);if(!c)return;
+  c_n.value=c.name||'';c_c.value=c.cpf||'';c_p.value=c.phone||'';selCli=id;
+  $('#cs').innerHTML=`<p class="sm ok">Cliente selecionado: <b>${esc(c.name)}</b>. Para trocar, comece a digitar de novo.</p>`;
 }
 function fillCli(inp){const c=db.customers.find(x=>x.name===inp.value);if(c){c_c.value=c.cpf||'';c_p.value=c.phone||''}}
 
@@ -714,7 +797,7 @@ function fisEdit(id){
   const s=db.sales.find(x=>x.id===id);
   modal(`<h2>Documento fiscal da venda</h2><div class="f">
   <div class="w"><label>Tipo de documento</label><select id="x_t"><option value="nfce" ${s.doc_type!=='nfe'?'selected':''}>NFC-e (modelo 65) · consumidor final</option><option value="nfe" ${s.doc_type==='nfe'?'selected':''}>NF-e (modelo 55) · cliente identificado</option></select></div>
-  <div class="w"><label>Cliente</label><select id="x_c"><option value="">Balcão (sem cliente)</option>${[...db.customers].sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}" ${c.id===s.customer_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+  <div class="w"><label>Cliente</label><select id="x_c"><option value="">Balcão (sem cliente)</option>${[...db.customers].filter(c=>(c.kind||'cliente')==='cliente').sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}" ${c.id===s.customer_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
   <div class="w"><label>Natureza da operação</label><input id="x_n" value="${esc(s.nat_op||'Venda de mercadoria')}"></div>
   <div class="w"><label>Frete</label><select id="x_f">${[['9','Sem frete'],['0','Por conta do emitente'],['1','Por conta do destinatário']].map(([k,l])=>`<option value="${k}" ${(s.freight||'9')===k?'selected':''}>${l}</option>`).join('')}</select></div></div>
   <button class="btn" onclick="fisEditSave('${id}')">Salvar</button>`);
