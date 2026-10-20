@@ -103,6 +103,10 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .lbn{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .lbn.l{left:10px}.lbn.r{right:10px}
 #lbc{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.55);padding:2px 12px;border-radius:99px;font-size:13px}
+.card.na .ph{filter:grayscale(.85);opacity:.7}.card.na .cb h3,.card.na .cash{opacity:.65}
+.nab{position:absolute;left:8px;top:8px;background:#344054;color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px}
+.g-small .nab,.g-list .nab{font-size:11px;padding:2px 8px}
+.avis{border:1px dashed var(--mut);border-radius:12px;padding:10px 12px;margin:10px 0}
 </style>
 </head>
 <body>
@@ -175,7 +179,7 @@ async function load(){
   if(sb){const{data}=await sb.from('company').select('*').eq('id',1).maybeSingle();if(data){CO=data;localStorage.mmco=JSON.stringify(CO)}}
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
   brand();
-  bag=bag.filter(i=>prod(i.id));saveBag();
+  bag=bag.filter(i=>prod(i.id)&&!(prod(i.id).stock<=0));saveBag();
   list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);
 }
@@ -199,12 +203,12 @@ function clearF(){q='';cat='Todos';$('#q').value='';list()}
 const EMPTY='<div class="empty"><p><b>Nenhum produto encontrado.</b></p><p>Tente outra palavra ou veja todas as categorias.</p><button class="btn g" onclick="clearF()">Limpar filtros</button></div>';
 function list(){
   chips();
-  const l=P.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
+  const l=P.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase())).sort((a,b)=>(a.stock<=0)-(b.stock<=0));
   summary(l.length);
-  $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
-   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}</div>
+  $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
+   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
-   <div class="sm">${p.stock<=0?'Esgotado':offers(p)}</div></div></div>`}).join('')||EMPTY;
+   <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div></div></div>`}).join('')||EMPTY;
   fab();
 }
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none'}
@@ -235,19 +239,21 @@ function detail(id){
   const p=prod(id),ph=(p.photos||[]).slice(0,5),m=p.max_inst||10,out=p.stock<=0;
   history.replaceState(null,'','#p='+id);gal=ph;gi=0;
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
+  const msgW=encodeURIComponent(`Olá, MultMix! Quero ser avisado quando o produto chegar: ${p.name}`);
   const msg=encodeURIComponent(`Olá, MultMix! Tenho interesse em: ${p.name}\n${vis(p).map(t=>txt(p,t)).join(' · ')||'Qual o valor?'}\nAinda está disponível?`);
   modal(`<div class="two"><div><div class="main" id="mi" role="button" tabindex="0" aria-label="Ampliar foto" onclick="if(!event.target.closest('.ar'))openLb()" onkeydown="if(event.key==='Enter')openLb()" style="cursor:zoom-in;${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"><span class="zm">⤢ Ampliar</span>${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
    <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
-   <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${out?'<span class="tag">Esgotado</span>':''}
+   <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${out?'<span class="tag">Indisponível</span>':''}
    <p>${esc(p.description)}</p>
+   ${out?'<div class="avis"><b>Indisponível no momento</b><br><span class="sm">Aguardando reposição de estoque. Avise-nos e chamamos você quando chegar.</span></div>':''}
    <div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
-   <div class="row"><button class="btn" ${out||!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>
-   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msg}">Chamar no WhatsApp</a></div></div></div>
+   <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
+   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 
 /* ---- Sacola ---- */
-function add(id){const i=bag.find(x=>x.id===id);i?i.qty++:bag.push({id,qty:1});saveBag();bagView()}
+function add(id){if(prod(id).stock<=0)return;const i=bag.find(x=>x.id===id);i?i.qty++:bag.push({id,qty:1});saveBag();bagView()}
 function qty(id,d){const i=bag.find(x=>x.id===id);i.qty+=d;if(i.qty<1)bag=bag.filter(x=>x.id!==id);saveBag();bagView()}
 const maxInst=()=>Math.min(...bag.map(i=>prod(i.id).max_inst||10),24);
 const total=()=>bag.reduce((s,i)=>s+price(prod(i.id),pay)*i.qty,0);

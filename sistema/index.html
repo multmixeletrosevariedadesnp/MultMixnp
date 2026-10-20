@@ -545,7 +545,7 @@ function vCli(){
   <select style="max-width:170px" onchange="ckind=this.value;cliList()"><option value="todos" ${ckind==='todos'?'selected':''}>Todos</option><option value="cliente" ${ckind==='cliente'?'selected':''}>Clientes</option><option value="fornecedor" ${ckind==='fornecedor'?'selected':''}>Fornecedores</option></select>
   <button class="btn" onclick="cliForm()">Novo cadastro</button></div>
   <div class="bar"><label class="sm" style="align-self:center"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label>
-  <button class="btn g s" onclick="cliExport('xlsx')">Exportar Excel</button><button class="btn g s" onclick="cliExport('csv')">Exportar CSV</button><span class="sm" id="cn" style="align-self:center"></span></div>
+  <button class="btn g s" onclick="cliImpOpen()">Importar planilha</button><button class="btn g s" onclick="cliExport('xlsx')">Exportar Excel</button><button class="btn g s" onclick="cliExport('csv')">Exportar CSV</button><span class="sm" id="cn" style="align-self:center"></span></div>
   <div id="cl" style="overflow:auto"></div>`;cliList();
 }
 function cliList(){
@@ -555,6 +555,85 @@ function cliList(){
   return`<tr><td>${esc(c.name)} ${forn?'<span class="tag">fornecedor</span>':''}${c.person_type==='PJ'?' <span class="tag">PJ</span>':''}${c.active===false?' <span class="tag">inativo</span>':''}${c.trade_name?`<div class="sm">${esc(c.trade_name)}</div>`:''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td><td>${esc(c.city||'')}${c.uf?'/'+esc(c.uf):''}</td>
   <td>${forn?'—':o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
   <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:'<p>Nenhum cadastro encontrado. Use "Novo cadastro" para incluir.</p>';
+}
+/* ========= Importar clientes e fornecedores (csv / xlsx) ========= */
+const CALI={name:['nome razao social','razao social','nome completo','nome','cliente','fornecedor','empresa'],trade_name:['nome fantasia','fantasia'],
+ cpf:['cpf cnpj','cpf ou cnpj','cnpj cpf','documento','cpf','cnpj'],ie:['inscricao estadual','ie'],
+ phone:['telefone whatsapp','telefone','celular','whatsapp','fone'],email:['e mail','email'],cep:['cep'],street:['endereco','rua logradouro','logradouro','rua'],
+ number:['numero','num'],complement:['complemento'],district:['bairro'],city:['cidade','municipio'],uf:['uf','estado'],ibge:['codigo ibge','cod ibge','ibge'],
+ kind:['tipo de cadastro','cadastro'],person:['tipo de pessoa','pessoa'],tipo:['tipo'],active:['situacao','status','ativo']};
+async function readTable(f){
+  const buf=await f.arrayBuffer();
+  if(/\.(csv|txt)$/i.test(f.name)){
+    let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){t=new TextDecoder('windows-1252').decode(buf)}
+    t=t.replace(/^\ufeff/,'');const l=t.split(/\r?\n/)[0]||'';
+    const d=[';','\t',','].map(x=>[x,l.split(x).length]).sort((a,b)=>b[1]-a[1])[0][0];
+    return csvParse(t,d);
+  }
+  if(typeof XLSX==='undefined')throw new Error('xlsx');
+  const wb=XLSX.read(buf,{type:'array'});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:'',raw:false});
+}
+function cliMap(rows,existing,newId){
+  const hs=Object.keys(rows[0]||{}),nh=hs.map(norm),col={};
+  for(const k of Object.keys(CALI)){if(k==='cpf')continue;for(const a of CALI[k]){const i=nh.indexOf(a);if(i>=0){col[k]=hs[i];break}}}
+  const docCols=hs.filter((h,i)=>CALI.cpf.includes(nh[i]));
+  const map=new Map();let skip=0,bad=0;
+  rows.forEach(r=>{
+    const g=k=>col[k]!=null?String(r[col[k]]??'').trim():'';
+    const name=g('name');if(!name){skip++;return}
+    let d=digits(docCols.map(h=>String(r[h]??'').trim()).find(Boolean)||'');
+    if(d.length===10)d=d.padStart(11,'0');if(d.length===13)d=d.padStart(14,'0');
+    let doc='',note='';
+    if(d){if((d.length===11&&okCpf(d))||(d.length===14&&okCnpj(d)))doc=fmtDoc(d);else{bad++;note='CPF/CNPJ inválido (importado sem documento)'}}
+    const key=doc?digits(doc):'n:'+norm(name);
+    const old=(doc&&existing.find(c=>digits(c.cpf)===digits(doc)))||(!doc&&existing.find(c=>norm(c.name)===norm(name)))||map.get(key)?.row;
+    const kt=g('kind')||g('tipo'),pt=g('person')||g('tipo'),at=g('active');
+    const kind=/forn/i.test(kt)?'fornecedor':/client/i.test(kt)?'cliente':(old&&old.kind)||'cliente';
+    const person=d.length===14?'PJ':/jur|^pj$/i.test(pt)?'PJ':/fis|^pf$/i.test(pt)?'PF':(old&&old.person_type)||'PF';
+    const act=at?!/inativ|^n(ã|a)o$|^0$|^false$/i.test(at):(old?old.active!==false:true);
+    const o=(k,fn=x=>x)=>g(k)?{[k]:fn(g(k))}:{};
+    const row={...(old||{id:newId(),active:true}),name,kind,person_type:person,active:act,cpf:doc||(old&&old.cpf)||'',
+      ...o('trade_name'),...o('ie'),...o('phone'),...o('email',x=>x.toLowerCase()),...o('cep',x=>x.replace(/^(\d{5})-?(\d{3})$/,'$1-$2')),
+      ...o('street'),...o('number'),...o('complement'),...o('district'),...o('city'),...o('uf',x=>x.toUpperCase().slice(0,2)),...o('ibge',x=>digits(x))};
+    map.set(key,{row,note,isNew:!existing.some(c=>c.id===row.id)});
+  });
+  return{out:[...map.values()],skip,bad,cols:col,hasDoc:docCols.length>0};
+}
+let cimp=[];
+function cliImpOpen(){
+  modal(`<h2>Importar clientes e fornecedores</h2><p class="sm">Envie uma planilha (.csv ou .xlsx), uma linha por cadastro. Só o <b>nome</b> é obrigatório. Colunas aceitas: cadastro (cliente ou fornecedor), pessoa (física ou jurídica), nome / razão social, nome fantasia, CPF / CNPJ, inscrição estadual, telefone, e-mail, CEP, endereço, número, complemento, bairro, cidade, UF, IBGE e situação. A planilha exportada pelo sistema pode ser importada de volta. Cadastros com o mesmo CPF/CNPJ (ou o mesmo nome, quando não há documento) são atualizados, não duplicados.</p>
+  <div class="row"><input type="file" accept=".csv,.txt,.xlsx,.xls" onchange="cliImpRead(this)" style="flex:1"><button class="btn g" onclick="cliImpModel()">Baixar modelo</button></div><div id="civ" style="margin-top:12px"></div>`);
+}
+function cliImpModel(){
+  const csv='cadastro;pessoa;nome / razão social;nome fantasia;cpf / cnpj;inscrição estadual;telefone;e-mail;cep;endereço;número;complemento;bairro;cidade;uf;ibge\n'+
+   'Cliente;Física;Maria da Silva;;529.982.247-25;;(93) 99999-0000;maria@email.com;68371-000;Rua das Flores;100;;Centro;Altamira;PA;1500602\n'+
+   'Fornecedor;Jurídica;Empresa Exemplo Ltda;Exemplo;11.222.333/0001-81;ISENTO;(11) 3000-4000;contato@exemplo.com;01000-000;Rua X;50;Sala 2;Centro;São Paulo;SP;3550308\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='modelo-clientes.csv';a.click();
+}
+async function cliImpRead(inp){
+  const fl=inp.files[0];if(!fl)return;let rows;
+  try{rows=await readTable(fl)}catch(e){return alert(e.message==='xlsx'?'A biblioteca de planilhas não carregou. Verifique a internet.':'Não consegui ler o arquivo.')}
+  if(!rows.length)return alert('A planilha está vazia.');
+  const res=cliMap(rows,db.customers,uid);
+  if(res.cols.name==null)return $('#civ').innerHTML='<p class="bad">Não achei a coluna do nome. Use o modelo para conferir os títulos das colunas.</p>';
+  cimp=res.out;const novos=cimp.filter(x=>x.isNew).length;
+  $('#civ').innerHTML=`<p><b>${novos} novos</b> · ${cimp.length-novos} já cadastrados · ${res.skip} linhas sem nome (ignoradas)${res.bad?` · <span class="bad">${res.bad} com CPF/CNPJ inválido</span>`:''}</p>
+  <label class="sm" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="ci_upd" style="width:auto" checked onchange="cliImpBtn()"> Atualizar os cadastros que já existem</label>
+  <div style="overflow:auto;max-height:260px"><table><tr><th>Nome</th><th>CPF / CNPJ</th><th>Tipo</th><th>Cidade</th><th>Situação</th></tr>
+  ${cimp.slice(0,50).map(x=>`<tr><td>${esc(x.row.name)}</td><td>${esc(x.row.cpf)}</td><td>${x.row.kind==='fornecedor'?'Fornecedor':'Cliente'} ${x.row.person_type}</td><td>${esc(x.row.city||'')}</td>
+  <td>${x.note?`<span class="bad">${esc(x.note)}</span>`:x.isNew?'<span class="ok">Novo</span>':'Atualiza'}</td></tr>`).join('')}</table></div>
+  ${cimp.length>50?'<p class="sm">Mostrando os 50 primeiros.</p>':''}<p><button class="btn" id="cibtn" onclick="cliImpGo()"></button></p>`;
+  cliImpBtn();
+}
+function cliImpBtn(){
+  const u=$('#ci_upd').checked,n=cimp.filter(x=>u||x.isNew).length;
+  $('#cibtn').textContent='Importar '+n+(n===1?' cadastro':' cadastros');$('#cibtn').disabled=!n;
+}
+function cliImpGo(){
+  const u=$('#ci_upd').checked,l=cimp.filter(x=>u||x.isNew);
+  l.forEach(x=>put('customers',x.row,true));sync();closeM();
+  alert(l.length+' cadastros importados.');cimp=[];render();
 }
 function cliExport(fmt){
   const l=cliFilter();if(!l.length)return alert('Não há cadastros na lista para exportar.');
