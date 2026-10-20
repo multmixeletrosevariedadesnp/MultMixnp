@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="favicon.png"><title>MultMix · Sistema</title>
+<link rel="icon" href="favicon.png"><link rel="manifest" href="manifest-sistema.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -327,7 +327,7 @@ async function logout(){await sb.auth.signOut();session=null;role=null;view='log
 function vProd(){
   $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><span class="sm" style="align-self:center">${db.products.length} produtos</span></div>
   <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Estoque</th><th></th></tr>
-  ${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${R(p.price_card)}</td><td>${R(p.price_credit)}</td><td>${p.stock}</td>
+  ${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${p.stock}</td>
   <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join('')}</table>`;
 }
 /* ========= Importar produtos (xlsx / csv) ========= */
@@ -365,7 +365,7 @@ function impMap(rows,existing,newId){
     if(!name||!(cash>0)){skip++;return}
     const key=name.toLowerCase();
     const old=existing.find(p=>p.name.toLowerCase()===key)||map.get(key);
-    const card=num(g('price_card'))||cash,cred=num(g('price_credit'))||card;
+    const card=col.price_card!=null?(num(g('price_card'))||null):(old?old.price_card??null:null),cred=col.price_credit!=null?(num(g('price_credit'))||null):(old?old.price_credit??null:null);
     const photos=String(g('photos')??'').split(/[\s|;]+/).filter(u=>/^https?:\/\//.test(u)).slice(0,5);
     const specs=String(g('specs')??'').split(/\||;|\n/).map(s=>s.trim()).filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}).filter(s=>s.k&&s.v);
     map.set(key,{...(old||{id:newId(),active:true,cfop:'5102',unit:'UN',stock:0,max_inst:10,photos:[],specs:[]}),
@@ -416,7 +416,7 @@ async function impRead(inp){
   ${out.length>50?'<p class="sm">Mostrando os 50 primeiros.</p>':''}<p><button class="btn" onclick="impGo()">Importar ${out.length} produtos</button></p>`;
 }
 function impGo(){
-  const chg=imp.some(p=>{const o=db.products.find(x=>x.id===p.id);return o&&['price_cash','price_card','price_credit'].some(k=>+o[k]!==p[k])});
+  const chg=imp.some(p=>{const o=db.products.find(x=>x.id===p.id);return o&&['price_cash','price_card','price_credit'].some(k=>(+o[k]||0)!==(+p[k]||0))});
   const go=()=>{imp.forEach(p=>put('products',p,true));sync();closeM();alert(imp.length+' produtos importados.');imp=[];render()};
   chg?master(go):go();
 }
@@ -424,14 +424,14 @@ function impGo(){
 function prodForm(id){
   const p=db.products.find(x=>x.id===id)||{photos:[],specs:[],max_inst:10,stock:0,cfop:'5102',unit:'UN',active:true};
   const v=(k)=>esc(p[k]??'');
-  modal(`<h2>${id?'Editar':'Novo'} produto</h2><div class="f">
+  modal(`<h2>${id?'Editar':'Novo'} produto</h2><p class="sm">Cartão e carnê são opcionais: o catálogo mostra só as formas de pagamento que você preencher.</p><div class="f">
    <div class="w"><label>Nome</label><input id="f_name" value="${v('name')}"></div>
    <div><label>Categoria</label><input id="f_category" value="${v('category')}"></div>
    <div><label>Estoque</label><input id="f_stock" type="number" value="${v('stock')}"></div>
    <div><label>Preço à vista</label><input id="f_price_cash" type="number" step="0.01" value="${v('price_cash')}"></div>
-   <div><label>Preço cartão</label><input id="f_price_card" type="number" step="0.01" value="${v('price_card')}"></div>
-   <div><label>Preço carnê (total)</label><input id="f_price_credit" type="number" step="0.01" value="${v('price_credit')}"></div>
-   <div><label>Máx. parcelas</label><input id="f_max_inst" type="number" value="${v('max_inst')}"></div>
+   <div><label>Preço cartão (opcional)</label><input id="f_price_card" type="number" step="0.01" value="${v('price_card')}"></div>
+   <div><label>Preço carnê total (opcional)</label><input id="f_price_credit" type="number" step="0.01" value="${v('price_credit')}"></div>
+   <div><label>Máx. parcelas do carnê</label><input id="f_max_inst" type="number" value="${v('max_inst')}"></div>
    <div class="w"><label>Descrição</label><textarea id="f_description" rows="2">${v('description')}</textarea></div>
    <div class="w"><label>Especificações (uma por linha, formato Nome: valor)</label><textarea id="f_specs" rows="4">${(p.specs||[]).map(s=>s.k+': '+s.v).join('\n')}</textarea></div>
    <div class="w"><label>Fotos (até 5, um link por linha)</label><textarea id="f_photos" rows="3">${(p.photos||[]).join('\n')}</textarea>
@@ -455,13 +455,13 @@ function saveProd(id){
   const g=k=>$('#f_'+k).value.trim();
   if(!g('name')||!g('price_cash'))return alert('Informe nome e preço à vista.');
   const row={id:id||uid(),name:g('name'),category:g('category'),description:g('description'),
-   price_cash:+g('price_cash'),price_card:+g('price_card')||+g('price_cash'),price_credit:+g('price_credit')||+g('price_card')||+g('price_cash'),
+   price_cash:+g('price_cash'),price_card:+g('price_card')||null,price_credit:+g('price_credit')||null,
    max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
    photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
   const old=db.products.find(x=>x.id===id);
   const go=()=>{put('products',row);closeM();render()};
-  old&&['price_cash','price_card','price_credit'].some(k=>+old[k]!==row[k])?master(go):go();
+  old&&['price_cash','price_card','price_credit'].some(k=>(+old[k]||0)!==(+row[k]||0))?master(go):go();
 }
 
 /* ========= Nova venda (PDV) ========= */
@@ -665,5 +665,6 @@ function csvFis(){
   render();sync();
 })();
 </script>
+<script src="pwa.js" defer></script>
 </body>
 </html>

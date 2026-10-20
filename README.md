@@ -26,3 +26,5 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 - **Senha mestre:** ações sensíveis (mudar preço, inativar cliente, cancelar pedido, marcar nota emitida) pedem a senha do administrador. Vale por 5 minutos. Para o vendedor usar, preencha `ADMIN_EMAIL` no `index.html`.
 - Novo vendedor: crie o usuário em Authentication e rode o comando comentado no fim do `supabase-v3.sql`.
 - **Empresa:** o administrador preenche logo, CNPJ, razão social, endereço, telefone e WhatsApp na aba Empresa. O catálogo e o carnê usam esses dados.
+- **App instalável:** `index.html` (sistema) e `catalogo.html` (catálogo) abrem como aplicativo. Ao abrir o link, o navegador oferece a instalação (no iPhone aparece a dica de Compartilhar > Adicionar à Tela de Início). Arquivos: `manifest-*.json`, `sw.js`, `pwa.js` e os ícones.
+- **Preços no catálogo:** só aparecem as formas de pagamento preenchidas no produto (cartão e carnê são opcionais).
