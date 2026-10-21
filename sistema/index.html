@@ -163,6 +163,114 @@ async function doSync(){
 const setSync=t=>$('#sync').textContent=t;
 addEventListener('online',sync);
 
+/* ========= Usuários, comissão e senha ========= */
+const ROLE_N={admin:'Administrador',vendedor:'Vendedor'};
+const genPw=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789',a=new Uint32Array(10);crypto.getRandomValues(a);return[...a].map(n=>c[n%c.length]).join('')+'@7'};
+async function loadProf(){
+  if(!sb||role!=='admin')return;
+  const{data,error}=await sb.from('profiles').select('*').order('name');
+  if(!error)PROF=data||[];
+}
+function sellerInfo(){
+  const el=$('#s_v'),u=(el&&PROF.find(x=>x.id===el.value))||me||{};
+  return{seller_id:u.id||null,seller_name:u.name||'',commission_pct:+u.commission_pct||0,commission_mode:u.commission_mode||'venda'};
+}
+async function vUsr(){
+  if(!sb){$('#app').innerHTML='<p>O cadastro de usuários fica disponível quando o sistema está conectado ao Supabase.</p>';return}
+  $('#app').innerHTML='<p class="sm">Carregando usuários...</p>';
+  await loadProf();
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="usrForm()">Novo usuário</button><span class="sm" style="align-self:center">${PROF.length} ${PROF.length===1?'usuário':'usuários'}</span></div>
+  <div style="overflow:auto"><table><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Comissão</th><th>Situação</th><th></th></tr>
+  ${PROF.map(u=>`<tr><td>${esc(u.name)}${me&&u.id===me.id?' <span class="tag">você</span>':''}</td><td>${esc(u.email||'')}</td><td>${ROLE_N[u.role]||esc(u.role)}</td>
+  <td>${+u.commission_pct>0?(+u.commission_pct)+'%':'—'}</td><td>${u.active===false?'<span class="tag">Inativo</span>':'<span class="ok">Ativo</span>'}</td>
+  <td><button class="btn g s" onclick="usrForm('${u.id}')">Editar</button></td></tr>`).join('')}</table></div>`;
+}
+function usrForm(id){
+  const u=PROF.find(x=>x.id===id)||{role:'vendedor',commission_pct:0,commission_mode:'venda',active:true},nw=!id,sel=(a,b)=>a===b?'selected':'';
+  modal(`<h2>${nw?'Novo usuário':'Editar usuário'}</h2><div class="f">
+  <div class="w"><label>Nome completo</label><input id="u_name" value="${esc(u.name||'')}"></div>
+  <div class="w"><label>E-mail (é o login)</label><input id="u_email" type="email" value="${esc(u.email||'')}" ${nw?'':'disabled'}></div>
+  ${nw?`<div class="w"><label>Senha provisória (mínimo 8 caracteres)</label><div class="pwd"><input id="u_pw" value="${genPw()}"><button type="button" class="btn g s" onclick="$('#u_pw').value=genPw()">Gerar outra</button></div></div>`:''}
+  <div><label>Perfil</label><select id="u_role"><option value="vendedor" ${sel(u.role,'vendedor')}>Vendedor</option><option value="admin" ${sel(u.role,'admin')}>Administrador</option></select></div>
+  <div><label>Telefone</label><input id="u_phone" inputmode="tel" value="${esc(u.phone||'')}"></div>
+  <div><label>Comissão (%)</label><input id="u_pct" type="number" step="0.01" min="0" max="100" value="${+u.commission_pct||0}"></div>
+  <div><label>Base da comissão</label><select id="u_mode"><option value="venda" ${sel(u.commission_mode,'venda')}>Sobre a venda, no ato</option><option value="recebimento" ${sel(u.commission_mode,'recebimento')}>Sobre o valor recebido (carnê, conforme as parcelas são pagas)</option></select></div>
+  ${nw?'':`<div><label>Situação</label><select id="u_active"><option value="true" ${u.active!==false?'selected':''}>Ativo</option><option value="false" ${u.active===false?'selected':''}>Inativo (sem acesso)</option></select></div>`}</div>
+  <p class="sm">Vendedor: vende, atende pedidos, cadastra clientes e recebe carnês. Não vê Caixa, Fiscal, Empresa nem Usuários e não muda preços. Administrador: acesso total. A comissão vale para as vendas feitas daqui em diante, e as vendas antigas mantêm a taxa da época.</p>
+  <button class="btn" onclick="usrSave('${id||''}')">Salvar</button>${nw?'':` <button class="btn g" onclick="usrPw('${id}')">Redefinir senha</button>`}`);
+}
+function usrSave(id){
+  const g=k=>$('#u_'+k)?$('#u_'+k).value.trim():'',v={name:g('name'),email:g('email').toLowerCase(),pw:g('pw'),role:g('role'),phone:g('phone'),pct:+g('pct'),mode:g('mode'),active:g('active')!=='false'};
+  if(v.name.length<3)return alert('Informe o nome completo.');
+  if(!(v.pct>=0&&v.pct<=100))return alert('A comissão deve ficar entre 0 e 100%.');
+  if(!id){
+    if(!/^\S+@\S+\.\S+$/.test(v.email))return alert('Informe um e-mail válido.');
+    if(v.pw.length<8)return alert('A senha provisória precisa ter ao menos 8 caracteres.');
+  }
+  master(async()=>{
+    const{error}=id?await sb.rpc('admin_update_user',{p_id:id,p_name:v.name,p_role:v.role,p_commission:v.pct,p_mode:v.mode,p_phone:v.phone,p_active:v.active})
+      :await sb.rpc('admin_create_user',{p_email:v.email,p_password:v.pw,p_name:v.name,p_role:v.role,p_commission:v.pct,p_mode:v.mode,p_phone:v.phone});
+    if(error)return alert(error.message);
+    closeM();await vUsr();
+    if(!id)alert('Usuário criado.\n\nLogin: '+v.email+'\nSenha provisória: '+v.pw+'\n\nPasse esses dados ao usuário e peça para trocar a senha em "Alterar senha".');
+  });
+}
+function usrPw(id){
+  master(()=>{
+    const u=PROF.find(x=>x.id===id)||{};
+    modal(`<h2>Redefinir senha</h2><p class="sm">Nova senha provisória para <b>${esc(u.name)}</b>:</p><div class="pwd"><input id="u_pw2" value="${genPw()}"><button type="button" class="btn g s" onclick="$('#u_pw2').value=genPw()">Gerar outra</button></div>
+    <p><button class="btn" onclick="usrPwGo('${id}')">Salvar nova senha</button></p>`);
+  });
+}
+async function usrPwGo(id){
+  const p=$('#u_pw2').value.trim();if(p.length<8)return alert('A senha precisa ter ao menos 8 caracteres.');
+  const{error}=await sb.rpc('admin_set_password',{p_user:id,p_password:p});
+  if(error)return alert(error.message);
+  closeM();alert('Senha redefinida. Passe ao usuário: '+p);
+}
+function pwForm(){
+  modal(`<h2>Alterar minha senha</h2><div class="f"><div class="w"><label>Nova senha (mínimo 8 caracteres)</label><input id="p_1" type="password" autocomplete="new-password"></div>
+  <div class="w"><label>Repita a nova senha</label><input id="p_2" type="password" autocomplete="new-password"></div></div><button class="btn" onclick="pwSave()">Salvar senha</button>`);
+}
+async function pwSave(){
+  const a=$('#p_1').value,b=$('#p_2').value;
+  if(a.length<8)return alert('A senha precisa ter ao menos 8 caracteres.');
+  if(a!==b)return alert('As duas senhas não são iguais.');
+  const{error}=await sb.auth.updateUser({password:a});
+  if(error)return alert('Não foi possível alterar: '+error.message);
+  closeM();alert('Senha alterada.');
+}
+
+/* ========= Comissões ========= */
+let comMonth=ld(now()).slice(0,7),comSel='todos';
+function comRows(m,sel){
+  const out=[],cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão';
+  db.sales.filter(s=>sel==='todos'||s.seller_id===sel).forEach(s=>{
+    const mode=s.commission_mode||'venda',pct=+s.commission_pct||0,rec=s.pay_type==='crediario'&&mode==='recebimento';
+    if(ld(s.created_at).slice(0,7)===m){
+      const base=rec?+s.entry:+s.total;
+      if(base>0)out.push({s,date:ld(s.created_at),cust:cn(s.customer_id),kind:rec?'Entrada':'Venda',base,pct});
+    }
+    if(rec)db.installments.filter(i=>i.sale_id===s.id&&i.paid_at&&ld(i.paid_at).slice(0,7)===m)
+      .forEach(i=>out.push({s,date:ld(i.paid_at),cust:cn(s.customer_id),kind:'Parcela '+i.number,base:+i.amount,pct}));
+  });
+  out.forEach(r=>{r.sid=r.s.seller_id||'';r.sname=r.s.seller_name||'Sem vendedor';r.comm=+(r.base*r.pct/100).toFixed(2)});
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+async function vCom(){
+  if(ADM())await loadProf();
+  const sel=ADM()?comSel:(me?me.id:'todos'),rows=comRows(comMonth,sel);
+  const by={};rows.forEach(r=>{const o=by[r.sid]=by[r.sid]||{name:r.sname,base:0,comm:0,sales:new Set()};o.base+=r.base;o.comm+=r.comm;o.sales.add(r.s.id)});
+  const tot=rows.reduce((a,r)=>a+r.comm,0),bs=rows.reduce((a,r)=>a+r.base,0),T={'Venda':'Venda','Entrada':'Entrada'};
+  $('#app').innerHTML=`<div class="bar"><input type="month" style="max-width:190px" value="${comMonth}" onchange="comMonth=this.value||comMonth;vCom()">
+  ${ADM()?`<select style="max-width:240px" onchange="comSel=this.value;vCom()"><option value="todos">Todos os vendedores</option>${PROF.map(u=>`<option value="${u.id}" ${comSel===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select>`:''}</div>
+  <div class="prices"><div class="pr k"><span>Comissão no período</span><b>${R(tot)}</b></div><div class="pr"><span>Base de cálculo (vendas e valores recebidos)</span><b>${R(bs)}</b></div></div>
+  ${Object.keys(by).length>1?`<table><tr><th>Vendedor</th><th>Vendas</th><th>Base</th><th>Comissão</th></tr>${Object.values(by).map(o=>`<tr><td>${esc(o.name)}</td><td>${o.sales.size}</td><td>${R(o.base)}</td><td><b>${R(o.comm)}</b></td></tr>`).join('')}</table>`:''}
+  ${rows.length?`<h3>Detalhe</h3><div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Origem</th>${sel==='todos'?'<th>Vendedor</th>':''}<th>Base</th><th>%</th><th>Comissão</th></tr>
+  ${rows.map(r=>`<tr><td>${r.date.split('-').reverse().join('/')}</td><td>${esc(r.cust)}</td><td>${esc(r.kind)}</td>${sel==='todos'?`<td>${esc(r.sname)}</td>`:''}<td>${R(r.base)}</td><td>${r.pct}%</td><td>${R(r.comm)}</td></tr>`).join('')}</table></div>`:'<p>Nenhuma comissão neste período.</p>'}
+  <p class="sm">Cálculo pela taxa e pela base que cada vendedor tinha no dia da venda. Carnê com base "sobre o valor recebido" gera comissão sobre a entrada e sobre cada parcela paga no mês, sem contar multa e juros.</p>`;
+}
+
 /* ========= Dados da empresa ========= */
 const CO=()=>db.company[0]||{};
 const logoUrl=()=>CO().logo_url||'logo.jpg';
@@ -228,10 +336,14 @@ function saveEmp(){
 }
 
 /* ========= Perfil e senha mestre ========= */
+let me=null,PROF=[],loginMsg='';
 async function loadRole(){
-  role=null;if(!sb||!session)return;
-  const{data}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
-  role=data?.role||null;
+  role=null;me=null;loginMsg='';if(!sb||!session)return;
+  const{data}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  if(data&&data.active===false){loginMsg='Este usuário está desativado. Fale com o administrador.';return}
+  role=data?.role||null;me=data||null;
+  if(!role)loginMsg='Seu usuário ainda não tem permissão. Peça ao administrador.';
+  if(role==='admin')await loadProf();
 }
 let unlockUntil=0,masterFn=null;
 function master(fn){
@@ -260,21 +372,23 @@ const ICON={box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 1
  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
  file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
  receipt:'<path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5z"/><path d="M9 8h6M9 12h6"/>',building:'<path d="M4 21V4a1 1 0 011-1h9a1 1 0 011 1v17M15 9h4a1 1 0 011 1v11M2 21h20M8 7h3M8 11h3M8 15h3"/>',
+ shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1 0-2-.5-2.5-1.5M12 6.5v1.5M12 16v1.5"/>',
  logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 function render(){
   if(sb&&!role&&view!=='login')view='login';
-  if(['prod','cx','fis','emp'].includes(view)&&!ADM())view='pdv';
+  if(['prod','cx','fis','emp','usr'].includes(view)&&!ADM())view='pdv';
   document.body.className=isAdmin()?'in':'out';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   let h='';
   if(isAdmin()){
-    h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file');
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('emp','Empresa','building');
+    h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+(ADM()?'':item('com','Minhas comissões','coin'));
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,login:vLogin}[view]||vPdv)();
+  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,login:vLogin}[view]||vPdv)();
 }
 
 /* ========= Catálogo público ========= */
@@ -330,7 +444,7 @@ async function login(e){
   b.disabled=false;b.textContent='Entrar';
   if(error)return $('#err').textContent='E-mail ou senha incorretos.';
   session=data.session;await loadRole();
-  if(!role){await sb.auth.signOut();session=null;return $('#err').textContent='Seu usuário ainda não tem permissão. Peça ao administrador.'}
+  if(!role){await sb.auth.signOut();session=null;return $('#err').textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'}
   view=ADM()?'prod':'pdv';render();sync();
 }
 async function logout(){await sb.auth.signOut();session=null;role=null;view='login';render()}
@@ -489,6 +603,7 @@ function vPdv(){
   <div id="cartv"></div>
   <div class="f"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+  ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
   <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
   <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
   <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
@@ -515,7 +630,7 @@ function finish(){
     let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
-  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:digits(c_c.value).length===14?'nfe':'nfce',nat_op:'Venda de mercadoria',freight:'9',created_at:now(),
+  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:digits(c_c.value).length===14?'nfe':'nfce',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
   put('sales',sale);
   cart.forEach(i=>{const p=db.products.find(x=>x.id===i.id);put('products',{...p,stock:p.stock-i.qty})});

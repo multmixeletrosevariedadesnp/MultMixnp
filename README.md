@@ -8,7 +8,7 @@ Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estátic
 - `index.html` e `catalogo.html` na raiz só redirecionam para as pastas acima (links antigos continuam funcionando).
 
 ## Configurar
-1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) `supabase-v5.sql` (dados da empresa) `supabase-v6.sql` (dados fiscais NFC-e/NF-e) `supabase-v7.sql` (preços visíveis no catálogo) e `supabase-v8.sql` (fornecedores e pessoa jurídica).
+1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) `supabase-v5.sql` (dados da empresa) `supabase-v6.sql` (dados fiscais NFC-e/NF-e) `supabase-v7.sql` (preços visíveis no catálogo) `supabase-v8.sql` (fornecedores e pessoa jurídica) e `supabase-v9.sql` (usuários e comissão).
 2. Storage: crie o bucket público `produtos`.
 3. Authentication: crie o usuário da equipe (e-mail e senha).
 4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` de `sistema/index.html` **e** de `catalogo/index.html`.
@@ -34,3 +34,4 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 - **Clientes e fornecedores:** cadastro único com filtro por tipo, busca por nome, fantasia, CPF/CNPJ, telefone, e-mail e cidade, exportação em Excel/CSV e preenchimento automático pelo CNPJ (BrasilAPI, com Minha Receita como reserva). Na Nova venda, o campo do cliente busca nos cadastros já salvos.
 - **Importar clientes/fornecedores:** botão Importar planilha na aba Clientes (CSV ou Excel); aceita a própria planilha exportada pelo sistema e atualiza por CPF/CNPJ sem duplicar.
 - **Apps independentes:** `sistema/` e `catalogo/` são autocontidos (cada um tem seu próprio HTML, manifest, service worker, `pwa.js`, logo e ícones). Mexer em um não altera o outro. Só o Supabase (banco) é compartilhado.
+- **Usuários e comissão:** o administrador cadastra usuários (administrador ou vendedor) com comissão em %, base da comissão (sobre a venda ou sobre o valor recebido no carnê), redefine senhas e desativa acessos. Cada venda guarda o vendedor e a taxa da época. A aba Comissões mostra o total por período; o vendedor vê só as dele.
