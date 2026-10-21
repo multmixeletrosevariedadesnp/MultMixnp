@@ -329,6 +329,7 @@ lb.ontouchstart=e=>sx=e.touches[0].clientX;
 lb.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)showImg(gi+(d<0?1:-1))};
 lb.onclick=e=>{if(e.target===lb)closeLb()};
 function toTop(){'scrollBehavior' in document.documentElement.style?window.scrollTo({top:0,behavior:'smooth'}):window.scrollTo(0,0)}
+new MutationObserver(()=>document.body.classList.toggle('instbar-on',!!document.getElementById('instbar'))).observe(document.body,{childList:true});
 const topVis=()=>$('#top').classList.toggle('on',(window.pageYOffset||document.documentElement.scrollTop||0)>250);
 addEventListener('scroll',topVis,{passive:true});topVis();
 applyVm();
