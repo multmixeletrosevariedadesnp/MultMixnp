@@ -328,10 +328,14 @@ const lb=$('#lb');
 lb.ontouchstart=e=>sx=e.touches[0].clientX;
 lb.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)showImg(gi+(d<0?1:-1))};
 lb.onclick=e=>{if(e.target===lb)closeLb()};
-function toTop(){'scrollBehavior' in document.documentElement.style?window.scrollTo({top:0,behavior:'smooth'}):window.scrollTo(0,0)}
+const pageY=()=>Math.max(window.pageYOffset||0,document.documentElement.scrollTop||0,document.body.scrollTop||0);
+function toTop(){
+  try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){window.scrollTo(0,0)}
+  setTimeout(()=>{if(pageY()>0){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}},1200);
+}
 new MutationObserver(()=>document.body.classList.toggle('instbar-on',!!document.getElementById('instbar'))).observe(document.body,{childList:true});
-const topVis=()=>$('#top').classList.toggle('on',(window.pageYOffset||document.documentElement.scrollTop||0)>250);
-addEventListener('scroll',topVis,{passive:true});topVis();
+const topVis=()=>$('#top').classList.toggle('on',pageY()>250);
+addEventListener('scroll',topVis,{passive:true,capture:true});setInterval(topVis,500);topVis();
 applyVm();
 load();
 </script>
