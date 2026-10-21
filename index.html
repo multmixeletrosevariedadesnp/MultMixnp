@@ -92,9 +92,12 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 @media(min-width:700px){#filters{position:sticky;top:var(--hh,64px);z-index:4;background:var(--bg);margin:-18px -18px 8px;padding:12px 18px 4px}}
 .ibtn{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer}.ibtn[hidden]{display:none}.ibtn+#zap{margin-left:0}
 .cash.ask{font-size:14px;font-weight:700}
-#top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:46px;height:46px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
+#top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:52px;height:52px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
 #top.on{opacity:1;pointer-events:auto;transform:none}
-body.hasbag #top{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body.hasbag #top{bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+body.instbar-on #fab{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.instbar-on #top{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))}
 #top svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .zm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 10px;border-radius:99px;pointer-events:none}
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:none;align-items:center;justify-content:center;touch-action:pan-y pinch-zoom}
@@ -216,17 +219,31 @@ function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacol
 
 /* ---- Produto ---- */
 const pageUrl=id=>location.origin+location.pathname+'#p='+id;
-function productText(p,head){
+function productText(p,head,noPhoto){
   const l=[head,'','*'+p.name+'*'];
   if(p.category)l.push(p.category);
   const d=(p.description||'').trim();if(d)l.push(d.length>220?d.slice(0,217)+'...':d);
   const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
   const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
-  l.push('');const ph=(p.photos||[])[0];if(ph)l.push('Foto: '+ph);
+  l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto)l.push('Foto: '+ph);
   l.push('Ver no catálogo: '+pageUrl(p.id));
   return l.join('\n');
 }
-let gal=[],gi=0,sx=0;
+let gal=[],gi=0,sx=0,shareFile=null;
+async function prefetchShare(p){
+  shareFile=null;const u=(p.photos||[])[0];if(!u)return;
+  try{const b=await(await fetch(u)).blob();if(!/^image\//.test(b.type))return;
+    shareFile=new File([b],'produto.'+(b.type.split('/')[1]||'jpg').replace('jpeg','jpg'),{type:b.type})}catch(e){}
+}
+function shareProduct(id){
+  const p=prod(id),nm=CO.trade_name||'MultMix',head='Olha este produto da '+nm+':';
+  if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
+    navigator.share({files:[shareFile],text:productText(p,head,true)}).catch(e=>{if(!e||e.name!=='AbortError')waShare(p,head)});return;
+  }
+  if(navigator.share){navigator.share({title:p.name,text:productText(p,head)}).catch(e=>{if(!e||e.name!=='AbortError')waShare(p,head)});return}
+  waShare(p,head);
+}
+const waShare=(p,head)=>window.open('https://wa.me/?text='+encodeURIComponent(productText(p,head)),'_blank','noopener');
 function lbShow(){$('#lbi').src=gal[gi];$('#lbc').textContent=gal.length>1?(gi+1)+' / '+gal.length:''}
 function openLb(){
   if(!gal.length)return;
@@ -249,7 +266,7 @@ function closeM(){$('#modal').classList.remove('open');if(location.hash)history.
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
 function detail(id){
   const p=prod(id),ph=(p.photos||[]).slice(0,5),m=p.max_inst||10,out=p.stock<=0;
-  history.replaceState(null,'','#p='+id);gal=ph;gi=0;
+  history.replaceState(null,'','#p='+id);gal=ph;gi=0;prefetchShare(p);
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
   const msgW=encodeURIComponent(productText(p,'Olá, MultMix! Quero ser avisado quando este produto chegar:'));
   const msg=encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?');
@@ -260,7 +277,8 @@ function detail(id){
    ${out?'<div class="avis"><b>Indisponível no momento</b><br><span class="sm">Aguardando reposição de estoque. Avise-nos e chamamos você quando chegar.</span></div>':''}
    <div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
    <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
-   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a></div></div></div>
+   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a>
+   <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 
@@ -311,7 +329,7 @@ lb.ontouchstart=e=>sx=e.touches[0].clientX;
 lb.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>50)showImg(gi+(d<0?1:-1))};
 lb.onclick=e=>{if(e.target===lb)closeLb()};
 function toTop(){'scrollBehavior' in document.documentElement.style?window.scrollTo({top:0,behavior:'smooth'}):window.scrollTo(0,0)}
-const topVis=()=>$('#top').classList.toggle('on',(window.pageYOffset||document.documentElement.scrollTop||0)>400);
+const topVis=()=>$('#top').classList.toggle('on',(window.pageYOffset||document.documentElement.scrollTop||0)>250);
 addEventListener('scroll',topVis,{passive:true});topVis();
 applyVm();
 load();
