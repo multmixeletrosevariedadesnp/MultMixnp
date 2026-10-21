@@ -33,3 +33,4 @@ GitHub > Settings > Pages > Deploy from a branch > `main` / root.
 - **Catálogo:** botão de voltar ao topo, foto ampliada em tela cheia (com setas, deslizar e botão Voltar) e escolha, na aba Empresa, de quais preços aparecem (à vista, cartão, carnê).
 - **Clientes e fornecedores:** cadastro único com filtro por tipo, busca por nome, fantasia, CPF/CNPJ, telefone, e-mail e cidade, exportação em Excel/CSV e preenchimento automático pelo CNPJ (BrasilAPI, com Minha Receita como reserva). Na Nova venda, o campo do cliente busca nos cadastros já salvos.
 - **Importar clientes/fornecedores:** botão Importar planilha na aba Clientes (CSV ou Excel); aceita a própria planilha exportada pelo sistema e atualiza por CPF/CNPJ sem duplicar.
+- **Apps independentes:** `sistema/` e `catalogo/` são autocontidos (cada um tem seu próprio HTML, manifest, service worker, `pwa.js`, logo e ícones). Mexer em um não altera o outro. Só o Supabase (banco) é compartilhado.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="../favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="../apple-touch-icon.png"><title>MultMix · Sistema</title>
+<link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -95,7 +95,7 @@ body.out header{display:none}
 </head>
 <body>
 <header>
-  <div class="brand"><img class="lg" src="../logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
+  <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
   <nav id="nav"></nav>
   <button class="ibtn" data-install hidden>Instalar app</button>
   <span class="sync" id="sync"></span>
@@ -165,8 +165,8 @@ addEventListener('online',sync);
 
 /* ========= Dados da empresa ========= */
 const CO=()=>db.company[0]||{};
-const logoUrl=()=>CO().logo_url||'../logo.jpg';
-const logoIcon=()=>CO().logo_url||'../logo-icon.png';
+const logoUrl=()=>CO().logo_url||'logo.jpg';
+const logoIcon=()=>CO().logo_url||'logo-icon.png';
 const waNum=()=>{const d=digits(CO().whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
 const fmtCnpj=v=>{const d=digits(v).slice(0,14);return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')};
 function okCnpj(v){
@@ -905,6 +905,6 @@ function csvFis(){
   render();sync();
 })();
 </script>
-<script src="../pwa.js" defer></script>
+<script src="pwa.js" defer></script>
 </body>
 </html>
