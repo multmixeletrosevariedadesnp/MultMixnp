@@ -242,7 +242,7 @@ async function pwSave(){
 }
 
 /* ========= Comissões ========= */
-let comMonth=ld(now()).slice(0,7),comSel='todos';
+let comMonth='',comSel='todos';
 function comRows(m,sel){
   const out=[],cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão';
   db.sales.filter(s=>sel==='todos'||s.seller_id===sel).forEach(s=>{
@@ -258,6 +258,7 @@ function comRows(m,sel){
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
 async function vCom(){
+  if(!comMonth)comMonth=ld(now()).slice(0,7);
   if(ADM())await loadProf();
   const sel=ADM()?comSel:(me?me.id:'todos'),rows=comRows(comMonth,sel);
   const by={};rows.forEach(r=>{const o=by[r.sid]=by[r.sid]||{name:r.sname,base:0,comm:0,sales:new Set()};o.base+=r.base;o.comm+=r.comm;o.sales.add(r.s.id)});
@@ -391,37 +392,7 @@ function render(){
   ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,login:vLogin}[view]||vPdv)();
 }
 
-/* ========= Catálogo público ========= */
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
-function vCat(){
-  const act=db.products.filter(p=>p.active!==false);
-  const cats=['Todos',...new Set(act.map(p=>p.category).filter(Boolean))];
-  const list=act.filter(p=>(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
-  $('#app').innerHTML=`<div class="bar"><input id="q" placeholder="Buscar produto" value="${esc(q)}" oninput="q=this.value;vCatList()"></div>
-  <div class="chips">${cats.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${esc(c)}';render()">${esc(c)}</button>`).join('')}</div>
-  <div class="grid" id="list"></div>`;
-  vCatList();
-}
-function vCatList(){
-  const list=db.products.filter(p=>p.active!==false&&(cat==='Todos'||p.category===cat)&&p.name.toLowerCase().includes(q.toLowerCase()));
-  $('#list').innerHTML=list.map(p=>{const pr=prices(p);return`<div class="card" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
-   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}</div>
-   <div class="cb"><h3>${esc(p.name)}</h3><span class="cash">${R(pr.cash)}</span> <small>à vista</small>
-   <div class="sm">Cartão ${R(pr.card)} · Carnê ${p.max_inst||10}x de ${R(pr.cred/(p.max_inst||10))}</div></div></div>`}).join('')||'<p>Nenhum produto encontrado.</p>';
-}
-function detail(id){
-  const p=db.products.find(x=>x.id===id),pr=prices(p),ph=p.photos||[];
-  const msg=encodeURIComponent(`Olá! Tenho interesse em: ${p.name}`);
-  modal(`<div class="two"><div><div class="main" id="mi" style="${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"></div>
-   <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" style="background-image:url('${esc(u)}')" onclick="mi.style.backgroundImage=\`url('${esc(u)}')\`;document.querySelectorAll('.th div').forEach(d=>d.classList.remove('on'));this.classList.add('on')"></div>`).join('')}</div></div>
-   <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span>
-   <p>${esc(p.description)}</p>
-   <div class="prices"><div class="pr k"><span>À vista</span><b>${R(pr.cash)}</b></div>
-   <div class="pr"><span>Cartão</span><b>${R(pr.card)}</b></div>
-   <div class="pr"><span>Carnê até ${p.max_inst||10}x</span><b>${R(pr.cred/(p.max_inst||10))}</b></div></div>
-   <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${waNum()}?text=${msg}">Chamar no WhatsApp</a></div></div>
-   ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
-}
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
 function closeM(){$('#modal').classList.remove('open')}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
@@ -873,7 +844,6 @@ function pickCli(id){
   c_n.value=c.name||'';c_c.value=c.cpf||'';c_p.value=c.phone||'';selCli=id;
   $('#cs').innerHTML=`<p class="sm ok">Cliente selecionado: <b>${esc(c.name)}</b>. Para trocar, comece a digitar de novo.</p>`;
 }
-function fillCli(inp){const c=db.customers.find(x=>x.name===inp.value);if(c){c_c.value=c.cpf||'';c_p.value=c.phone||''}}
 
 /* ========= Carnês ========= */
 function vCar(){

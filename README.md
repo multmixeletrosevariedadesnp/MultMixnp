@@ -1,37 +1,23 @@
 # MultMix · Eletros e Variedades
 
-Catálogo virtual + vendas (à vista, cartão, carnê) + clientes. Site estático (GitHub Pages) com Supabase e cache offline no navegador.
+Dois aplicativos independentes, publicados no GitHub Pages, que compartilham só o banco (Supabase).
 
-## Páginas
-- `catalogo/`: vitrine pública para os clientes (sacola e pedido pelo WhatsApp). Divulgue este link: `.../catalogo/`.
-- `sistema/`: sistema da loja (login da equipe): `.../sistema/`.
-- `index.html` e `catalogo.html` na raiz só redirecionam para as pastas acima (links antigos continuam funcionando).
+- `sistema/`: sistema da loja (login da equipe). Endereço: `.../MultMixnp/sistema/`
+- `catalogo/`: catálogo público para os clientes. Endereço: `.../MultMixnp/catalogo/`
+- `index.html` e `catalogo.html` (raiz): só redirecionam para as pastas acima.
+- `sw.js` (raiz): limpa o cache de versões antigas.
+- `supabase*.sql`: banco de dados. Rode no SQL Editor na ordem: `supabase.sql`, `-v2`, `-v3`, ... `-v9`.
 
-## Configurar
-1. Supabase > SQL Editor: rode `supabase.sql`, depois `supabase-v2.sql` e `supabase-v3.sql` (perfis admin/vendedor) `supabase-v4.sql` (dados do cliente no pedido) `supabase-v5.sql` (dados da empresa) `supabase-v6.sql` (dados fiscais NFC-e/NF-e) `supabase-v7.sql` (preços visíveis no catálogo) `supabase-v8.sql` (fornecedores e pessoa jurídica) e `supabase-v9.sql` (usuários e comissão).
-2. Storage: crie o bucket público `produtos`.
-3. Authentication: crie o usuário da equipe (e-mail e senha).
-4. Em `index.html`, preencha `URL`, `KEY` (chave anon) e `WHATS` no bloco `CFG` de `sistema/index.html` **e** de `catalogo/index.html`.
+Cada pasta é autocontida (HTML, manifest, service worker, `pwa.js`, logo e ícones). Mexer em uma não altera a outra.
 
-## Publicar
-GitHub > Settings > Pages > Deploy from a branch > `main` / root.
-
-## Roadmap
-- [x] Pedidos do catálogo, caixa, inativar clientes, multa/juros
-- [x] Controle fiscal (pendentes, exportação CSV)
-- [ ] Emissão automática da NFC-e (precisa de emissor e certificado)
+## Configuração
+No topo do script de `sistema/index.html` e de `catalogo/index.html`, o bloco `CFG` tem a URL e a chave anon do Supabase.
+Telefone, WhatsApp, CNPJ e logo da empresa são cadastrados no sistema, na aba Empresa.
 
 ## Acesso
-- **Administrador:** vê tudo (Produtos, Caixa, Fiscal) e muda nomes e preços.
-- **Vendedor:** vende, atende pedidos, cadastra clientes e recebe carnês. Não vê Caixa nem Fiscal e não muda preços (bloqueado no banco).
-- **Senha mestre:** ações sensíveis (mudar preço, inativar cliente, cancelar pedido, marcar nota emitida) pedem a senha do administrador. Vale por 5 minutos. Para o vendedor usar, preencha `ADMIN_EMAIL` em `sistema/index.html`.
-- Novo vendedor: crie o usuário em Authentication e rode o comando comentado no fim do `supabase-v3.sql`.
-- **Empresa:** o administrador preenche logo, CNPJ, razão social, endereço, telefone e WhatsApp na aba Empresa. O catálogo e o carnê usam esses dados.
-- **App instalável:** O sistema e o catálogo são dois aplicativos independentes (cada um com seu manifest, service worker e escopo) e se instalam separadamente. Ao abrir o link, o navegador oferece a instalação (no iPhone aparece a dica de Compartilhar > Adicionar à Tela de Início). Arquivos: `sistema/` e `catalogo/` (manifest.json e sw.js de cada um), `pwa.js` e os ícones na raiz.
-- **Preços no catálogo:** só aparecem as formas de pagamento preenchidas no produto (cartão e carnê são opcionais).
-- **Fiscal (NFC-e 65 e NF-e 55):** a aba Fiscal confere, venda a venda, se faltam dados da empresa, dos produtos (NCM, CFOP, CSOSN) e do cliente (CPF/CNPJ, IE e endereço com IBGE na NF-e). A emissão depende da integração com o microsserviço fiscal.
-- **Catálogo:** botão de voltar ao topo, foto ampliada em tela cheia (com setas, deslizar e botão Voltar) e escolha, na aba Empresa, de quais preços aparecem (à vista, cartão, carnê).
-- **Clientes e fornecedores:** cadastro único com filtro por tipo, busca por nome, fantasia, CPF/CNPJ, telefone, e-mail e cidade, exportação em Excel/CSV e preenchimento automático pelo CNPJ (BrasilAPI, com Minha Receita como reserva). Na Nova venda, o campo do cliente busca nos cadastros já salvos.
-- **Importar clientes/fornecedores:** botão Importar planilha na aba Clientes (CSV ou Excel); aceita a própria planilha exportada pelo sistema e atualiza por CPF/CNPJ sem duplicar.
-- **Apps independentes:** `sistema/` e `catalogo/` são autocontidos (cada um tem seu próprio HTML, manifest, service worker, `pwa.js`, logo e ícones). Mexer em um não altera o outro. Só o Supabase (banco) é compartilhado.
-- **Usuários e comissão:** o administrador cadastra usuários (administrador ou vendedor) com comissão em %, base da comissão (sobre a venda ou sobre o valor recebido no carnê), redefine senhas e desativa acessos. Cada venda guarda o vendedor e a taxa da época. A aba Comissões mostra o total por período; o vendedor vê só as dele.
+- **Administrador:** acesso total.
+- **Vendedor:** vende, atende pedidos, cadastra clientes e recebe carnês; não vê Caixa, Fiscal, Empresa nem Usuários.
+- **Senha mestre:** ações sensíveis pedem a senha do administrador (vale 5 minutos).
+
+## Pendente
+- Emissão automática de NFC-e e NF-e (aguarda a documentação do microsserviço fiscal).
