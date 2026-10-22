@@ -112,7 +112,7 @@ const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1N
 /* Sem URL/KEY o sistema roda em modo demonstração (só neste navegador). */
 
 const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
-const T=['products','customers','sales','installments','orders','company'];
+const T=['products','customers','sales','installments','orders','company','company_private'];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -122,12 +122,12 @@ const now=()=>new Date().toISOString();
 /* ========= Banco local (cache offline) + fila de sincronização ========= */
 let db;
 try{db=JSON.parse(localStorage.mm)}catch(e){}
-if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:[],outbox:[]};
+if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:[],company_private:[],outbox:[]};
  [['Smart TV 50" 4K','Eletros',2399,2599,2899,['Tela: 50" LED 4K','Smart: Android TV','HDMI: 3 portas','Voltagem: Bivolt'],'Tela 4K com apps de streaming.'],
   ['Liquidificador 900W','Cozinha',169,179,199,['Potência: 900W','Copo: 2,2 L','Lâminas: aço inox','Voltagem: 127V'],'Potente e fácil de limpar.'],
   ['Ventilador de Mesa 40cm','Variedades',119,129,139,['Hélices: 6','Velocidades: 3','Potência: 80W'],'Silencioso, ideal para o calor.']
  ].forEach(p=>db.products.push({id:uid(),name:p[0],category:p[1],price_cash:p[2],price_card:p[3],price_credit:p[4],max_inst:10,stock:10,active:true,specs:p[5].map(s=>{const[k,...v]=s.split(':');return{k,v:v.join(':').trim()}}),photos:[],description:p[6],ncm:'',cfop:'5102',unit:'UN'}));}
-db.orders=db.orders||[];db.company=db.company||[];
+db.orders=db.orders||[];db.company=db.company||[];db.company_private=db.company_private||[];
 const save=()=>localStorage.mm=JSON.stringify(db);
 let session=null;
 let role=null;
@@ -272,6 +272,351 @@ async function vCom(){
   <p class="sm">Cálculo pela taxa e pela base que cada vendedor tinha no dia da venda. Carnê com base "sobre o valor recebido" gera comissão sobre a entrada e sobre cada parcela paga no mês, sem contar multa e juros.</p>`;
 }
 
+/* ========= Carnê em PDF (gerador próprio, sem bibliotecas externas) ========= */
+const QR=(()=>{
+  const ECC=[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const BLK=[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const raw=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
+  const gmul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z};
+  const rsGen=d=>{const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=gmul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=gmul(root,2)}return r};
+  const rsRem=(data,gen)=>{const r=new Array(gen.length).fill(0);for(const b of data){const f=b^r.shift();r.push(0);gen.forEach((c,i)=>r[i]^=gmul(c,f))}return r};
+  const bit=(x,i)=>((x>>>i)&1)!==0;
+  function make(text){
+    const bytes=[...new TextEncoder().encode(text)];
+    let ver=1;
+    for(;ver<=40;ver++){const cc=ver<10?8:16;if(4+cc+bytes.length*8<=(Math.floor(raw(ver)/8)-ECC[ver]*BLK[ver])*8)break}
+    if(ver>40)throw new Error('Texto grande demais para o QR Code');
+    const cap=Math.floor(raw(ver)/8)-ECC[ver]*BLK[ver],bits=[],put=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>>i)&1)};
+    put(4,4);put(bytes.length,ver<10?8:16);bytes.forEach(b=>put(b,8));
+    put(0,Math.min(4,cap*8-bits.length));while(bits.length%8)bits.push(0);
+    const data=[];for(let i=0;i<bits.length;i+=8)data.push(parseInt(bits.slice(i,i+8).join(''),2));
+    for(let p=0xEC;data.length<cap;p^=0xEC^0x11)data.push(p);
+    const nb=BLK[ver],eb=ECC[ver],rawCW=Math.floor(raw(ver)/8),ns=nb-rawCW%nb,sl=Math.floor(rawCW/nb),gen=rsGen(eb),blocks=[];
+    for(let i=0,k=0;i<nb;i++){const dat=data.slice(k,k+sl-eb+(i<ns?0:1));k+=dat.length;const ecc=rsRem(dat,gen);if(i<ns)dat.push(0);blocks.push(dat.concat(ecc))}
+    const cw=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==sl-eb||j>=ns)cw.push(b[i])});
+    const size=ver*4+17,m=Array.from({length:size},()=>new Array(size).fill(false)),fn=Array.from({length:size},()=>new Array(size).fill(false));
+    const setFn=(x,y,v)=>{m[y][x]=v;fn[y][x]=true};
+    for(let i=0;i<size;i++){setFn(6,i,i%2===0);setFn(i,6,i%2===0)}
+    const finder=(x,y)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy)),xx=x+dx,yy=y+dy;if(xx>=0&&xx<size&&yy>=0&&yy<size)setFn(xx,yy,d!==2&&d!==4)}};
+    finder(3,3);finder(size-4,3);finder(3,size-4);
+    const na=ver===1?0:Math.floor(ver/7)+2,al=[];
+    if(na){const step=ver===32?26:Math.ceil((ver*4+4)/(na*2-2))*2;al.push(6);for(let p=size-7;al.length<na;p-=step)al.splice(1,0,p)}
+    al.forEach((a,i)=>al.forEach((b,j)=>{if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))return;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)setFn(a+dx,b+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}));
+    const fmt=mask=>{
+      const d=0<<3|mask;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const b=(d<<10|r)^0x5412;
+      for(let i=0;i<=5;i++)setFn(8,i,bit(b,i));setFn(8,7,bit(b,6));setFn(8,8,bit(b,7));setFn(7,8,bit(b,8));for(let i=9;i<15;i++)setFn(14-i,8,bit(b,i));
+      for(let i=0;i<8;i++)setFn(size-1-i,8,bit(b,i));for(let i=8;i<15;i++)setFn(8,size-15+i,bit(b,i));setFn(8,size-8,true);
+    };
+    fmt(0);
+    if(ver>=7){let r=ver;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=ver<<12|r;for(let i=0;i<18;i++){const c=bit(b,i),a=size-11+i%3,bb=Math.floor(i/3);setFn(a,bb,c);setFn(bb,a,c)}}
+    let k=0;
+    for(let right=size-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<size;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?size-1-vert:vert;if(!fn[y][x]&&k<cw.length*8){m[y][x]=bit(cw[k>>>3],7-(k&7));k++}}}
+    const mask=(mk)=>{for(let y=0;y<size;y++)for(let x=0;x<size;x++){let inv;switch(mk){case 0:inv=(x+y)%2===0;break;case 1:inv=y%2===0;break;case 2:inv=x%3===0;break;case 3:inv=(x+y)%3===0;break;case 4:inv=(Math.floor(x/3)+Math.floor(y/2))%2===0;break;case 5:inv=x*y%2+x*y%3===0;break;case 6:inv=(x*y%2+x*y%3)%2===0;break;default:inv=((x+y)%2+x*y%3)%2===0}if(!fn[y][x]&&inv)m[y][x]=!m[y][x]}};
+    const pen=()=>{
+      let p=0;
+      const line=a=>{let run=1;for(let i=1;i<=a.length;i++){if(i<a.length&&a[i]===a[i-1])run++;else{if(run>=5)p+=3+run-5;run=1}}
+        for(let i=0;i+11<=a.length;i++){const s=a.slice(i,i+11).map(Number).join('');if(s==='10111010000'||s==='00001011101')p+=40}};
+      for(let y=0;y<size;y++){line(m[y]);line(m.map(r=>r[y]))}
+      for(let y=0;y<size-1;y++)for(let x=0;x<size-1;x++)if(m[y][x]===m[y][x+1]&&m[y][x]===m[y+1][x]&&m[y][x]===m[y+1][x+1])p+=3;
+      const dark=m.flat().filter(Boolean).length,tot=size*size;p+=(Math.ceil(Math.abs(dark*20-tot*10)/tot)-1)*10;return p;
+    };
+    let best=0,bp=1e9;
+    for(let mk=0;mk<8;mk++){mask(mk);fmt(mk);const p=pen();if(p<bp){bp=p;best=mk}mask(mk)}
+    mask(best);fmt(best);
+    return{size,get:(x,y)=>m[y][x],version:ver};
+  }
+  return{make};
+})();
+
+/* PIX (BR Code estático com valor) */
+const emv=(id,v)=>id+String(v.length).padStart(2,'0')+v;
+function crc16(s){let c=0xFFFF;for(let i=0;i<s.length;i++){c^=s.charCodeAt(i)<<8;for(let j=0;j<8;j++)c=(c&0x8000)?((c<<1)^0x1021):(c<<1);c&=0xFFFF}return c.toString(16).toUpperCase().padStart(4,'0')}
+const pixClean=(s,n)=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim().slice(0,n).trim();
+function pixPayload({key,name,city,amount,txid}){
+  const mai=emv('00','BR.GOV.BCB.PIX')+emv('01',key);
+  const p=emv('00','01')+emv('01','11')+emv('26',mai)+emv('52','0000')+emv('53','986')+(amount>0?emv('54',(+amount).toFixed(2)):'')
+    +emv('58','BR')+emv('59',pixClean(name,25)||'LOJA')+emv('60',pixClean(city,15)||'BRASIL')+emv('62',emv('05',txid||'***'))+'6304';
+  return p+crc16(p);
+}
+
+/* PDF mínimo (A4, texto Helvetica/Courier, retângulos, linhas, JPEG) */
+const HW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const BW=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+const CP={0x20AC:0x80,0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97};
+const MM=72/25.4;
+class Pdf{
+  constructor(){this.W=210;this.H=297;this.pages=[];this.cur=null;this.img=null}
+  page(){this.cur=[];this.pages.push(this.cur)}
+  X(x){return (x*MM).toFixed(2)}
+  Y(y){return ((this.H-y)*MM).toFixed(2)}
+  rgb(c,st){const h=c.replace('#','');return [0,2,4].map(i=>(parseInt(h.substr(i,2),16)/255).toFixed(3)).join(' ')+(st?' RG':' rg')}
+  dash(d){return d?'['+d.map(v=>(v*MM).toFixed(2)).join(' ')+'] 0 d':'[] 0 d'}
+  rect(x,y,w,h,o={}){
+    const a=this.cur;a.push('q');if(o.fill)a.push(this.rgb(o.fill));
+    if(o.stroke){a.push(this.rgb(o.stroke,1));a.push(((o.lw||.3)*MM).toFixed(2)+' w');a.push(this.dash(o.dash))}
+    a.push(`${this.X(x)} ${this.Y(y+h)} ${(w*MM).toFixed(2)} ${(h*MM).toFixed(2)} re ${o.fill&&o.stroke?'B':o.fill?'f':'S'}`);a.push('Q');
+  }
+  line(x1,y1,x2,y2,o={}){const a=this.cur;a.push('q',this.rgb(o.color||'#cfd4dc',1),((o.lw||.3)*MM).toFixed(2)+' w',this.dash(o.dash),`${this.X(x1)} ${this.Y(y1)} m ${this.X(x2)} ${this.Y(y2)} l S`,'Q')}
+  tw(s,size,bold,mono){
+    let w=0;for(const ch of String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'')){const c=ch.charCodeAt(0);w+=mono?600:(c>=32&&c<=126?(bold?BW:HW)[c-32]:556)}
+    return w*size/1000/MM;
+  }
+  enc(s){
+    let o='';
+    for(const ch of String(s)){let c=ch.charCodeAt(0);if(CP[c])c=CP[c];else if(c>255)c=63;
+      if(c===40||c===41||c===92)o+='\\'+String.fromCharCode(c);else if(c<32||c>126)o+='\\'+c.toString(8).padStart(3,'0');else o+=ch}
+    return o;
+  }
+  text(s,x,y,o={}){
+    const size=o.size||9,f=o.mono?'F3':o.bold?'F2':'F1';let px=x;
+    if(o.align==='r')px=x-this.tw(s,size,o.bold,o.mono);else if(o.align==='c')px=x-this.tw(s,size,o.bold,o.mono)/2;
+    const t=o.angle?(()=>{const r=o.angle*Math.PI/180,c=Math.cos(r).toFixed(4),sn=Math.sin(r).toFixed(4);return `${c} ${sn} ${(-sn)} ${c} ${this.X(px)} ${this.Y(y)} Tm`})():`${this.X(px)} ${this.Y(y)} Td`;
+    this.cur.push(`BT /${f} ${size} Tf ${this.rgb(o.color||'#101828')} ${t} (${this.enc(s)}) Tj ET`);
+  }
+  fit(s,w,size,bold){s=String(s||'');if(this.tw(s,size,bold)<=w)return s;while(s.length>1&&this.tw(s+'...',size,bold)>w)s=s.slice(0,-1);return s.trim()+'...'}
+  wrap(s,w,size,bold,max){
+    const out=[];let cur='';
+    for(const word of String(s||'').split(/\s+/).filter(Boolean)){
+      const t=cur?cur+' '+word:word;
+      if(this.tw(t,size,bold)<=w)cur=t;else{if(cur)out.push(cur);cur=word}
+    }
+    if(cur)out.push(cur);
+    if(max&&out.length>max){out.length=max;out[max-1]=this.fit(out[max-1]+' ...',w,size,bold)}
+    return out;
+  }
+  image(x,y,w,h){this.cur.push(`q ${(w*MM).toFixed(2)} 0 0 ${(h*MM).toFixed(2)} ${this.X(x)} ${this.Y(y+h)} cm /Im1 Do Q`)}
+  qr(q,x,y,size){
+    const m=size/(q.size+8),ops=['q','0 0 0 rg'];
+    for(let r=0;r<q.size;r++){let c=0;while(c<q.size){if(!q.get(c,r)){c++;continue}let e=c;while(e<q.size&&q.get(e,r))e++;
+      ops.push(`${this.X(x+(4+c)*m)} ${this.Y(y+(5+r)*m)} ${((e-c)*m*MM).toFixed(2)} ${(m*MM+.15).toFixed(2)} re`);c=e}}
+    ops.push('f','Q');this.cur.push(...ops);
+  }
+  async bytes(meta={}){
+    const te=new TextEncoder(),parts=[],offs=[];let len=0;
+    const add=u=>{parts.push(u);len+=u.length},str=s=>add(te.encode(s));
+    const gz=async u=>{if(typeof CompressionStream==='undefined')return null;try{return new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer())}catch(e){return null}};
+    str('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    const nObj=5+(this.img?1:0)+this.pages.length*2,imgId=this.img?6:0,first=5+(this.img?1:0)+1;
+    const obj=(n,body)=>{offs[n]=len;str(`${n} 0 obj\n${body}\nendobj\n`)};
+    const stream=(n,dict,u)=>{offs[n]=len;str(`${n} 0 obj\n<< ${dict} /Length ${u.length} >>\nstream\n`);add(u);str('\nendstream\nendobj\n')};
+    obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2,`<< /Type /Pages /Kids [${this.pages.map((_,i)=>`${first+i*2+1} 0 R`).join(' ')}] /Count ${this.pages.length} >>`);
+    obj(3,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    obj(4,'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    obj(5,'<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>');
+    if(this.img)stream(6,`/Type /XObject /Subtype /Image /Width ${this.img.w} /Height ${this.img.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,this.img.bytes);
+    for(let i=0;i<this.pages.length;i++){
+      const cid=first+i*2,pid=cid+1,raw=te.encode(this.pages[i].join('\n')),z=await gz(raw);
+      z?stream(cid,'/Filter /FlateDecode',z):stream(cid,'',raw);
+      obj(pid,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>${imgId?` /XObject << /Im1 ${imgId} 0 R >>`:''} >> /Contents ${cid} 0 R >>`);
+    }
+    const info=nObj+1,clean=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[()\\]/g,'').replace(/[^\x20-\x7E]/g,'');
+    obj(info,`<< /Title (${clean(meta.title)}) /Author (${clean(meta.author)}) /Creator (MultMix Sistema) >>`);
+    const xr=len;str(`xref\n0 ${info+1}\n0000000000 65535 f \n`);
+    for(let n=1;n<=info;n++)str(String(offs[n]).padStart(10,'0')+' 00000 n \n');
+    str(`trailer\n<< /Size ${info+1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${xr}\n%%EOF\n`);
+    const out=new Uint8Array(len);let p=0;for(const u of parts){out.set(u,p);p+=u.length}return out;
+  }
+}
+
+function pixNameFor(co){
+  const c=[co.trade,co.legal].filter(Boolean).map(s=>pixClean(s,60));
+  const fit=c.find(s=>s&&s.length<=25);if(fit)return fit;
+  const s=c[0]||'LOJA';let w=s.slice(0,26).split(' ');if(s.length>25)w.pop();let r=w.join(' ');while(r.includes(' ')&&r.split(' ').pop().length<=2)r=r.slice(0,r.lastIndexOf(' '));return(r||s.slice(0,25)).slice(0,25).trim();
+}
+function buildCarnePdf(d){
+  const P=new Pdf(),BRAND='#00468f',GOLD='#ffc21a',GR='#667085',LT='#f2f4f7',LN='#cfd4dc',OK='#12805c';
+  if(d.logo)P.img=d.logo;
+  const brl=n=>'R$ '+(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const nP=d.parcels.length,pages=1+Math.ceil(nP/4),pixName=d.pix?pixNameFor(d.co):'';
+  const foot=pg=>P.text(`Carnê nº ${d.num}   |   ${d.cust.name}   |   Página ${pg} de ${pages}   |   Gerado em ${d.issued}`,105,291.5,{size:6.5,color:GR,align:'c'});
+  const box=(x,y,w,h,t)=>{P.rect(x,y,w,6,{fill:LT});P.rect(x,y,w,h,{stroke:LN,lw:.3});P.text(t.toUpperCase(),x+3,y+4.2,{size:6.8,bold:true,color:GR})};
+  const mult=d.multa,jur=d.juro,instr=`Após o vencimento: multa de ${String(mult).replace('.',',')}% + juros de ${String(jur).replace('.',',')}% ao mês, acertados na loja.`;
+  /* ---- página 1: resumo ---- */
+  P.page();
+  P.rect(0,0,210,30,{fill:BRAND});P.rect(0,30,210,1.3,{fill:GOLD});
+  const lr=d.logo?d.logo.w/d.logo.h:1,lb=bx=>({w:lr>=1?bx:bx*lr,h:lr>=1?bx/lr:bx});
+  const L1=lb(20);if(d.logo)P.image(10+(20-L1.w)/2,5+(20-L1.h)/2,L1.w,L1.h);
+  const tx=d.logo?34:10;
+  P.text(P.fit(d.co.name,196-tx,16,true),tx,13.5,{size:16,bold:true,color:'#ffffff'});
+  const sub=[d.co.legal&&d.co.legal!==d.co.name?d.co.legal:'',d.co.cnpj?'CNPJ '+d.co.cnpj:''].filter(Boolean).join('   |   ');
+  [sub,d.co.addr,d.co.contact].filter(Boolean).forEach((t,i)=>P.text(P.fit(t,196-tx,7.5),tx,19.3+i*3.9,{size:7.5,color:'#dbe6f7'}));
+  P.text('CARNÊ DE PAGAMENTO',10,42,{size:15,bold:true,color:BRAND});
+  P.text('Nº '+d.num,200,42,{size:11,bold:true,align:'r'});
+  P.text('Emitido em '+d.issued,10,47.5,{size:8,color:GR});
+  // cliente
+  box(10,52,190,29,'Cliente');
+  P.text(P.fit(d.cust.name,184,10.5,true),13,63.5,{size:10.5,bold:true});
+  P.text([d.cust.doc?'CPF/CNPJ: '+d.cust.doc:'',d.cust.phone?'Telefone: '+d.cust.phone:''].filter(Boolean).join('     '),13,68.8,{size:8.5,color:'#344054'});
+  P.wrap(d.cust.addr,184,8,false,2).forEach((l,i)=>P.text(l,13,73.8+i*4,{size:8,color:'#344054'}));
+  // compra
+  let y=85;const items=d.items.slice(0,7),extra=d.items.length-items.length;
+  const hCompra=8+5.5+(items.length+(extra>0?1:0))*5+3+4*5.2+3;
+  box(10,y,190,hCompra,'Compra');
+  P.text('QTD',13,y+11,{size:6.5,bold:true,color:GR});P.text('PRODUTO',24,y+11,{size:6.5,bold:true,color:GR});
+  P.text('UNITÁRIO',160,y+11,{size:6.5,bold:true,color:GR,align:'r'});P.text('TOTAL',197,y+11,{size:6.5,bold:true,color:GR,align:'r'});
+  let yy=y+16.2;
+  items.forEach(it=>{P.text(String(it.qty),13,yy,{size:8.5});P.text(P.fit(it.name,125,8.5),24,yy,{size:8.5});P.text(brl(it.unit),160,yy,{size:8.5,align:'r'});P.text(brl(it.total),197,yy,{size:8.5,align:'r'});yy+=5});
+  if(extra>0){P.text(`+ ${extra} outro(s) item(ns)`,24,yy,{size:8,color:GR});yy+=5}
+  P.line(13,yy-2.4,197,yy-2.4);yy+=2.6;
+  const tr=(l,v,b)=>{P.text(l,150,yy,{size:8.5,bold:b,align:'r'});P.text(v,197,yy,{size:8.5,bold:b,align:'r'});yy+=5.2};
+  tr('Total da compra',brl(d.total));tr('Entrada',brl(d.entry));tr('Valor financiado',brl(d.financed),true);
+  const eq=d.parcels.every(p=>Math.abs(p.amount-d.parcels[0].amount)<.02);
+  tr('Parcelas',eq?`${d.parcelsAll} x de ${brl(d.parcels[0].amount)}`:`${d.parcelsAll} parcelas`,true);
+  y+=hCompra+4;
+  // tabela de parcelas
+  const two=nP>12,cw=two?93:190,rows=two?Math.ceil(nP/2):nP,rh=rows<=12?5.2:4.3,hT=6+5+rows*rh+1.5;
+  P.rect(10,y,190,6,{fill:LT});P.rect(10,y,190,hT,{stroke:LN,lw:.3});P.text('PARCELAS',13,y+4.2,{size:6.8,bold:true,color:GR});
+  for(let c=0;c<(two?2:1);c++){
+    const x=10+c*97;
+    P.text('PARC.',x+3,y+10.6,{size:6.3,bold:true,color:GR});P.text('VENCIMENTO',x+17,y+10.6,{size:6.3,bold:true,color:GR});
+    P.text('VALOR',x+cw-32,y+10.6,{size:6.3,bold:true,color:GR,align:'r'});P.text('SITUAÇÃO',x+cw-29,y+10.6,{size:6.3,bold:true,color:GR});
+    d.parcels.slice(c*rows,(c+1)*rows).forEach((p,i)=>{
+      const ry=y+12+i*rh;if(i%2===0)P.rect(x+.3,ry-.2,cw-.6,rh,{fill:'#fafbfc'});
+      const b=ry+rh-1.4;
+      P.text(`${p.n}/${p.of}`,x+3,b,{size:8});P.text(p.due,x+17,b,{size:8});P.text(brl(p.amount),x+cw-32,b,{size:8,bold:true,align:'r'});
+      P.text(p.paid?'Paga '+p.paid.date:'Em aberto',x+cw-29,b,{size:7.5,color:p.paid?OK:'#344054',bold:!!p.paid});
+    });
+  }
+  y+=hT+5;
+  // como pagar
+  const L=[];
+  if(d.pix)L.push(`Pix: leia o QR Code de cada parcela, que já traz o valor preenchido. Chave ${d.pix.keyType}: ${d.pix.keyShown}. Recebedor: ${pixName}. Confira o nome antes de confirmar.`);
+  else L.push('Pague na loja em dinheiro, cartão ou Pix.');
+  L.push('Também é possível pagar em dinheiro ou cartão na loja, apresentando este carnê.');
+  L.push(instr+' O QR Code traz o valor nominal da parcela.');
+  const wl=L.flatMap(t=>P.wrap(t,182,8)),hP=9+wl.length*4+1.5;
+  P.rect(10,y,190,hP,{fill:'#fffbea',stroke:'#f3e3a0',lw:.3});P.rect(10,y,1.6,hP,{fill:GOLD});
+  P.text('Como pagar',14,y+5.2,{size:8.5,bold:true,color:BRAND});
+  wl.forEach((l,i)=>P.text(l,14,y+10.2+i*4,{size:8,color:'#344054'}));
+  if(y+hP<262){
+    P.line(10,277,95,277,{color:'#98a2b3'});P.text('Assinatura do cliente',10,281,{size:7,color:GR});
+    P.line(120,277,200,277,{color:'#98a2b3'});P.text('Data',120,281,{size:7,color:GR});
+  }
+  foot(1);
+  /* ---- fichas ---- */
+  d.parcels.forEach((p,i)=>{
+    const b=i%4;if(b===0){P.page();foot(2+Math.floor(i/4))}
+    const y0=10+b*69,q=d.pix&&!p.paid&&p.amount>0;
+    let payload='',qr=null;
+    if(q){payload=pixPayload({key:d.pix.key,name:pixName,city:d.pix.city,amount:p.amount,txid:'MM'+d.num+'P'+String(p.n).padStart(2,'0')});qr=QR.make(payload)}
+    P.rect(10,y0,50,66,{fill:LT});P.rect(10,y0,190,66,{stroke:LN,lw:.35});
+    P.line(60,y0,60,y0+66,{dash:[1.5,1.2],color:'#98a2b3'});
+    const lab=(t,x,yy)=>P.text(t,x,yy,{size:6,color:GR});
+    P.text('CANHOTO DA LOJA',14,y0+6,{size:6,bold:true,color:GR});
+    lab('PARCELA',14,y0+14);P.text(`${p.n}/${p.of}`,14,y0+21,{size:15,bold:true,color:BRAND});
+    lab('VENCIMENTO',14,y0+28);P.text(p.due,14,y0+33.5,{size:10,bold:true});
+    lab('VALOR',14,y0+40);P.text(brl(p.amount),14,y0+45.5,{size:10,bold:true});
+    lab('CLIENTE',14,y0+51.5);P.text(P.fit(d.cust.name,43,7.5,true),14,y0+56,{size:7.5,bold:true});
+    P.text(p.paid?`PAGA em ${p.paid.date}`:`Carnê nº ${d.num}`,14,y0+62,{size:6.3,bold:!!p.paid,color:p.paid?OK:GR});
+    const x0=64;
+    const L2=lb(11);if(d.logo)P.image(x0+(11-L2.w)/2,y0+3.5+(11-L2.h)/2,L2.w,L2.h);
+    const nx=d.logo?x0+13.5:x0;
+    P.text(P.fit(d.co.name,158-nx,10,true),nx,y0+8.2,{size:10,bold:true,color:BRAND});
+    P.text(P.fit([d.co.cnpj?'CNPJ '+d.co.cnpj:'',d.co.phone].filter(Boolean).join('   |   '),158-nx,7),nx,y0+12.6,{size:7,color:GR});
+    P.line(x0,y0+16.5,158,y0+16.5);
+    lab('VENCIMENTO',x0,y0+21);P.text(p.due,x0,y0+27.2,{size:12,bold:true});
+    lab('PARCELA',100,y0+21);P.text(`${p.n} de ${p.of}`,100,y0+27.2,{size:12,bold:true});
+    lab('VALOR',130,y0+21);P.text(brl(p.amount),130,y0+27.2,{size:12,bold:true,color:BRAND});
+    P.line(x0,y0+31,158,y0+31);
+    lab('PAGADOR',x0,y0+34.2);P.text(P.fit(d.cust.name,94,9,true),x0,y0+39.2,{size:9,bold:true});
+    if(d.cust.doc)P.text('CPF/CNPJ: '+d.cust.doc,x0,y0+43.4,{size:7.3,color:'#344054'});
+    P.line(x0,y0+45.8,158,y0+45.8);
+    lab('INSTRUÇÕES',x0,y0+48.8);
+    P.text(q?'Pague com Pix (QR Code ao lado), dinheiro ou cartão na loja.':'Pague na loja em dinheiro, cartão ou Pix.',x0,y0+51.9,{size:6.6,color:'#344054'});
+    P.text(P.fit(instr,94,6.6),x0,y0+54.9,{size:6.6,color:'#344054'});
+    if(q){
+      lab('PIX COPIA E COLA',x0,y0+58.6);
+      for(let k=0;k*92<payload.length;k++)P.text(payload.slice(k*92,k*92+92),x0,y0+61.6+k*2.4,{size:4.8,mono:true,color:'#344054'});
+      P.qr(qr,163,y0+2,34);
+      P.text('PAGUE COM PIX',180,y0+40.5,{size:6.6,bold:true,color:BRAND,align:'c'});
+      P.text(brl(p.amount),180,y0+45.6,{size:10,bold:true,align:'c'});
+      P.text('valor já preenchido',180,y0+49.4,{size:5.8,color:GR,align:'c'});
+    }else if(p.paid){
+      P.text('PAGA',180,y0+27,{size:24,bold:true,color:OK,align:'c',angle:12});
+      P.text('em '+p.paid.date,180,y0+36,{size:8,color:OK,align:'c',bold:true});
+      if(p.paid.method)P.text(p.paid.method,180,y0+40.4,{size:7,color:GR,align:'c'});
+    }else{
+      P.rect(164,y0+8,32,30,{stroke:LN,lw:.3,dash:[1.2,1]});
+      P.text('Pagamento',180,y0+21,{size:8,bold:true,color:GR,align:'c'});P.text('na loja',180,y0+25.5,{size:8,bold:true,color:GR,align:'c'});
+    }
+    if(b<3&&i<nP-1){
+      P.line(10,y0+67.5,200,y0+67.5,{dash:[2,1.6],color:'#98a2b3'});
+      P.rect(94,y0+66.3,22,2.4,{fill:'#ffffff'});P.text('recorte aqui',105,y0+68.1,{size:5,color:'#98a2b3',align:'c'});
+    }
+  });
+  return P;
+}
+
+/* ---- chave Pix e botão do carnê ---- */
+const PIXT={cpf:'CPF',cnpj:'CNPJ',telefone:'telefone',email:'e-mail',aleatoria:'aleatória'};
+const PRIV=()=>db.company_private[0]||{};
+function pixNorm(t,v){
+  v=(v||'').trim();
+  if(t==='cpf'||t==='cnpj')return digits(v);
+  if(t==='telefone'){let d=digits(v);if(d.startsWith('55')&&d.length>=12)d=d.slice(2);return d?'+55'+d:''}
+  return v.toLowerCase();
+}
+function pixOk(t,k){
+  if(t==='cpf')return okCpf(k);if(t==='cnpj')return okCnpj(k);
+  if(t==='telefone')return /^\+55\d{10,11}$/.test(k);
+  if(t==='email')return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(k)&&k.length<=77;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(k);
+}
+const pixShow=(t,k)=>t==='cpf'?fmtDoc(k):t==='cnpj'?fmtCnpj(k):k;
+const fmtD=iso=>String(iso||'').slice(0,10).split('-').reverse().join('/');
+async function logoJpeg(){
+  try{
+    const b=await(await fetch(logoIcon())).blob();
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(b)});
+    const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;
+    const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0);
+    const bin=atob(cv.toDataURL('image/jpeg',.92).split(',')[1]),bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return{w:cv.width,h:cv.height,bytes};
+  }catch(e){return null}
+}
+let lastCarne=null;
+async function carnePdf(id,onlyOpen){
+  const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),pv=PRIV();
+  let ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
+  if(!ins.length)return alert('Esta venda não tem parcelas.');
+  const all=ins.length;if(onlyOpen)ins=ins.filter(i=>!i.paid_at);
+  if(!ins.length)return alert('Todas as parcelas já estão pagas.');
+  let pix=null;
+  if(pv.pix_key&&pixOk(pv.pix_key_type,pv.pix_key)){
+    if(!co.city)return alert('Preencha a cidade da empresa na aba Empresa. Ela é obrigatória no código Pix.');
+    pix={key:pv.pix_key,keyType:PIXT[pv.pix_key_type],keyShown:pixShow(pv.pix_key_type,pv.pix_key),city:co.city};
+  }else if(!confirm('A chave Pix da empresa ainda não foi cadastrada (aba Empresa). Gerar o carnê sem QR Code?'))return;
+  modal('<h2>Gerando o carnê...</h2><p class="sm">Aguarde um instante.</p>');
+  try{
+    const logo=await logoJpeg(),num=id.replace(/-/g,'').slice(0,8).toUpperCase(),nw=new Date();
+    const addr=co.street?`${co.street}, ${co.number||'s/n'}${co.complement?' - '+co.complement:''} - ${co.district||''}, ${co.city||''}/${co.uf||''}${co.cep?' - CEP '+co.cep:''}`:'';
+    const d={
+      co:{name:co.trade_name||co.legal_name||'MultMix',trade:co.trade_name,legal:co.legal_name,cnpj:co.cnpj,addr,phone:co.phone||co.whatsapp||'',
+        contact:[co.phone,co.whatsapp&&co.whatsapp!==co.phone?co.whatsapp:'',co.email].filter(Boolean).join('   |   ')},
+      cust:{name:c.name||'Cliente',doc:c.cpf?fmtDoc(c.cpf):'',phone:c.phone||'',
+        addr:c.street?`${c.street}, ${c.number||'s/n'}${c.complement?' - '+c.complement:''}, ${c.district||''}, ${c.city||''}/${c.uf||''}${c.cep?', CEP '+c.cep:''}`:(c.address||'')},
+      num,issued:`${nw.toLocaleDateString('pt-BR')} ${nw.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`,
+      items:(s.items||[]).map(i=>({qty:i.qty,name:i.name,unit:+i.price,total:+i.price*i.qty})),
+      total:+s.total,entry:+s.entry||0,financed:+s.total-(+s.entry||0),parcelsAll:all,
+      parcels:ins.map(i=>({n:i.number,of:all,due:fmtD(i.due_date),amount:+i.amount,paid:i.paid_at?{date:fmtD(ld(i.paid_at)),method:i.method||''}:null})),
+      multa:CFG.MULTA,juro:CFG.JURO_MES,logo,pix};
+    const bytes=await buildCarnePdf(d).bytes({title:`Carne ${num} - ${d.cust.name}`,author:d.co.name});
+    const blob=new Blob([bytes],{type:'application/pdf'}),url=URL.createObjectURL(blob);
+    const fn='carne-'+norm(d.cust.name).replace(/ /g,'-').slice(0,30)+'-'+num+'.pdf';
+    lastCarne={blob,fn,nome:d.cust.name};
+    modal(`<h2>Carnê pronto</h2><p class="sm">${ins.length} ${ins.length===1?'parcela':'parcelas'} · ${pix?'com QR Code Pix em cada parcela, já com o valor':'sem QR Code (chave Pix não cadastrada)'}.</p>
+    <div class="row"><a class="btn" href="${url}" download="${esc(fn)}">Baixar PDF</a><a class="btn g" href="${url}" target="_blank" rel="noopener">Abrir / imprimir</a>${navigator.canShare?'<button class="btn g" onclick="carneShare()">Compartilhar</button>':''}</div>`);
+  }catch(e){modal('<h2>Não foi possível gerar o carnê</h2><p class="bad">'+esc(e&&e.message||e)+'</p>')}
+}
+function carneShare(){
+  if(!lastCarne)return;
+  const f=new File([lastCarne.blob],lastCarne.fn,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:'Carnê '+lastCarne.nome}).catch(()=>{});
+  else alert('Este aparelho não permite compartilhar o arquivo. Use Baixar PDF.');
+}
+
 /* ========= Dados da empresa ========= */
 const CO=()=>db.company[0]||{};
 const logoUrl=()=>CO().logo_url||'logo.jpg';
@@ -297,6 +642,10 @@ function vEmp(){
   <div><label>Logo (PNG ou JPG)</label><input type="file" accept="image/*" onchange="upLogo(this)"><input type="hidden" id="e_logo_url" value="${esc(c.logo_url||'')}"></div></div>
   ${EMP.map(([k,l,w])=>`<div class="${w===1?'w':''}"><label>${l}</label>${w==='sel'?`<select id="e_${k}">${['','Simples Nacional','MEI','Lucro Presumido','Lucro Real'].map(o=>`<option ${c[k]===o?'selected':''}>${o}</option>`).join('')}</select>`
    :`<input id="e_${k}" value="${esc(c[k]||'')}" ${k==='cnpj'?'inputmode="numeric" oninput="this.value=fmtCnpj(this.value)"':''} ${k==='cep'?'inputmode="numeric" onblur="cepFill()"':''} ${k==='uf'?'maxlength="2" style="text-transform:uppercase"':''}>`}</div>`).join('')}</div>
+  <div style="margin:14px 0"><b>Chave Pix da empresa (carnê com QR Code)</b>
+  <p class="sm" style="margin:2px 0 8px">Usada no QR Code de cada parcela do carnê em PDF. Digite a chave exatamente como está cadastrada no seu banco. Ela não aparece no catálogo.</p>
+  <div class="f"><div><label>Tipo da chave</label><select id="e_pix_key_type">${[['','Sem chave'],['cnpj','CNPJ'],['cpf','CPF'],['telefone','Telefone'],['email','E-mail'],['aleatoria','Chave aleatória']].map(([k,l])=>`<option value="${k}" ${(PRIV().pix_key_type||'')===k?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div><label>Chave Pix</label><input id="e_pix_key" value="${esc(PRIV().pix_key||'')}"></div></div></div>
   <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
@@ -333,7 +682,11 @@ function saveEmp(){
   row.uf=row.uf.toUpperCase();
   row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
-  master(()=>{put('company',row);alert('Dados da empresa salvos.');render()});
+  const pt=$('#e_pix_key_type').value,pk=pixNorm(pt,$('#e_pix_key').value);
+  if(pk&&!pt)return alert('Escolha o tipo da chave Pix.');
+  if(pk&&!pixOk(pt,pk))return alert('Chave Pix inválida para o tipo escolhido. Confira os números ou o e-mail.');
+  const pixRow=(pk||PRIV().pix_key)?{id:1,pix_key:pk||null,pix_key_type:pk?pt:null}:null;
+  master(()=>{put('company',row);if(pixRow)put('company_private',pixRow);alert('Dados da empresa salvos.');render()});
 }
 
 /* ========= Perfil e senha mestre ========= */
@@ -871,7 +1224,7 @@ function carne(id){
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
   <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>`}</td></tr>`}).join('')}</table></div>
-  <p><button class="btn g noprint" onclick="window.print()">Imprimir carnê</button></p>`);
+  <div class="row noprint"><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button></div>`);
 }
 function payAsk(iid,sid){
   const i=db.installments.find(x=>x.id===iid),d=due(i);
