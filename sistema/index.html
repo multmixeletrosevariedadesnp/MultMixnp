@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.0.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -91,6 +91,12 @@ body.out header{display:none}
  main{width:100%}
 }
 .cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
+.art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+.artp{position:sticky;top:12px}
+#artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.thb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+@media(max-width:900px){.art{grid-template-columns:1fr}.artp{position:static;max-width:360px;margin:0 auto}}
+.appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
 </style>
 </head>
 <body>
@@ -99,6 +105,7 @@ body.out header{display:none}
   <nav id="nav"></nav>
   <button class="ibtn" data-install hidden>Instalar app</button>
   <span class="sync" id="sync"></span>
+  <button type="button" class="appv" data-appver></button>
 </header>
 <main id="app"></main>
 <div id="modal"></div>
@@ -617,6 +624,227 @@ function carneShare(){
   else alert('Este aparelho não permite compartilhar o arquivo. Use Baixar PDF.');
 }
 
+/* ========= Arte do produto: gerador de imagem (SVG) ========= */
+const ART_TH={
+  azul:{n:'Azul MultMix',a:'#00539f',b:'#002b63',text:'#ffffff',sub:'#cfe0f7',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  amarelo:{n:'Amarelo oferta',a:'#ffd24d',b:'#ffb300',text:'#101828',sub:'#4b3b00',accent:'#d92d20',price:'#00468f',badge:'#d92d20',badgeT:'#ffffff',shape:'#ffffff',foot:'rgba(0,0,0,.14)',footT:'#101828'},
+  vermelho:{n:'Vermelho promoção',a:'#e53b2c',b:'#9c1a10',text:'#ffffff',sub:'#ffd9d4',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  escuro:{n:'Escuro premium',a:'#1d2939',b:'#0b111c',text:'#ffffff',sub:'#98a2b3',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(255,255,255,.08)',footT:'#ffffff'},
+  claro:{n:'Claro limpo',a:'#f8fafc',b:'#dfe5ee',text:'#101828',sub:'#475467',accent:'#00468f',price:'#00468f',badge:'#00468f',badgeT:'#ffffff',shape:'#00468f',foot:'rgba(0,70,143,.1)',footT:'#101828'}
+};
+const artX=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const artW=(s,size,bold)=>{let w=0;for(const ch of String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'')){const c=ch.charCodeAt(0);w+=c>=32&&c<=126?(bold?BW:HW)[c-32]:556}return w*size/1000};
+function artWrap(s,maxW,size,bold){
+  const out=[];let cur='';
+  for(const word of String(s||'').split(/\s+/).filter(Boolean)){const t=cur?cur+' '+word:word;if(artW(t,size,bold)<=maxW)cur=t;else{if(cur)out.push(cur);cur=word}}
+  if(cur)out.push(cur);return out;
+}
+const artFit=(s,maxW,size,bold)=>{s=String(s||'');if(artW(s,size,bold)<=maxW)return s;while(s.length>1&&artW(s+'...',size,bold)>maxW)s=s.slice(0,-1);return s.trim()+'...'};
+const artBRL=n=>(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function artSvg(o){
+  const th=ART_TH[o.theme]||ART_TH.azul,W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
+  const F="Arial,Helvetica,sans-serif",E=[];
+  const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold);const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
+    E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
+  // fundo
+  E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
+    <clipPath id="pc"><rect id="pcr" x="0" y="0" width="1" height="1" rx="40"/></clipPath><clipPath id="lc"><rect id="lcr" x="0" y="0" width="1" height="1" rx="26"/></clipPath></defs>`);
+  E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
+  E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
+  E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  let y=Math.round(52*k);
+  // cabeçalho: logo + nome
+  if(o.showLogo&&(o.logo||o.co.name)){
+    const ls=Math.round(112*k),nameS=Math.round(46*k),gap=24,nw=artW(o.co.name,nameS,true),maxNW=W-2*60-(o.logo?ls+gap:0),nm=artFit(o.co.name,maxNW,nameS,true),w=artW(nm,nameS,true);
+    const tot=(o.logo?ls+gap:0)+w,x0=(W-tot)/2;
+    if(o.logo){E.push(`<rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x0}" y="${y}" width="${ls}" height="${ls}" preserveAspectRatio="xMidYMid slice" clip-path="url(#lcp)"/>`)}
+    T(nm,x0+(o.logo?ls+gap:0),y+ls/2+nameS*.34,nameS,{bold:1});
+    y+=ls+Math.round(34*k);
+  }
+  // selo
+  if(o.badge){
+    const bs=Math.round(54*k),bw=artW(o.badge.toUpperCase(),bs,true)+88*k,bh=Math.round(98*k),bx=(W-bw)/2;
+    E.push(`<rect x="${bx+6}" y="${y+8}" width="${bw}" height="${bh}" rx="${bh/2}" fill="#000" fill-opacity=".22"/><rect x="${bx}" y="${y}" width="${bw}" height="${bh}" rx="${bh/2}" fill="${th.badge}" stroke="#ffffff" stroke-width="${6*k}"/>`);
+    T(o.badge.toUpperCase(),W/2,y+bh/2+bs*.35,bs,{bold:1,color:th.badgeT,anchor:'m'});
+    y+=bh+Math.round(34*k);
+  }
+  // rodapé (altura fixa) e bloco de preço (altura variável) definem a altura da foto
+  const footH=o.showFoot?Math.round(190*k):Math.round(50*k),M=60,CW=W-2*M;
+  let nameS=Math.round(68*k),nl=artWrap(o.name,CW-20,nameS,true);
+  if(nl.length>2){nameS=Math.round(56*k);nl=artWrap(o.name,CW-20,nameS,true)}
+  if(nl.length>2){nl.length=2;nl[1]=artFit(nl[1]+' ...',CW-20,nameS,true)}
+  const nLH=Math.round(nameS*1.14),hasOld=+o.old>0,oldS=Math.round(44*k);
+  let ps=Math.round(190*k);const pint=Math.floor(+o.price).toLocaleString('pt-BR'),pcents=','+String(Math.round((+o.price-Math.floor(+o.price))*100)).padStart(2,'0');
+  const pw=s=>artW('R$',s*.34,true)+10+artW(pint,s,true)+artW(pcents,s*.44,true);
+  while(pw(ps)>CW&&ps>60)ps-=4;
+  const lines=(o.lines||[]).filter(Boolean),lS=Math.round(44*k),lLH=Math.round(60*k),vS=Math.round(30*k);
+  const below=18*k+nl.length*nLH+(hasOld?oldS+26*k:10*k)+ps*.78+22*k+(lines.length?lines.length*lLH+10*k:0)+(o.valid?vS+30*k:0);
+  let ph=H-footH-y-below-30*k;ph=Math.max(feed?300:420,Math.min(ph,feed?560:820));
+  // cartão da foto
+  const cx=M+10,cw=W-2*cx;
+  E.push(`<rect x="${cx+8}" y="${y+14}" width="${cw}" height="${ph}" rx="44" fill="#000" fill-opacity=".25"/><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44" fill="#ffffff"/>`);
+  if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet" clip-path="url(#pcp)"/>`)}
+  else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
+  y+=ph+Math.round(30*k);
+  // nome
+  nl.forEach((l,i)=>{y+=nLH;T(l,W/2,y-nameS*.2,nameS,{bold:1,anchor:'m'})});
+  y+=Math.round(8*k);
+  // preço antigo
+  if(hasOld){const t='de R$ '+artBRL(o.old),w=artW(t,oldS,false);y+=oldS;T(t,W/2,y,oldS,{anchor:'m',color:th.sub});E.push(`<line x1="${W/2-w/2-4}" y1="${y-oldS*.3}" x2="${W/2+w/2+4}" y2="${y-oldS*.3}" stroke="${th.sub}" stroke-width="${Math.max(3,4*k)}"/>`);y+=Math.round(16*k)}
+  // preço principal
+  const small=ps*.34,cs=ps*.44,tw=pw(ps);let px=(W-tw)/2;y+=ps*.78;
+  const by=y;
+  T('R$',px,by-ps*.40,small,{bold:1,color:th.price});px+=artW('R$',small,true)+10;
+  px+=T(pint,px,by,ps,{bold:1,color:th.price});
+  T(pcents,px,by-ps*.40,cs,{bold:1,color:th.price});
+  y+=Math.round(22*k);
+  // condições
+  lines.forEach(l=>{y+=lLH;T(artFit(l,CW,lS,true),W/2,y-lS*.25,lS,{bold:1,anchor:'m'})});
+  if(lines.length)y+=Math.round(10*k);
+  if(o.valid){y+=Math.round(30*k);T(artFit(o.valid,CW,vS,false),W/2,y+vS*.7,vS,{anchor:'m',color:th.sub,italic:1})}
+  // rodapé
+  if(o.showFoot){
+    const fy=H-footH;E.push(`<rect x="0" y="${fy}" width="${W}" height="${footH}" fill="${th.foot}"/><rect x="0" y="${fy}" width="${W}" height="${Math.round(6*k)}" fill="${th.accent}"/>`);
+    const fs=Math.round(42*k),f2=Math.round(36*k),f3=Math.round(27*k);let fyy=fy+Math.round(62*k);
+    T(artFit(o.co.name,CW,fs,true),W/2,fyy,fs,{bold:1,anchor:'m',color:th.footT});
+    if(o.co.phone){fyy+=Math.round(50*k);T('WhatsApp '+o.co.phone,W/2,fyy,f2,{bold:1,anchor:'m',color:th.footT})}
+    if(o.co.addr){fyy+=Math.round(42*k);T(artFit(o.co.addr,CW,f3,false),W/2,fyy,f3,{anchor:'m',color:th.footT,op:.85})}
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
+}
+
+/* ---- tela da aba "Arte do produto" ---- */
+let artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0;
+const artCache=new Map();
+async function artBlobData(blob,max){
+  const u=URL.createObjectURL(blob);
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('img'));i.src=u});
+    const k=Math.min(1,max/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+    cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0,cv.width,cv.height);
+    return cv.toDataURL('image/jpeg',.9);
+  }finally{URL.revokeObjectURL(u)}
+}
+async function artUrlData(url,max){
+  if(artCache.has(url))return artCache.get(url);
+  const r=await fetch(url);if(!r.ok)throw new Error('http');
+  const d=await artBlobData(await r.blob(),max);artCache.set(url,d);return d;
+}
+const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
+function artCaption(){
+  const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artVal('badge');
+  const pid=artVal('p'),L=[`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
+  [artVal('l1'),artVal('l2'),artVal('valid')].map(s=>s.trim()).filter(Boolean).forEach(s=>L.push(s));
+  L.push('','Chame no WhatsApp: https://wa.me/'+waNum());
+  if(pid)L.push('Veja no catálogo: '+new URL('../catalogo/#p='+pid,location.href).href);
+  return L.join('\n');
+}
+function artOpts(){
+  const co=CO(),addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
+  const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
+  return{fmt:artVal('fmt')||'status',theme:artTheme,badge:artVal('badge'),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+    old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
+    co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
+}
+function artRender(){
+  const o=artOpts(),box=$('#artv');if(!box)return;
+  box.innerHTML=artSvg(o);
+  if(!artCapDirty&&$('#a_cap'))$('#a_cap').value=artCaption();
+  document.querySelectorAll('.thb').forEach(b=>b.classList.toggle('on',b.dataset.th===artTheme));
+  artFile=null;clearTimeout(artTimer);artTimer=setTimeout(artPrep,500);
+}
+async function artRaster(){
+  const o=artOpts(),W=1080,H=o.fmt==='feed'?1350:1920;
+  const url=URL.createObjectURL(new Blob([artSvg(o)],{type:'image/svg+xml;charset=utf-8'}));
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src=url});
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.getContext('2d').drawImage(img,0,0,W,H);
+    return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.92));
+  }finally{URL.revokeObjectURL(url)}
+}
+const artName=()=>'arte-'+norm(artVal('name')).replace(/ /g,'-').slice(0,32)+'.jpg';
+async function artPrep(){
+  const g=++artGen;
+  try{const b=await artRaster();if(g===artGen)artFile=new File([b],artName(),{type:'image/jpeg'})}catch(e){artFile=null}
+}
+async function artDownload(){
+  try{
+    const b=artFile||await artRaster(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=artName();a.click();
+  }catch(e){alert('Não foi possível gerar a imagem neste navegador.')}
+}
+function artShare(){
+  if(!artFile)return alert('A imagem ainda está sendo preparada. Aguarde um segundo e toque de novo.');
+  if(navigator.canShare&&navigator.canShare({files:[artFile]})){
+    navigator.share({files:[artFile],text:artVal('cap')||artCaption()}).catch(e=>{if(!e||e.name!=='AbortError')alert('Não foi possível abrir o compartilhamento. Use "Baixar imagem".')});
+  }else{
+    artDownload();
+    alert('Este aparelho não permite enviar direto. A imagem foi baixada: abra o WhatsApp, vá em Status, toque em + e escolha a imagem. A legenda está no botão "Copiar legenda".');
+  }
+}
+function artCopy(){
+  const t=artVal('cap')||artCaption();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert('Legenda copiada.')).catch(()=>{const e=$('#a_cap');if(e){e.select();document.execCommand('copy');alert('Legenda copiada.')}});
+}
+async function artLoadPhoto(){
+  const p=db.products.find(x=>x.id===artVal('p')),st=$('#a_st');if(!st)return;
+  artPhoto=null;artRender();
+  const u=p&&(p.photos||[])[+artVal('ph')||0];
+  if(!u){st.textContent=p?'Este produto não tem foto cadastrada. Envie uma foto abaixo.':'';return}
+  st.className='sm';st.textContent='Carregando a foto...';
+  try{artPhoto=await artUrlData(u,1100);st.textContent=''}catch(e){st.className='sm bad';st.textContent='Não consegui carregar a foto (o site dela pode bloquear). Envie uma foto do aparelho abaixo.'}
+  artRender();
+}
+async function artUpload(inp){
+  const f=inp.files[0];if(!f)return;
+  try{artPhoto=await artBlobData(f,1100);$('#a_st').textContent=''}catch(e){alert('Não consegui ler essa imagem.')}
+  artRender();
+}
+function artPick(){
+  const p=db.products.find(x=>x.id===artVal('p'));if(!p)return;
+  const set=(id,v)=>{const e=$('#a_'+id);if(e)e.value=v},m=p.max_inst||10;
+  set('name',p.name);set('price',(+p.price_cash).toFixed(2));set('old','');
+  set('l1',+p.price_credit>0?`ou ${m}x de R$ ${artBRL(p.price_credit/m)} no carnê`:'');
+  set('l2',+p.price_card>0?`No cartão: R$ ${artBRL(p.price_card)}`:'');
+  const ph=$('#a_ph');if(ph)ph.innerHTML=(p.photos||[]).map((_,i)=>`<option value="${i}">Foto ${i+1}</option>`).join('')||'<option value="0">Sem foto</option>';
+  artCapDirty=false;artLoadPhoto();
+}
+function artFilter(){
+  const k=norm(artVal('q')),sel=$('#a_p');if(!sel)return;
+  const l=db.products.filter(p=>p.active!==false&&(!k||norm(p.name).includes(k))).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  sel.innerHTML=l.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')||'<option value="">Nenhum produto</option>';
+  if(l.length)artPick();
+}
+async function vArte(){
+  if(!logoIcon)return;
+  $('#app').innerHTML=`<div class="art"><div class="box" style="max-width:none">
+  <h2 style="margin-top:0">Arte do produto</h2>
+  <p class="sm">Gere uma imagem de oferta e publique no Status do WhatsApp da empresa. O WhatsApp não permite publicar sozinho: no celular, toque em <b>Enviar para o WhatsApp</b>, escolha o WhatsApp e depois <b>Meu status</b>.</p>
+  <div class="f"><div class="w"><label>Buscar produto</label><input id="a_q" placeholder="Digite parte do nome" oninput="artFilter()"></div>
+  <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
+  <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
+  <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}</select></div>
+  <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artTheme='${k}';artRender()">${t.n}</button>`).join('')}</div></div>
+  <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
+  <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
+  <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
+  <div class="w"><label>Condição 1 (opcional)</label><input id="a_l1" oninput="artRender()"></div>
+  <div class="w"><label>Condição 2 (opcional)</label><input id="a_l2" oninput="artRender()"></div>
+  <div class="w"><label>Validade (opcional)</label><input id="a_valid" value="Válido enquanto durar o estoque" oninput="artRender()"></div>
+  <div><label>Foto do produto</label><select id="a_ph" onchange="artLoadPhoto()"></select></div>
+  <div><label>Usar outra foto</label><input type="file" accept="image/*" onchange="artUpload(this)"></div>
+  <div class="w sm" id="a_st" role="status"></div>
+  <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label></div>
+  <div class="w"><label>Legenda do status (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
+  <div class="row"><button class="btn" onclick="artShare()">Enviar para o WhatsApp (Status)</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
+  <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
+  <div class="artp"><div id="artv"></div></div></div>`;
+  artFilter();
+  try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
+  artRender();
+}
+
 /* ========= Dados da empresa ========= */
 const CO=()=>db.company[0]||{};
 const logoUrl=()=>CO().logo_url||'logo.jpg';
@@ -727,22 +955,23 @@ const ICON={box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 1
  file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
  receipt:'<path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5z"/><path d="M9 8h6M9 12h6"/>',building:'<path d="M4 21V4a1 1 0 011-1h9a1 1 0 011 1v17M15 9h4a1 1 0 011 1v11M2 21h20M8 7h3M8 11h3M8 15h3"/>',
  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1 0-2-.5-2.5-1.5M12 6.5v1.5M12 16v1.5"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
  logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 function render(){
   if(sb&&!role&&view!=='login')view='login';
-  if(['prod','cx','fis','emp','usr'].includes(view)&&!ADM())view='pdv';
+  if(['prod','cx','fis','emp','usr','arte'].includes(view)&&!ADM())view='pdv';
   document.body.className=isAdmin()?'in':'out';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   let h='';
   if(isAdmin()){
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,login:vLogin}[view]||vPdv)();
+  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -918,6 +1147,7 @@ function saveProd(id){
 
 /* ========= Nova venda (PDV) ========= */
 let cart=[],pre=null,fromOrder=null,selCli=null;
+window.appBusy=()=>cart.length>0||$('#modal').classList.contains('open');
 function vPdv(){
   selCli=null;
   $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Nova venda</h2>

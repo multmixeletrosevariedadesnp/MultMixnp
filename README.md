@@ -25,3 +25,9 @@ Telefone, WhatsApp, CNPJ e logo da empresa são cadastrados no sistema, na aba E
 ## Carnê em PDF
 Na aba Carnês, "Gerar PDF do carnê" cria um PDF A4 com página de resumo (cliente, compra, parcelas) e uma ficha por parcela, com canhoto e QR Code Pix já com o valor da parcela.
 A chave Pix é cadastrada na aba Empresa (guardada em tabela privada, `supabase-v10.sql`). O PDF é gerado no próprio navegador, sem bibliotecas externas.
+
+## Arte do produto
+Na aba Arte do produto (administrador), escolha o produto e gere uma imagem de oferta (Status 9:16 ou Feed 4:5) com 5 estilos, selo, preço de oferta, preço antigo riscado, condições e rodapé da empresa. No celular, o botão Enviar abre o compartilhamento para o WhatsApp (Meu status); no computador, baixe a imagem. O WhatsApp não permite publicar o status automaticamente.
+
+## Versões e atualização automática
+Cada aplicativo mostra o número da versão (rodapé do catálogo, menu do sistema) e se atualiza sozinho quando uma versão nova é publicada: ele confere `version.json` ao abrir, ao voltar para o app e a cada 5 minutos. Veja `CHANGELOG.md` para o histórico e para o passo a passo de publicar uma versão.
