@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.2.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.3.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1091,11 +1091,16 @@ async function login(e){
 async function logout(){await sb.auth.signOut();session=null;role=null;view='login';render()}
 
 /* ========= Produtos (admin) ========= */
+let pq='';
+function prodRows(){
+  const k=norm(pq),l=db.products.filter(p=>!pq.trim()||norm([p.name,p.category,p.ncm].join(' ')).includes(k));
+  const n=$('#pcount');if(n)n.textContent=pq.trim()?l.length+' de '+db.products.length+' produtos':db.products.length+' produtos';
+  return l.length?l.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${p.stock}</td>
+  <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join(''):'<tr><td colspan="6">Nenhum produto encontrado.</td></tr>';
+}
 function vProd(){
-  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><span class="sm" style="align-self:center">${db.products.length} produtos</span></div>
-  <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Estoque</th><th></th></tr>
-  ${db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${p.stock}</td>
-  <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join('')}</table>`;
+  $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar produto, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
+  <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Estoque</th><th></th></tr><tbody id="ptb">${prodRows()}</tbody></table>`;
 }
 /* ========= Importar produtos (xlsx / csv) ========= */
 const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -1150,6 +1155,65 @@ let imp=[];
 function impOpen(){
   modal(`<h2>Importar produtos</h2><p class="sm">Envie uma planilha (.xlsx ou .csv) com uma linha por produto. Colunas aceitas: nome, categoria, preço à vista, preço cartão, preço carnê, estoque, NCM, CFOP, unidade, parcelas, descrição, especificações (Chave: valor | Chave: valor) e fotos (links separados por espaço, até 5). Só nome e preço à vista são obrigatórios. Produtos com o mesmo nome são atualizados, não duplicados.</p>
   <div class="row"><input type="file" id="impf" accept=".xlsx,.xls,.csv" onchange="impRead(this)" style="flex:1"><button class="btn g" onclick="impModel()">Baixar modelo</button></div><div id="impv" style="margin-top:12px"></div>`);
+}
+/* ========= Entrada de estoque por XML da NF-e de compra ========= */
+let XML=null;
+function xmlOpen(){
+  XML=null;
+  modal(`<h2>Entrada por XML (NF-e do fornecedor)</h2><p class="sm">Envie o XML da nota de compra. O sistema lê os itens, reconhece os produtos que você já tem (por código de barras, código do fornecedor ou nome) e soma a quantidade ao estoque. Produto novo é criado <b>inativo</b> e com preço zero: defina os preços antes de ativar, para não aparecer no catálogo sem valor.</p>
+  <input type="file" id="xmlf" accept=".xml,text/xml" onchange="xmlRead(this)"><div id="xmlv" style="margin-top:12px"></div>`);
+}
+function xmlRead(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{
+    try{
+      const d=new DOMParser().parseFromString(r.result,'text/xml');
+      if(d.getElementsByTagName('parsererror').length)throw new Error('xml');
+      const t=(el,n)=>{const x=el&&el.getElementsByTagName(n)[0];return x?x.textContent.trim():''};
+      const inf=d.getElementsByTagName('infNFe')[0];if(!inf)throw new Error('Este arquivo não é uma NF-e (infNFe não encontrado).');
+      const key=(inf.getAttribute('Id')||'').replace(/\D/g,''),em=inf.getElementsByTagName('emit')[0];
+      const items=[...inf.getElementsByTagName('det')].map(det=>{
+        const pr=det.getElementsByTagName('prod')[0],ean=t(pr,'cEAN'),ean2=t(pr,'cEANTrib');
+        return{code:t(pr,'cProd'),ean:/^\d{8,14}$/.test(ean)?ean:/^\d{8,14}$/.test(ean2)?ean2:'',name:t(pr,'xProd'),ncm:t(pr,'NCM'),cest:t(pr,'CEST'),un:t(pr,'uCom')||'UN',
+          qty:Math.round(parseFloat(t(pr,'qCom'))||0),cost:+(parseFloat(t(pr,'vUnCom'))||0).toFixed(2)};
+      }).filter(i=>i.qty>0);
+      if(!items.length)throw new Error('Nenhum item com quantidade encontrado.');
+      items.forEach(i=>{
+        const p=(i.ean&&db.products.find(x=>x.ean===i.ean))||db.products.find(x=>x.supplier_code&&x.supplier_code===i.code&&i.code)||db.products.find(x=>norm(x.name)===norm(i.name));
+        i.pid=p?p.id:'novo';
+      });
+      XML={key,num:t(inf.getElementsByTagName('ide')[0],'nNF'),forn:t(em,'xNome'),cnpj:t(em,'CNPJ'),items};
+      xmlView();
+    }catch(e){$('#xmlv').innerHTML=`<p class="bad">${esc(e.message==='xml'?'Não foi possível ler o arquivo. Envie o XML original da nota.':e.message)}</p>`}
+  };r.readAsText(f);
+}
+function xmlDone(){try{return JSON.parse(localStorage.mmxml||'[]')}catch(e){return[]}}
+function xmlView(){
+  const x=XML,dup=x.key&&xmlDone().includes(x.key);
+  $('#xmlv').innerHTML=`<p><b>${esc(x.forn)}</b> · NF ${esc(x.num)} · ${x.items.length} item(ns)</p>
+  ${dup?'<p class="bad">Esta nota já foi lançada neste aparelho. Confirme só se tiver certeza, senão o estoque será somado de novo.</p>':''}
+  <div style="overflow:auto"><table><tr><th>Item da nota</th><th>Qtd</th><th>Custo</th><th>Vai para</th></tr>
+  ${x.items.map((i,ix)=>`<tr><td>${esc(i.name)}<div class="sm">${i.ean?'EAN '+i.ean+' · ':''}cód. ${esc(i.code)}</div></td><td>${i.qty}</td><td>${R(i.cost)}</td>
+  <td><select onchange="XML.items[${ix}].pid=this.value;xmlView()"><option value="novo" ${i.pid==='novo'?'selected':''}>Cadastrar produto novo</option><option value="ignorar" ${i.pid==='ignorar'?'selected':''}>Ignorar este item</option>
+  ${[...db.products].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(p=>`<option value="${p.id}" ${i.pid===p.id?'selected':''}>${esc(p.name)} (estoque ${p.stock})</option>`).join('')}</select></td></tr>`).join('')}</table></div>
+  <p><label><input type="checkbox" id="xml_cost" checked style="width:auto"> Atualizar o custo dos produtos</label></p>
+  <button class="btn" onclick="xmlApply()">Dar entrada no estoque</button>`;
+}
+function xmlApply(){
+  const x=XML;if(!x)return;
+  const upd=$('#xml_cost').checked;let a=0,n=0;
+  x.items.forEach(i=>{
+    if(i.pid==='ignorar')return;
+    if(i.pid==='novo'){
+      put('products',{id:uid(),name:i.name,category:'',description:'',price_cash:0,price_card:null,price_credit:null,max_inst:10,stock:i.qty,active:false,ncm:i.ncm,cfop:'5102',unit:i.un,cest:i.cest,csosn:'102',specs:[],photos:[],ean:i.ean||null,supplier_code:i.code||null,cost:i.cost||null});n++;
+    }else{
+      const p=db.products.find(y=>y.id===i.pid);if(!p)return;
+      put('products',{...p,stock:(+p.stock||0)+i.qty,ean:p.ean||i.ean||null,supplier_code:p.supplier_code||i.code||null,ncm:p.ncm||i.ncm,...(upd&&i.cost?{cost:i.cost}:{})});a++;
+    }
+  });
+  if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-200))}
+  closeM();XML=null;render();
+  alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.`);
 }
 function impModel(){
   const csv='nome;categoria;preço à vista;preço cartão;preço carnê;estoque;ncm;unidade;parcelas;descrição;especificações;fotos\n'+
@@ -1223,7 +1287,7 @@ async function upload(inp){
 function saveProd(id){
   const g=k=>$('#f_'+k).value.trim();
   if(!g('name')||!g('price_cash'))return alert('Informe nome e preço à vista.');
-  const row={id:id||uid(),name:g('name'),category:g('category'),description:g('description'),
+  const row={...(db.products.find(x=>x.id===id)||{}),id:id||uid(),name:g('name'),category:g('category'),description:g('description'),
    price_cash:+g('price_cash'),price_card:+g('price_card')||null,price_credit:+g('price_credit')||null,
    max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),

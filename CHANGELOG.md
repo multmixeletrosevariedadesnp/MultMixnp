@@ -11,6 +11,12 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.3.0 — 26/10/2026
+- Entrada de estoque pelo XML da NF-e de compra (rode `supabase-v12.sql`): reconhece produtos por código de barras, código do fornecedor ou nome; produto novo entra inativo e sem preço; guarda o custo.
+
+### 1.2.1 — 26/10/2026
+- Campo de pesquisa na tela de Produtos (nome, categoria ou NCM).
+
 ### 1.2.0 — 26/10/2026
 - Estoque seguro: a baixa é feita no servidor (rode `supabase-v11.sql`), então dois aparelhos vendendo juntos não se sobrescrevem.
 - Cancelar venda (senha mestre): devolve o estoque, cancela parcelas em aberto, tira a comissão, registra a devolução no Caixa e avisa quando há nota a cancelar.
