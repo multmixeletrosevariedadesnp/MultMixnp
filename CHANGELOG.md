@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.1.0 — 26/10/2026
+- Arte do produto com datas especiais: Natal, Black Friday, Cyber Monday, Aniversário, Dia das Mães, Dia dos Pais, Dia das Crianças, Namorados, Páscoa, Ano Novo, Dia do Consumidor e Oferta relâmpago, com título, subtítulo e atalho para as próximas datas.
+
 ### 1.0.0 — 25/10/2026
 - Atualização automática e controle de versão.
 - Arte do produto para o Status do WhatsApp.
@@ -20,6 +23,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
 - Dados da empresa, pedidos do catálogo, caixa, controle fiscal (NFC-e e NF-e) e preços configuráveis.
 
 ## Catálogo (`catalogo/`)
+### 1.0.1 — 26/10/2026
+- Chamar no WhatsApp leva a foto do produto (link de imagem reduzida, com prévia no chat) junto do nome e da descrição.
+
 ### 1.0.0 — 25/10/2026
 - Atualização automática e controle de versão.
 - Janela do produto com botão Fechar sempre visível, barra "Voltar aos produtos" no celular e botão voltar do celular.
