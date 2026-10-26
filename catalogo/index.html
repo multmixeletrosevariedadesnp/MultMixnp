@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.0.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.0.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -234,6 +234,8 @@ function list(){
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none';document.body.classList.toggle('hasbag',n>0)}
 
 /* ---- Produto ---- */
+// foto reduzida (JPEG até 800 px, leve) para o WhatsApp mostrar a prévia da imagem no chat
+const waImg=u=>u?'https://wsrv.nl/?url='+encodeURIComponent(u)+'&w=800&h=800&fit=inside&we&bg=white&output=jpg&q=80':'';
 const pageUrl=id=>location.origin+location.pathname+'#p='+id;
 function productText(p,head,noPhoto){
   const l=[head,'','*'+p.name+'*'];
@@ -241,7 +243,7 @@ function productText(p,head,noPhoto){
   const d=(p.description||'').trim();if(d)l.push(d.length>220?d.slice(0,217)+'...':d);
   const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
   const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
-  l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto)l.push('Foto: '+ph);
+  l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto)l.push('Foto: '+waImg(ph));
   l.push('Ver no catálogo: '+pageUrl(p.id));
   return l.join('\n');
 }
@@ -332,7 +334,7 @@ function send(){
   const tot=total(),dg=v=>(v||'').replace(/\D/g,'');
   if((cust.name||'').trim().length<3||dg(cust.phone).length<10)return alert('Preencha seu nome e WhatsApp com DDD para fazer o pedido.');
   if(pay==='crediario'&&(dg(cust.cpf).length!==11||(cust.address||'').trim().length<5))return alert('Para o carnê, informe o CPF (11 dígitos) e o endereço.');
-  let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`+((p.photos||[])[0]?`\n   Foto: ${p.photos[0]}`:'')+`\n   ${pageUrl(p.id)}`}).join('\n');
+  let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`+((p.photos||[])[0]?`\n   Foto: ${waImg(p.photos[0])}`:'')+`\n   ${pageUrl(p.id)}`}).join('\n');
   t+=`\n\nCliente: ${cust.name} · ${cust.phone}`+(pay==='crediario'?`\nCPF: ${cust.cpf} · Endereço: ${cust.address}`:'');
   t+=`\n\nForma de pagamento: ${NAMES[pay]}${pay==='crediario'?` (${nin}x de ${R(tot/nin)})`:''}\nTotal: ${R(tot)}`;
   window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(t),'_blank','noopener');

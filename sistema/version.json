@@ -1,5 +1,5 @@
 {
- "version": "1.0.0",
- "date": "2026-10-25",
- "notes": "Arte do produto, carnê em PDF com Pix, usuários e comissão. Agora o aplicativo se atualiza sozinho."
+ "version": "1.2.0",
+ "date": "2026-10-26",
+ "notes": "Estoque seguro: a baixa é feita no servidor (dois aparelhos não se sobrescrevem). Cancelar venda: devolve estoque, cancela parcelas, tira a comissão e registra a devolução no caixa."
 }

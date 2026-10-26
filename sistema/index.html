@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.0.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.2.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -94,7 +94,7 @@ body.out header{display:none}
 .art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
 .artp{position:sticky;top:12px}
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
-.thb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{position:static;max-width:360px;margin:0 auto}}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
 </style>
@@ -252,7 +252,7 @@ async function pwSave(){
 let comMonth='',comSel='todos';
 function comRows(m,sel){
   const out=[],cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão';
-  db.sales.filter(s=>sel==='todos'||s.seller_id===sel).forEach(s=>{
+  db.sales.filter(s=>!s.canceled_at&&(sel==='todos'||s.seller_id===sel)).forEach(s=>{
     const mode=s.commission_mode||'venda',pct=+s.commission_pct||0,rec=s.pay_type==='crediario'&&mode==='recebimento';
     if(ld(s.created_at).slice(0,7)===m){
       const base=rec?+s.entry:+s.total;
@@ -641,8 +641,75 @@ function artWrap(s,maxW,size,bold){
 }
 const artFit=(s,maxW,size,bold)=>{s=String(s||'');if(artW(s,size,bold)<=maxW)return s;while(s.length>1&&artW(s+'...',size,bold)>maxW)s=s.slice(0,-1);return s.trim()+'...'};
 const artBRL=n=>(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- datas especiais ---------- */
+const artRnd=seed=>{let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const artStar=(cx,cy,R,r,n)=>{const p=[];for(let i=0;i<n*2;i++){const a=Math.PI*i/n-Math.PI/2,d=i%2?r:R;p.push((cx+Math.cos(a)*d).toFixed(1)+','+(cy+Math.sin(a)*d).toFixed(1))}return p.join(' ')};
+const artHeart=(x,y,s)=>`M${x},${y+s*.62} C${x-s*1.15},${y-s*.1} ${x-s*.55},${y-s*.95} ${x},${y-s*.4} C${x+s*.55},${y-s*.95} ${x+s*1.15},${y-s*.1} ${x},${y+s*.62}Z`;
+const artRay=(cx,cy,r1,r2,n,col,w)=>{let o='';for(let i=0;i<n;i++){const a=Math.PI*2*i/n;o+=`<line x1="${(cx+Math.cos(a)*r1).toFixed(1)}" y1="${(cy+Math.sin(a)*r1).toFixed(1)}" x2="${(cx+Math.cos(a)*r2).toFixed(1)}" y2="${(cy+Math.sin(a)*r2).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`}return o};
+const artStripes=(y0,y1,W,c1,c2,op)=>{let o=`<rect x="0" y="${y0}" width="${W}" height="${y1-y0}" fill="${c2}" fill-opacity="${op}"/>`;for(let x=-(y1-y0);x<W+(y1-y0);x+=64)o+=`<polygon points="${x},${y1} ${x+(y1-y0)},${y0} ${x+(y1-y0)+32},${y0} ${x+32},${y1}" fill="${c1}" fill-opacity="${op}"/>`;return o};
+const ART_OCC={
+ natal:{n:'Natal',ttl:'FELIZ NATAL',sub:'Presentes com preço de Natal',th:{a:'#c8102e',b:'#6b0a1a',text:'#ffffff',sub:'#ffe3e3',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#7a0d1f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<80;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*9).toFixed(1)}" fill="#fff" fill-opacity="${(.18+r()*.5).toFixed(2)}"/>`);
+   for(let i=0;i<9;i++)E.push(`<polygon points="${artStar(r()*W,r()*H*.95,14+r()*20,5+r()*6,4)}" fill="#ffd54f" fill-opacity=".85"/>`);
+   let pts='';for(let t=0;t<=40;t++){pts+=`${(t*W/40).toFixed(0)},${(18+Math.sin(t/40*Math.PI*5)*10).toFixed(0)} `}
+   E.push(`<polyline points="${pts}" fill="none" stroke="#ffd54f" stroke-width="4"/>`);
+   for(let t=0;t<=20;t++){const x=t*W/20,y=18+Math.sin(t/20*Math.PI*5)*10;E.push(`<circle cx="${x.toFixed(0)}" cy="${(y+12).toFixed(0)}" r="10" fill="${['#ffd54f','#2e9e4f','#ffffff','#ff5a5f'][t%4]}"/>`)}}},
+ blackfriday:{n:'Black Friday',ttl:'BLACK FRIDAY',sub:'Os menores preços do ano',th:{a:'#1a1a1a',b:'#000000',text:'#ffffff',sub:'#d0d0d0',accent:'#ffd400',price:'#ffd400',badge:'#ffd400',badgeT:'#000000',shape:'#ffd400',foot:'rgba(255,212,0,.14)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(0,34,W,'#ffd400','#000',1));E.push(`<polygon points="0,${H*.5} ${W},${H*.38} ${W},${H*.46} 0,${H*.58}" fill="#ffd400" fill-opacity=".08"/>`);
+   for(let i=0;i<14;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(60+r()*90).toFixed(0)}" fill="#ffd400" fill-opacity=".06">%</text>`)}},
+ cybermonday:{n:'Cyber Monday',ttl:'CYBER MONDAY',sub:'Só hoje: preços de arrepiar',th:{a:'#0b1437',b:'#050a1f',text:'#ffffff',sub:'#9fb4ff',accent:'#00e5ff',price:'#00e5ff',badge:'#ff2bd6',badgeT:'#ffffff',shape:'#00e5ff',foot:'rgba(0,229,255,.12)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<14;i++){const y=r()*H;E.push(`<line x1="0" y1="${y.toFixed(0)}" x2="${W}" y2="${(y-180+r()*360).toFixed(0)}" stroke="${i%2?'#00e5ff':'#ff2bd6'}" stroke-opacity=".22" stroke-width="${(2+r()*4).toFixed(1)}"/>`)}
+   for(let i=0;i<40;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(1.5+r()*3).toFixed(1)}" fill="#00e5ff" fill-opacity=".6"/>`)}},
+ aniversario:{n:'Aniversário',ttl:'ANIVERSÁRIO',sub:'Parabéns pra nós, presente pra você',th:{a:'#8e24aa',b:'#3b0f6e',text:'#ffffff',sub:'#f3d9ff',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#3b0f6e',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffd54f','#ff6f91','#4dd0e1','#a5d6a7','#ffffff','#ffab40'];
+   for(let i=0;i<110;i++){const x=r()*W,y=r()*H,c=pal[Math.floor(r()*pal.length)],k=Math.floor(r()*3);
+    if(k===0)E.push(`<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${(8+r()*14).toFixed(0)}" height="${(5+r()*8).toFixed(0)}" fill="${c}" fill-opacity=".85" transform="rotate(${(r()*180).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})"/>`);
+    else if(k===1)E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(4+r()*7).toFixed(1)}" fill="${c}" fill-opacity=".85"/>`);
+    else E.push(`<polygon points="${artStar(x,y,10+r()*8,4,5)}" fill="${c}" fill-opacity=".85"/>`)}
+   [[52,H*.26,'#ff6f91'],[W-52,H*.33,'#4dd0e1'],[48,H*.58,'#ffd54f'],[W-48,H*.66,'#ff6f91']].forEach(([x,y,c])=>{E.push(`<path d="M${x},${y+86} q-8,60 12,120" fill="none" stroke="#ffffff" stroke-opacity=".6" stroke-width="3"/><ellipse cx="${x}" cy="${y}" rx="60" ry="76" fill="${c}" fill-opacity=".92"/><ellipse cx="${x-20}" cy="${y-26}" rx="14" ry="22" fill="#fff" fill-opacity=".35"/><polygon points="${x},${y+74} ${x-9},${y+92} ${x+9},${y+92}" fill="${c}"/>`)})}},
+ maes:{n:'Dia das Mães',ttl:'DIA DAS MÃES',sub:'O presente que ela merece',th:{a:'#f06292',b:'#ad1457',text:'#ffffff',sub:'#ffe3ee',accent:'#ffe082',price:'#fff0b3',badge:'#ffe082',badgeT:'#880e4f',shape:'#ffffff',foot:'rgba(0,0,0,.25)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<22;i++)E.push(`<path d="${artHeart(r()*W,r()*H,14+r()*34)}" fill="#fff" fill-opacity="${(.12+r()*.22).toFixed(2)}"/>`);
+   [[70,120],[W-70,H*.46],[90,H*.8],[W-90,H*.9]].forEach(([x,y])=>{for(let k=0;k<6;k++){const a=Math.PI*2*k/6;E.push(`<circle cx="${(x+Math.cos(a)*30).toFixed(0)}" cy="${(y+Math.sin(a)*30).toFixed(0)}" r="22" fill="#fff" fill-opacity=".28"/>`)}E.push(`<circle cx="${x}" cy="${y}" r="16" fill="#ffe082" fill-opacity=".8"/>`)})}},
+ pais:{n:'Dia dos Pais',ttl:'DIA DOS PAIS',sub:'Presenteie o seu herói',th:{a:'#1565c0',b:'#0a2a63',text:'#ffffff',sub:'#d3e5ff',accent:'#ffc21a',price:'#ffd95a',badge:'#ffc21a',badgeT:'#0a2a63',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(H*.1,H*.16,W,'#ffffff','#000',.06));E.push(artStripes(H*.7,H*.77,W,'#ffffff','#000',.05));
+   for(let i=0;i<26;i++)E.push(`<polygon points="${artStar(r()*W,r()*H,10+r()*18,4+r()*4,5)}" fill="#fff" fill-opacity="${(.1+r()*.25).toFixed(2)}"/>`)}},
+ criancas:{n:'Dia das Crianças',ttl:'DIA DAS CRIANÇAS',sub:'Alegria e diversão para a família',th:{a:'#29b6f6',b:'#5e35b1',text:'#ffffff',sub:'#e8f6ff',accent:'#ffeb3b',price:'#fff176',badge:'#ffeb3b',badgeT:'#4527a0',shape:'#ffffff',foot:'rgba(0,0,0,.25)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffeb3b','#ff5252','#69f0ae','#ff80ab','#ffffff','#ffab40'];
+   for(let i=0;i<70;i++){const edge=r()<.85,x=edge?(r()<.5?r()*110:W-r()*110):r()*W,y=edge?r()*H:(r()<.5?r()*130:H-r()*200),c=pal[Math.floor(r()*pal.length)],k=Math.floor(r()*3),s=12+r()*22;
+    if(k===0)E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(s/2).toFixed(0)}" fill="${c}" fill-opacity=".85"/>`);
+    else if(k===1)E.push(`<polygon points="${artStar(x,y,s,s*.45,5)}" fill="${c}" fill-opacity=".85"/>`);
+    else E.push(`<polygon points="${x},${y-s} ${x-s},${y+s*.8} ${x+s},${y+s*.8}" fill="${c}" fill-opacity=".85" transform="rotate(${(r()*60).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})"/>`)}}},
+ namorados:{n:'Dia dos Namorados',ttl:'DIA DOS NAMORADOS',sub:'Presenteie quem você ama',th:{a:'#e53935',b:'#7f0f1c',text:'#ffffff',sub:'#ffdede',accent:'#ffc2d1',price:'#ffe0e8',badge:'#ffffff',badgeT:'#b71c1c',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<20;i++)E.push(`<path d="${artHeart(r()*W,r()*H,16+r()*44)}" fill="${i%3?'#ffffff':'#ffc2d1'}" fill-opacity="${(.12+r()*.28).toFixed(2)}"/>`);
+   E.push(`<path d="${artHeart(W-120,H*.22,70)}" fill="#ffffff" fill-opacity=".18"/><path d="${artHeart(110,H*.58,60)}" fill="#ffffff" fill-opacity=".16"/>`)}},
+ pascoa:{n:'Páscoa',ttl:'FELIZ PÁSCOA',sub:'Ofertas para a sua Páscoa',th:{a:'#8e6bbf',b:'#4a2c7a',text:'#ffffff',sub:'#eadcff',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#3b1f66',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffd54f','#ff8fb1','#7fe0c8','#ffffff','#ffab40'];
+   for(let i=0;i<16;i++){const x=r()<.5?36+r()*60:W-36-r()*60,y=r()*H,c=pal[i%pal.length],s=22+r()*20,rot=(r()*50-25).toFixed(0);
+    E.push(`<g transform="rotate(${rot} ${x.toFixed(0)} ${y.toFixed(0)})" fill-opacity=".55"><ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${s}" ry="${(s*1.28).toFixed(0)}" fill="${c}"/><polyline points="${(x-s).toFixed(0)},${y.toFixed(0)} ${(x-s/2).toFixed(0)},${(y-s*.3).toFixed(0)} ${x.toFixed(0)},${y.toFixed(0)} ${(x+s/2).toFixed(0)},${(y-s*.3).toFixed(0)} ${(x+s).toFixed(0)},${y.toFixed(0)}" fill="none" stroke="#fff" stroke-width="5"/></g>`)}}},
+ anonovo:{n:'Ano Novo',ttl:'FELIZ ANO NOVO',sub:'Comece o ano com economia',th:{a:'#12234f',b:'#050b22',text:'#ffffff',sub:'#cdd8ff',accent:'#ffd54f',price:'#ffd54f',badge:'#ffd54f',badgeT:'#12234f',shape:'#ffd54f',foot:'rgba(255,213,79,.12)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{[[W*.07,H*.42],[W*.94,H*.27],[W*.92,H*.6]].forEach(([x,y],i)=>{E.push(artRay(x,y,20,58+i*8,16,'#ffd54f',5));E.push(artRay(x,y,72+i*8,100+i*8,16,'#fff',3));E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="9" fill="#ffd54f"/>`)});
+   for(let i=0;i<90;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*5).toFixed(1)}" fill="${['#ffd54f','#ffffff','#7fb2ff'][i%3]}" fill-opacity=".7"/>`)}},
+ consumidor:{n:'Dia do Consumidor',ttl:'DIA DO CONSUMIDOR',sub:'Descontos de verdade para você',th:{a:'#00539f',b:'#00254f',text:'#ffffff',sub:'#cfe0f7',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#00254f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(0,26,W,'#ffc21a','#000',.9));for(let i=0;i<16;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(60+r()*80).toFixed(0)}" fill="#ffffff" fill-opacity=".07">%</text>`)}},
+ relampago:{n:'Oferta relâmpago',ttl:'OFERTA RELÂMPAGO',sub:'Corra: por tempo limitado',th:{a:'#ffd400',b:'#ff9800',text:'#101828',sub:'#4b3300',accent:'#d50000',price:'#d50000',badge:'#d50000',badgeT:'#ffffff',shape:'#000000',foot:'rgba(0,0,0,.16)',footT:'#101828'},
+  deco:(E,W,H,th,r)=>{E.push(`<polygon points="${W*.62},${H*.04} ${W*.28},${H*.34} ${W*.46},${H*.34} ${W*.34},${H*.62} ${W*.74},${H*.26} ${W*.54},${H*.26}" fill="#fff" fill-opacity=".22"/>`);
+   E.push(`<polygon points="${W*.9},${H*.5} ${W*.7},${H*.7} ${W*.8},${H*.7} ${W*.72},${H*.88} ${W*.98},${H*.62} ${W*.86},${H*.62}" fill="#d50000" fill-opacity=".14"/>`);E.push(artStripes(0,28,W,'#d50000','#000',.85))}}
+};
+const ART_OCC_ORDER=['natal','blackfriday','cybermonday','aniversario','maes','pais','criancas','namorados','pascoa','anonovo','consumidor','relampago'];
+function artNth(y,m,wd,n){const d=new Date(y,m,1);const off=(wd-d.getDay()+7)%7;return new Date(y,m,1+off+(n-1)*7)}
+function artEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
+function artDates(from){
+  const out=[],y0=from.getFullYear();
+  for(const y of[y0,y0+1]){
+    const bf=artNth(y,10,5,4),cm=new Date(bf);cm.setDate(bf.getDate()+3);
+    out.push(['natal',new Date(y,11,25)],['blackfriday',bf],['cybermonday',cm],['maes',artNth(y,4,0,2)],['pais',artNth(y,7,0,2)],['criancas',new Date(y,9,12)],['namorados',new Date(y,5,12)],['pascoa',artEaster(y)],['anonovo',new Date(y+1,0,1)],['consumidor',new Date(y,2,15)]);
+  }
+  const t=new Date(from.getFullYear(),from.getMonth(),from.getDate());
+  return out.filter(([,d])=>d>=t).sort((a,b)=>a[1]-b[1]).filter((x,i,a)=>a.findIndex(z=>z[0]===x[0])===i);
+}
 function artSvg(o){
-  const th=ART_TH[o.theme]||ART_TH.azul,W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
+  const oc=ART_OCC[o.occ],th=oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
   const F="Arial,Helvetica,sans-serif",E=[];
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold);const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
     E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
@@ -652,6 +719,7 @@ function artSvg(o){
   E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
   E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
   E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  if(oc)oc.deco(E,W,H,th,artRnd(o.occ.split('').reduce((h,c)=>h*31+c.charCodeAt(0),7)));
   let y=Math.round(52*k);
   // cabeçalho: logo + nome
   if(o.showLogo&&(o.logo||o.co.name)){
@@ -660,6 +728,15 @@ function artSvg(o){
     if(o.logo){E.push(`<rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x0}" y="${y}" width="${ls}" height="${ls}" preserveAspectRatio="xMidYMid slice" clip-path="url(#lcp)"/>`)}
     T(nm,x0+(o.logo?ls+gap:0),y+ls/2+nameS*.34,nameS,{bold:1});
     y+=ls+Math.round(34*k);
+  }
+  // título da data especial
+  if(o.ttl){
+    let ts=Math.round(112*k);const tt=String(o.ttl).toUpperCase();while(artW(tt,ts,true)>W-100&&ts>44)ts-=4;
+    const tw=artW(tt,ts,true),tx=(W-tw)/2,ty=y+ts*.86;
+    T(tt,tx+5,ty+6,ts,{bold:1,color:'#000000',op:.28});T(tt,tx,ty,ts,{bold:1,color:th.accent});
+    y+=Math.round(ts*1.02);
+    if(o.sub){const ss=Math.round(42*k);T(artFit(o.sub,W-120,ss,false),W/2,y+ss*.8,ss,{anchor:'m',color:th.text});y+=Math.round(ss*1.5)}
+    y+=Math.round(10*k);
   }
   // selo
   if(o.badge){
@@ -714,7 +791,7 @@ function artSvg(o){
 }
 
 /* ---- tela da aba "Arte do produto" ---- */
-let artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0;
+let artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
 const artCache=new Map();
 async function artBlobData(blob,max){
   const u=URL.createObjectURL(blob);
@@ -734,7 +811,7 @@ async function artUrlData(url,max){
 const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
 function artCaption(){
   const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artVal('badge');
-  const pid=artVal('p'),L=[`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
+  const pid=artVal('p'),tt=artVal('ttl').trim(),sb=artVal('sub').trim(),L=[...(tt?[`*${tt}*`+(sb?' - '+sb:''),'']:[]),`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
   [artVal('l1'),artVal('l2'),artVal('valid')].map(s=>s.trim()).filter(Boolean).forEach(s=>L.push(s));
   L.push('','Chame no WhatsApp: https://wa.me/'+waNum());
   if(pid)L.push('Veja no catálogo: '+new URL('../catalogo/#p='+pid,location.href).href);
@@ -743,7 +820,7 @@ function artCaption(){
 function artOpts(){
   const co=CO(),addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,badge:artVal('badge'),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artVal('badge'),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
     co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
@@ -751,9 +828,16 @@ function artRender(){
   const o=artOpts(),box=$('#artv');if(!box)return;
   box.innerHTML=artSvg(o);
   if(!artCapDirty&&$('#a_cap'))$('#a_cap').value=artCaption();
-  document.querySelectorAll('.thb').forEach(b=>b.classList.toggle('on',b.dataset.th===artTheme));
+  document.querySelectorAll('.thb').forEach(b=>b.classList.toggle('on',b.dataset.th===artTheme&&!artOcc));
+  document.querySelectorAll('.occb').forEach(b=>b.classList.toggle('on',b.dataset.oc===artOcc));
   artFile=null;clearTimeout(artTimer);artTimer=setTimeout(artPrep,500);
 }
+function artSetOcc(id){
+  artOcc=id;const o=ART_OCC[id],set=(k,v)=>{const e=$('#a_'+k);if(e)e.value=v};
+  if(o){set('ttl',o.ttl);set('sub',o.sub);set('badge','')}
+  artRender();
+}
+function artSetTheme(t){artTheme=t;artOcc='';artRender()}
 async function artRaster(){
   const o=artOpts(),W=1080,H=o.fmt==='feed'?1350:1920;
   const url=URL.createObjectURL(new Blob([artSvg(o)],{type:'image/svg+xml;charset=utf-8'}));
@@ -824,7 +908,11 @@ async function vArte(){
   <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
   <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
   <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}</select></div>
-  <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artTheme='${k}';artRender()">${t.n}</button>`).join('')}</div></div>
+  <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artSetTheme('${k}')">${t.n}</button>`).join('')}</div></div>
+  <div class="w"><label>Data especial</label><div class="row" style="margin:0 0 6px">${artDates(new Date()).slice(0,3).map(([id,d])=>`<button type="button" class="btn s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n} · ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</button>`).join('')}<span class="sm" style="align-self:center">próximas datas</span></div>
+  <div class="row" style="margin:0">${ART_OCC_ORDER.map(id=>`<button type="button" class="btn g s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n}</button>`).join('')}<button type="button" class="btn g s" onclick="artSetOcc('')">Sem data</button></div></div>
+  <div class="w"><label>Título da data (opcional)</label><input id="a_ttl" placeholder="Ex.: BLACK FRIDAY" oninput="artRender()"></div>
+  <div class="w"><label>Subtítulo (opcional)</label><input id="a_sub" oninput="artRender()"></div>
   <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
   <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
   <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
@@ -1176,6 +1264,7 @@ function cartView(){
   $('#cartv').innerHTML=`<table>${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);return`<tr><td>${esc(p.name)}</td><td>${i.qty} × ${R(unit(p,t))}</td><td><button class="btn g s" onclick="cart.splice(${ix},1);cartView()">Remover</button></td></tr>`}).join('')}</table>
   <p><b>Total: ${R(tot)}</b>${t==='crediario'&&tot?` · restante ${n}x de ${R((tot-e)/n)}`:''}</p>`;
 }
+const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p.stock||0)+d;save()}};
 function finish(){
   if(!cart.length)return alert('Adicione ao menos um produto.');
   const t=s_t.value,tot=total(),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;
@@ -1186,8 +1275,10 @@ function finish(){
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:digits(c_c.value).length===14?'nfe':'nfce',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
+  const low=cart.filter(i=>{const p=db.products.find(x=>x.id===i.id);return(+p.stock||0)<i.qty}).map(i=>db.products.find(x=>x.id===i.id).name);
+  if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
   put('sales',sale);
-  cart.forEach(i=>{const p=db.products.find(x=>x.id===i.id);put('products',{...p,stock:p.stock-i.qty})});
+  cart.forEach(i=>stockAdj(i.id,-i.qty)); // a baixa oficial é feita no servidor ao sincronizar a venda
   if(t==='crediario'){
     const per=Math.floor((tot-e)/n*100)/100;let d=new Date(s_d.value+'T12:00');
     for(let k=1;k<=n;k++){
@@ -1202,7 +1293,7 @@ function finish(){
 /* ========= Clientes ========= */
 let cq='',showInat=false,ckind='todos';
 const digits=v=>(v||'').replace(/\D/g,'');
-const owed=id=>db.installments.filter(i=>!i.paid_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===id));
+const owed=id=>db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===id));
 function cliFilter(){
   const k=norm(cq),d=digits(cq);
   return db.customers.filter(c=>(showInat||c.active!==false)&&(ckind==='todos'||(c.kind||'cliente')===ckind)&&
@@ -1432,8 +1523,8 @@ function pickCli(id){
 function vCar(){
   const sales=db.sales.filter(s=>s.pay_type==='crediario').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   $('#app').innerHTML=sales.length?`<table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
-  ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=ins.some(i=>!i.paid_at&&i.due_date<now().slice(0,10));
-  return`<tr><td>${esc(c.name)} ${late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.length}</td>
+  ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=!s.canceled_at&&ins.some(i=>!i.paid_at&&!i.canceled_at&&i.due_date<now().slice(0,10));
+  return`<tr><td>${esc(c.name)} ${s.canceled_at?'<span class="tag">cancelada</span>':late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.filter(i=>i.paid_at||!i.canceled_at).length}</td>
   <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
 }
 /* ========= Carnê com multa e juros ========= */
@@ -1449,12 +1540,34 @@ const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão déb
 function carne(id){
   const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
   const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
-  modal(`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${esc(logoIcon())}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"><p class="sm" style="margin:0">${esc(coLine())}</p></div><h2>Carnê · ${esc(c.name)}</h2><p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
-  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);return`<tr><td>${i.number}/${ins.length}</td>
+  modal(`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${esc(logoIcon())}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"><p class="sm" style="margin:0">${esc(coLine())}</p></div><h2>Carnê · ${esc(c.name)}</h2>${s.canceled_at?`<p class="bad"><b>Venda cancelada em ${ld(s.canceled_at).split('-').reverse().join('/')}</b>${s.cancel_reason?' · '+esc(s.cancel_reason):''}${+s.refund_amount?` · devolvido ${R(s.refund_amount)}`:''}</p>`:''}<p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
+  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);if(i.canceled_at&&!i.paid_at)return`<tr><td>${i.number}/${ins.length}</td><td>${i.due_date.split('-').reverse().join('/')}</td><td>${R(i.amount)}</td><td>—</td><td><span class="sm">Cancelada</span></td></tr>`;return`<tr><td>${i.number}/${ins.length}</td>
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
   <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>`}</td></tr>`}).join('')}</table></div>
-  <div class="row noprint"><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button></div>`);
+  <div class="row noprint">${s.canceled_at?'':`<button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+}
+function cancelSale(id){
+  const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at)return;
+  const got=(s.pay_type==='crediario'?+s.entry:+s.total)+db.installments.filter(i=>i.sale_id===id&&i.paid_at).reduce((a,i)=>a+(+i.paid_amount||+i.amount),0);
+  master(()=>{
+    modal(`<h2>Cancelar venda</h2><p class="sm">${R(s.total)} · ${(s.items||[]).map(i=>i.qty+'× '+esc(i.name)).join(', ')}</p>
+    <p>O estoque dos itens volta, as parcelas em aberto são canceladas e a comissão desta venda deixa de contar.${s.fiscal_status==='emitida'?'<br><b class="bad">Esta venda já tem nota emitida: cancele a nota na SEFAZ também.</b>':''}</p>
+    <div class="f"><div class="w"><label>Motivo</label><input id="cx_r" placeholder="Ex.: cliente devolveu o produto"></div>
+    <div><label>Valor devolvido ao cliente</label><input id="cx_v" type="number" step="0.01" min="0" value="${got.toFixed(2)}"></div>
+    <div><label>Devolvido em</label><select id="cx_m">${METHODS}</select></div></div>
+    <p class="sm">Recebido até agora nesta venda: ${R(got)}. Deixe 0 se nada foi devolvido em dinheiro.</p>
+    <button class="btn" onclick="cancelSaleOk('${id}')">Confirmar cancelamento</button>`);
+  });
+}
+function cancelSaleOk(id){
+  const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at)return;
+  if(!cx_r.value.trim())return alert('Informe o motivo do cancelamento.');
+  const t=now();
+  put('sales',{...s,canceled_at:t,cancel_reason:cx_r.value.trim(),canceled_by:(me&&me.name)||'',refund_amount:+cx_v.value||0,refund_method:cx_m.value});
+  (s.items||[]).forEach(i=>stockAdj(i.id,+i.qty));
+  db.installments.filter(i=>i.sale_id===id&&!i.paid_at&&!i.canceled_at).forEach(i=>put('installments',{...i,canceled_at:t}));
+  closeM();alert('Venda cancelada. Estoque devolvido.');render();
 }
 function payAsk(iid,sid){
   const i=db.installments.find(x=>x.id===iid),d=due(i);
@@ -1490,20 +1603,22 @@ setInterval(()=>{if(session&&view==='ped')sync()},30000);
 let cxd=ld(now());
 function vCx(){
   const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
-  const sd=db.sales.filter(s=>day(s.created_at));
+  const sd=db.sales.filter(s=>day(s.created_at)),sdOk=sd.filter(s=>!s.canceled_at),devs=db.sales.filter(s=>s.canceled_at&&day(s.canceled_at)&&+s.refund_amount>0);
   sd.forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
   db.installments.filter(i=>day(i.paid_at)).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+  devs.forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount)); // devoluções saem do caixa no dia do cancelamento
   const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
-  const open=db.installments.filter(i=>!i.paid_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
-  const vm=db.sales.filter(s=>ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
+  const open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
+  const vm=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
   $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value;vCx()"></div>
   <div class="prices"><div class="pr k"><span>Recebido no dia</span><b>${R(tot)}</b></div>
   ${Object.keys(by).map(m=>`<div class="pr"><span>${esc(m)}</span><b>${R(by[m])}</b></div>`).join('')}
-  <div class="pr"><span>Vendas do dia</span><b>${sd.length}</b></div>
+  <div class="pr"><span>Vendas do dia</span><b>${sdOk.length}</b></div>
   <div class="pr"><span>Vendido no mês (${mes.split('-').reverse().join('/')})</span><b>${R(vm)}</b></div>
   <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
   <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
-  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td></tr>`).join('')}</table>`:''}`;
+  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="cancelSale('${s.id}')">Cancelar</button>`}</td></tr>`).join('')}</table>`:''}
+  ${devs.length?`<p class="sm">Devoluções de hoje: ${devs.map(s=>R(s.refund_amount)+' ('+esc(s.refund_method||'—')+')').join(' · ')}</p>`:''}`;
 }
 
 /* ========= Fiscal (controle de NFC-e) ========= */
@@ -1529,15 +1644,15 @@ function fisCheck(s){
 }
 const DOC={nfce:'NFC-e (65)',nfe:'NF-e (55)'};
 function vFis(){
-  const l=[...db.sales].sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const l=[...db.sales].filter(s=>!s.canceled_at||s.fiscal_status==='emitida').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   const rows=l.map(s=>({s,p:s.fiscal_status==='emitida'?[]:fisCheck(s)}));
-  const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'),prontas=pend.filter(x=>!x.p.length).length;
+  const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'&&!x.s.canceled_at),prontas=pend.filter(x=>!x.p.length).length;
   $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). A emissão automática depende da integração com o microsserviço fiscal.</p>
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
   <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button></div>
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfce}</td>
-  <td>${em?'<span class="ok">Emitida</span>':p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
+  <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':em?'<span class="ok">Emitida</span>':p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
   <td>${em?'':`<button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}</td></tr>`}).join('')}</table></div>`;
 }
 function fisEdit(id){
@@ -1560,7 +1675,7 @@ function fisSave(id){
 }
 function csvFis(){
   const rows=[['data','documento','cliente','cpf_cnpj','ie','cep','endereco','numero','bairro','cidade','uf','ibge','natureza','frete','produto','ncm','cfop','csosn','un','qtd','valor_unit','valor_total']];
-  db.sales.filter(s=>s.fiscal_status!=='emitida').forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
+  db.sales.filter(s=>s.fiscal_status!=='emitida'&&!s.canceled_at).forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
     s.items.forEach(i=>rows.push([s.created_at.slice(0,10),s.doc_type==='nfe'?'NF-e 55':'NFC-e 65',c.name||'',c.cpf||'',c.ie||'',c.cep||'',c.street||'',c.number||'',c.district||'',c.city||'',c.uf||'',c.ibge||'',s.nat_op||'Venda de mercadoria',s.freight||'9',i.name,i.ncm||'',i.cfop||'',i.csosn||'',i.unit||'UN',i.qty,i.price,(i.price*i.qty).toFixed(2)]))});
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();

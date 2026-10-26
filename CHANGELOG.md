@@ -11,6 +11,11 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.2.0 — 26/10/2026
+- Estoque seguro: a baixa é feita no servidor (rode `supabase-v11.sql`), então dois aparelhos vendendo juntos não se sobrescrevem.
+- Cancelar venda (senha mestre): devolve o estoque, cancela parcelas em aberto, tira a comissão, registra a devolução no Caixa e avisa quando há nota a cancelar.
+- Aviso ao vender com estoque insuficiente.
+
 ### 1.1.0 — 26/10/2026
 - Arte do produto com datas especiais: Natal, Black Friday, Cyber Monday, Aniversário, Dia das Mães, Dia dos Pais, Dia das Crianças, Namorados, Páscoa, Ano Novo, Dia do Consumidor e Oferta relâmpago, com título, subtítulo e atalho para as próximas datas.
 
