@@ -1,5 +1,5 @@
 {
- "version": "1.3.0",
+ "version": "1.4.0",
  "date": "2026-10-26",
- "notes": "Entrada de estoque pelo XML da NF-e de compra: reconhece produtos pelo código de barras, código do fornecedor ou nome, soma o estoque e cadastra os novos como inativos."
+ "notes": "Fiscal: botão Emitir nota (NFC-e e NF-e) pela API fiscal, DANFE em PDF, XML e cancelamento de nota."
 }

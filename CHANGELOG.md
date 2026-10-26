@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.4.0 — 26/10/2026
+- Fiscal: botão Emitir nota (NFC-e 65 e NF-e 55) via função `fiscal` do Supabase e API fiscal; DANFE em PDF, XML e cancelamento de nota (administrador). Rode `supabase-v13.sql` e publique a função (`supabase/functions/fiscal`).
+
 ### 1.3.0 — 26/10/2026
 - Entrada de estoque pelo XML da NF-e de compra (rode `supabase-v12.sql`): reconhece produtos por código de barras, código do fornecedor ou nome; produto novo entra inativo e sem preço; guarda o custo.
 
