@@ -1,5 +1,5 @@
 {
- "version": "1.6.0",
+ "version": "1.8.0",
  "date": "2026-10-26",
- "notes": "Código de barras no produto e leitura pela câmera do celular na venda (adiciona vários itens seguidos) e no cadastro."
+ "notes": "Central de avisos com bip, tela de Cobrança, Contas a pagar (geradas pela entrada de XML ou à mão) e aviso de vencimentos."
 }
