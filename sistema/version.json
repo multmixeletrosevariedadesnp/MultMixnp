@@ -1,5 +1,5 @@
 {
- "version": "1.4.0",
- "date": "2026-10-26",
- "notes": "Fiscal: botão Emitir nota (NFC-e e NF-e) pela API fiscal, DANFE em PDF, XML e cancelamento de nota."
+ "version": "1.8.5",
+ "date": "2026-10-27",
+ "notes": "Botão Forçar atualização e versão visível (menu e Empresa)."
 }

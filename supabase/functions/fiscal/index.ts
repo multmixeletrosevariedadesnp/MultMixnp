@@ -47,20 +47,21 @@ Deno.serve(async (req) => {
     if (b.action === "emit") {
       if (s.canceled_at) return json({ ok: false, erro: "Venda cancelada não pode emitir nota." }, 409);
       if (s.fiscal_status === "emitida") return json({ ok: false, erro: "Esta venda já tem nota emitida." }, 409);
-      const modelo = s.doc_type === "nfe" ? 55 : 65, serie = 1;
+      const modelo = s.doc_type === "nfce" ? 65 : 55, serie = 1; // padrão: NF-e 55
       const { data: c } = s.customer_id
         ? await db.from("customers").select("*").eq("id", s.customer_id).maybeSingle() : { data: null };
       const ids = (s.items ?? []).map((i: any) => i.id);
       const { data: prods } = await db.from("products").select("id,ean").in("id", ids);
       const ean = new Map((prods ?? []).map((p: any) => [p.id, p.ean]));
 
-      // Número: reaproveita o da tentativa rejeitada (evita buraco na numeração).
+      // Número: reaproveita o da tentativa anterior SÓ se foi reservado para este mesmo modelo
+      // (evita buraco na numeração, mas nunca leva um número de NFC-e para NF-e ou o contrário).
       let numero = Number(s.fiscal_number) || 0;
-      if (!numero || Number(s.fiscal_series) !== serie) {
+      if (!numero || Number(s.fiscal_series) !== serie || Number(s.fiscal_model) !== modelo) {
         const { data: n, error } = await db.rpc("fiscal_next_number", { p_model: modelo, p_serie: serie });
         if (error) throw error;
         numero = n as number;
-        await db.from("sales").update({ fiscal_number: String(numero), fiscal_series: String(serie), updated_at: new Date().toISOString() }).eq("id", s.id);
+        await db.from("sales").update({ fiscal_number: String(numero), fiscal_series: String(serie), fiscal_model: modelo, updated_at: new Date().toISOString() }).eq("id", s.id);
       }
 
       const pagamentos: { tPag: string; vPag: number }[] = [];
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
             ibge: c.ibge, municipio: c.city, uf: c.uf, cep: dig(c.cep) },
         } : { doc: "" },
         itens: (s.items ?? []).map((i: any) => ({
-          cProd: i.id, xProd: i.name, ncm: dig(i.ncm), cfop: i.cfop || "5102", un: i.unit || "UN",
+          cProd: String(i.id).replace(/-/g, "").slice(0, 8).toUpperCase(), xProd: i.name, ncm: dig(i.ncm), cfop: i.cfop || "5102", un: i.unit || "UN",
           qtd: Number(i.qty), vUnit: Number(i.price), csosn: i.csosn || "102", cest: i.cest || "", ean: ean.get(i.id) || "",
         })),
         pagamentos,
@@ -109,12 +110,25 @@ Deno.serve(async (req) => {
     if (b.action === "cancel") {
       if (!admin) return json({ ok: false, erro: "Só o administrador cancela nota." }, 403);
       if (s.fiscal_status !== "emitida" || !s.fiscal_key) return json({ ok: false, erro: "Esta venda não tem nota emitida." }, 409);
+      const markCanceled = async (xml: string | null) => {
+        if (xml) await db.from("fiscal_docs").update({ cancel_xml: xml }).eq("sale_id", s.id);
+        await db.from("sales").update({ fiscal_status: "cancelada", fiscal_canceled_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", s.id);
+      };
       const r = await api("/nfe/cancelar", { method: "POST", body: JSON.stringify({
         chave: s.fiscal_key, protocolo: s.fiscal_protocol, justificativa: b.justificativa }) });
-      const d = await r.json().catch(() => ({ ok: false, erro: "Resposta inválida da API fiscal." }));
+      const txt = await r.text();
+      let d: any = null;
+      try { d = JSON.parse(txt); } catch (_) { /* resposta fora do padrão */ }
+      if (!d) {
+        // A API respondeu algo estranho: confere na SEFAZ se o cancelamento aconteceu mesmo assim.
+        try {
+          const c = await (await api("/nfe/consultar?chave=" + s.fiscal_key, { method: "GET" })).json();
+          if (c?.ok && String(c.cStat) === "101") { await markCanceled(null); return json({ ok: true, aviso: "A SEFAZ confirmou o cancelamento." }); }
+        } catch (_) { /* segue para o erro */ }
+        return json({ ok: false, erro: `Resposta inválida da API fiscal (HTTP ${r.status}): ${txt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 200)}` }, 502);
+      }
       if (!d.ok) return json({ ok: false, erro: [d.cStat, d.erro, ...(d.detalhes ?? [])].filter(Boolean).join(" · ") }, 422);
-      await db.from("fiscal_docs").update({ cancel_xml: d.xml }).eq("sale_id", s.id);
-      await db.from("sales").update({ fiscal_status: "cancelada", fiscal_canceled_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", s.id);
+      await markCanceled(d.xml);
       return json({ ok: true });
     }
 
