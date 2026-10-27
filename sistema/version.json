@@ -1,5 +1,5 @@
 {
- "version": "1.14.0",
+ "version": "1.15.0",
  "date": "2026-10-27",
- "notes": "Relatórios em PDF: vendas, estoque, carnês, contas a pagar, caixa e comissões."
+ "notes": "Preço de custo e margem de lucro no produto (custo vem do XML da nota)."
 }
