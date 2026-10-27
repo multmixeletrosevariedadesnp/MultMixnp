@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.12.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.13.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2412,11 +2412,64 @@ function vFis(){
   const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'&&!x.s.canceled_at),prontas=pend.filter(x=>!x.p.length).length;
   $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). O botão Emitir nota envia a venda à API fiscal (em homologação, a nota não tem valor fiscal).</p>
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
-  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${ADM()?'<button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
+  <div class="pr" id="fisSt" style="margin:8px 0"><span>Emissão (API fiscal e SEFAZ)</span><b class="sm">verificando…</b></div>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':s.fiscal_status==='cancelada'?'<span class="bad">Nota cancelada</span>':em?`<span class="ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
   <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>`;
+  fisStatus();
+}
+let FST=null;
+async function fisStatus(force){
+  const el=()=>document.getElementById('fisSt');
+  const paint=(h)=>{const e=el();if(e)e.innerHTML='<span>Emissão (API fiscal e SEFAZ)</span>'+h};
+  if(!sb||!navigator.onLine){paint('<b class="bad">Sem internet: não dá para emitir agora</b><div class="sm">Pode vender normalmente; a nota é emitida depois, em Fiscal. Lembre: nota de mercadoria que sai da loja precisa estar autorizada antes (confira com o contador).</div>');return}
+  if(!force&&FST&&Date.now()-FST.t<60000){paint(FST.h);return}
+  paint('<b class="sm">verificando…</b>');
+  let h;
+  try{
+    const d=await fisCall({action:'status'});
+    if(!d.api)h=`<b class="bad">API fiscal indisponível</b><div class="sm">${esc(d.erro||'')} Se estiver "dormindo" (Render gratuito), espere 1 minuto e verifique de novo.</div>`;
+    else if(d.sefaz_ok)h=`<b class="ok">SEFAZ em operação</b> <span class="tag">${d.ambiente===2?'homologação':'produção'}</span>`;
+    else h=`<b class="bad">SEFAZ fora do ar</b><div class="sm">${esc(d.motivo||d.erro||'')} As vendas continuam normais. Tente emitir mais tarde; as notas ficam na lista abaixo. Se a SEFAZ ficar muito tempo fora, fale com o contador sobre contingência (SVC/EPEC).</div>`;
+  }catch(e){h=`<b class="bad">Não foi possível verificar</b><div class="sm">${esc(e.message)}</div>`}
+  FST={t:Date.now(),h};paint(h);
+}
+async function fisEmitAll(){
+  const ids=db.sales.filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
+  if(!ids.length)return alert('Nenhuma venda pronta.');
+  if(!confirm('Emitir '+ids.length+' nota(s) agora, uma por vez, da mais antiga para a mais nova?\nSe a SEFAZ ou a API falhar, o processo para.'))return;
+  let ok=0,rec=0,falha='';
+  for(const id of ids){
+    setSync('emitindo '+(ok+1)+' de '+ids.length+'…');
+    try{await sync();const d=await fisCall({action:'emit',sale_id:id});ok++;if(d.recuperada)rec++}
+    catch(e){falha=e.message;break}
+  }
+  await sync();FST=null;
+  alert(ok+' nota(s) emitida(s)'+(rec?' (recuperada(s) da SEFAZ, que já havia autorizado: '+rec+')':'')+'.'+(falha?'\n\nO processo parou numa nota:\n'+falha:''));
+  vFis();
+}
+async function fisNumOpen(){
+  modal('<h2>Numeração das notas</h2><p class="sm">Verificando…</p>');
+  try{
+    const out=[];
+    for(const m of [55,65]){const d=await fisCall({action:'fiscal_gaps',modelo:m,serie:1});out.push({m,d})}
+    modal('<h2>Numeração das notas</h2><p class="sm">Número que nunca virou nota (venda cancelada antes de emitir, erro, etc.) deixa um "buraco". A SEFAZ aceita o buraco, mas o certo é <b>inutilizar</b> o número. Fale com o contador se tiver dúvida.</p>'+
+      out.map(({m,d})=>`<h3>${m===55?'NF-e (55)':'NFC-e (65)'} · série 1 · último número reservado: ${d.ultimo}</h3>`+
+        (d.gaps.length?`<table>${d.gaps.map(g=>`<tr><td>${g.ini===g.fin?'Nº '+g.ini:'Nº '+g.ini+' a '+g.fin}</td><td><button class="btn s" onclick="fisInut(${m},${g.ini},${g.fin})">Inutilizar</button></td></tr>`).join('')}</table>`:'<p class="ok">Sem buracos.</p>')+
+        (d.historico.filter(h=>h.model===m).length?`<p class="sm">Já inutilizados: ${d.historico.filter(h=>h.model===m).map(h=>(h.ini===h.fin?h.ini:h.ini+'-'+h.fin)).join(', ')}</p>`:'')).join(''));
+  }catch(e){modal('<h2>Numeração das notas</h2><p class="bad">'+esc(e.message)+'</p><p class="sm">Se a mensagem falar de função desconhecida ou tabela, falta publicar a função fiscal nova e rodar o SQL v22.</p>')}
+}
+function fisInut(m,ini,fin){
+  const j=prompt('Motivo da inutilização (mínimo 15 caracteres):','Numeração não utilizada por falha na emissão');if(j===null)return;
+  if(j.trim().length<15)return alert('O motivo precisa ter ao menos 15 caracteres.');
+  if(!confirm('Inutilizar '+(m===55?'NF-e':'NFC-e')+' nº '+ini+(fin>ini?' a '+fin:'')+' na SEFAZ? Isso não pode ser desfeito.'))return;
+  master(async()=>{
+    try{await fisCall({action:'inutilizar',modelo:m,serie:1,ini,fin,justificativa:j.trim()});alert('Numeração inutilizada na SEFAZ.')}
+    catch(e){alert('Não foi possível inutilizar:\n'+e.message)}
+    fisNumOpen();
+  });
 }
 function fisEdit(id){
   const s=db.sales.find(x=>x.id===id);
@@ -2440,7 +2493,7 @@ async function fisCall(body){
 async function fisEmit(id){
   if(!confirm('Emitir a nota fiscal desta venda agora?'))return;
   setSync('emitindo nota…');
-  try{await sync();const d=await fisCall({action:'emit',sale_id:id});await sync();alert('Nota emitida'+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
+  try{await sync();const d=await fisCall({action:'emit',sale_id:id});await sync();alert((d.recuperada?'A SEFAZ já tinha autorizado esta nota; o sistema recuperou o XML sem emitir de novo':'Nota emitida')+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
   catch(e){await sync();alert('Não foi possível emitir:\n'+e.message)}
   vFis();
 }
