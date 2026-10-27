@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.16.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.16.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2119,37 +2119,43 @@ function pdfEnc(t){ // WinAnsi: Latin-1 + alguns sinais
 }
 function pdfFit(t,w,sz){t=String(t);if(pdfW(t,sz)<=w)return t;while(t.length>1&&pdfW(t+'…',sz)>w)t=t.slice(0,-1);return t+'…'}
 function pdfMake(d,co){
-  let sz=8.5,W=595.28,H=841.89;const M=36,rh=15,pages=[];let cur=null,y=0;
-  const nat=()=>d.head.map((h,i)=>Math.max(pdfW(h,sz)+4,...d.rows.map(r=>pdfW(r[i],sz)),d.al[i]==='r'?pdfW(d.foot[i]||'',sz)*1.1:0)+10);
-  let wid=nat();
-  if(wid.reduce((a,b)=>a+b,0)>W-2*M){W=841.89;H=595.28} // não coube em pé: usa a folha deitada
-  const CW=W-2*M;let cw;
-  for(const z of [8.5,8,7.5,7]){
-    sz=z;wid=nat();const tot=wid.reduce((a,b)=>a+b,0);
-    if(tot<=CW){const flex=wid.map((w,i)=>d.al[i]==='l'&&w>110?i:-1).filter(i=>i>=0),pool=flex.length?flex:wid.map((_,i)=>i),ex=(CW-tot)/pool.length;cw=wid.map((w,i)=>pool.includes(i)?w+ex:w);break}
-    const flex=wid.map((w,i)=>w>110&&d.al[i]==='l'?i:-1).filter(i=>i>=0),fixed=wid.reduce((a,w,i)=>flex.includes(i)?a:a+w,0),room=CW-fixed;
-    if(flex.length&&room/flex.length>=90){const sumF=flex.reduce((a,i)=>a+wid[i],0);cw=wid.map((w,i)=>flex.includes(i)?w*room/sumF:w);break}
-    cw=wid.map(w=>w*CW/tot);
+  const G=d.groups||[{title:'',rows:d.rows,foot:null}],all=G.flatMap(g=>g.rows),RED='0.72 0.11 0.11 rg',BLUE='0 0.27 0.56 rg';
+  let sz=9.5,W=595.28,H=841.89,rh=18;const M=36,pages=[];let cur=null,y=0;
+  const nat=()=>d.head.map((h,i)=>Math.max(pdfW(h,sz)+6,...all.map(r=>pdfW(r[i],sz)),...G.map(g=>g.foot&&d.al[i]==='r'?pdfW(g.foot[i]||'',sz)*1.1:0),d.al[i]==='r'?pdfW(d.foot[i]||'',sz)*1.1:0)+14);
+  sz=9.5;let wid=nat();
+  if(wid.reduce((a,b)=>a+b,0)>W-2*M){W=841.89;H=595.28}
+  const CW=W-2*M;let cw=null;
+  for(const z of [9.5,9,8.5,8,7.5,7]){
+    sz=z;rh=Math.round(z+8);wid=nat();const tot=wid.reduce((a,b)=>a+b,0);
+    if(tot<=CW){cw=wid.map(w=>w*CW/tot);break} // sobra distribuída por igual, na proporção de cada coluna
   }
-  const T=(x,yy,t,o={})=>{const f=o.b?'F2':'F1',z=o.sz||sz;let xx=x;if(o.r)xx=x-pdfW(t,z);cur.push(`BT /${f} ${z} Tf ${o.c||'0 g'} ${xx.toFixed(2)} ${yy.toFixed(2)} Td (${pdfEnc(t)}) Tj ET`)};
+  if(!cw){const tot=wid.reduce((a,b)=>a+b,0);cw=wid.map(w=>w*CW/tot)}
+  const T=(x,yy,t,o={})=>{const f=o.b?'F2':'F1',z=o.sz||sz;let xx=x;if(o.r)xx=x-pdfW(t,z);cur.push(`BT /${f} ${z} Tf ${o.c||'0.1 g'} ${xx.toFixed(2)} ${yy.toFixed(2)} Td (${pdfEnc(t)}) Tj ET`)};
+  const rect=(x,yy,w,h,c)=>cur.push(`${/g$/.test(c)?c:c+' rg'} ${x.toFixed(2)} ${yy.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+  const hl=(x1,x2,yy,c,w)=>cur.push(`${c} RG ${w} w ${x1} ${yy.toFixed(2)} m ${x2} ${yy.toFixed(2)} l S`);
   const newPage=()=>{cur=[];pages.push(cur);y=H-M;
-    T(M,y-12,co.trade_name||co.legal_name||'MultMix',{b:1,sz:13});
-    T(W-M,y-12,d.title,{b:1,sz:12,r:1,c:'0 0.27 0.56 rg'});y-=26;
-    if(co.cnpj)T(M,y,'CNPJ '+co.cnpj,{sz:8,c:'0.35 g'});T(W-M,y,pdfFit(d.sub,CW*0.6,8),{sz:8,r:1,c:'0.35 g'});y-=8;
-    cur.push(`0 0.27 0.56 RG 1.5 w ${M} ${y} m ${W-M} ${y} l S`);y-=14};
-  const head=()=>{cur.push(`0 0.27 0.56 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);let x=M;d.head.forEach((h,i)=>{const r=d.al[i]==='r';T(r?x+cw[i]-4:x+4,y-rh+8,pdfFit(h,cw[i]-8,sz),{b:1,c:'1 g',r});x+=cw[i]});y-=rh};
-  const row=(r,o={})=>{if(y-rh<M+20){newPage();head()}
-    if(o.zebra)cur.push(`0.95 0.96 0.98 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);
-    if(o.foot)cur.push(`0 0.27 0.56 RG 1 w ${M} ${y+4} m ${W-M} ${y+4} l S`);
-    let x=M;r.forEach((c,i)=>{const rr=d.al[i]==='r';let free=cw[i];if(o.foot&&!rr)for(let j=i+1;j<r.length&&r[j]==='';j++)free+=cw[j];T(rr?x+cw[i]-4:x+4,y-rh+8,pdfFit(c,free-8,sz),{b:o.foot,r:rr});x+=cw[i]});y-=rh};
+    T(M,y-12,co.trade_name||co.legal_name||'MultMix',{b:1,sz:14});
+    T(W-M,y-12,d.title,{b:1,sz:12,r:1,c:BLUE});y-=27;
+    if(co.cnpj)T(M,y,'CNPJ '+co.cnpj,{sz:8,c:'0.4 g'});T(W-M,y,pdfFit(d.sub,CW*0.6,8),{sz:8,r:1,c:'0.4 g'});y-=9;
+    hl(M,W-M,y,'0 0.27 0.56',1.5);y-=16};
+  const head=()=>{rect(M,y-rh+5,CW,rh,BLUE);let x=M;d.head.forEach((h,i)=>{const r=d.al[i]==='r';T(r?x+cw[i]-6:x+6,y-rh+10,pdfFit(h,cw[i]-12,sz),{b:1,c:'1 g',r});x+=cw[i]});y-=rh};
+  const need=n=>{if(y-n<M+24){newPage();head()}};
+  const cells=(r,o={})=>{let x=M;r.forEach((c,i)=>{const rr=d.al[i]==='r';let free=cw[i];if(o.span&&!rr)for(let j=i+1;j<r.length&&r[j]==='';j++)free+=cw[j];
+    const red=!o.b&&/^Cancelada/.test(String(c))||o.red;T(rr?x+cw[i]-6:x+6,y-rh+10,pdfFit(c,free-12,sz),{b:o.b,r:rr,c:o.c||(red?RED:undefined)});x+=cw[i]})};
   newPage();
-  // resumo
-  d.sum.forEach(([l,v])=>{T(M,y,l+': ',{sz:9,c:'0.35 g'});T(M+pdfW(l+': ',9)+2,y,String(v),{b:1,sz:9});y-=13});y-=6;
-  head();d.rows.forEach((r,i)=>row(r,{zebra:i%2}));
-  if(d.rows.length)row(d.foot,{foot:1});else{T(M+4,y-rh+8,'Nada encontrado neste filtro.');y-=rh}
+  // cartões de resumo
+  {let x=M,h=36;d.sum.forEach(([l,v])=>{const w=Math.max(pdfW(l,7.5),pdfW(String(v),11.5)*1.05)+22;if(x+w>W-M){x=M;y-=h+8}
+    rect(x,y-h,w,h,'0.95 0.96 0.98');rect(x,y-h,3,h,BLUE);T(x+11,y-13,l,{sz:7.5,c:'0.4 g'});T(x+11,y-28,String(v),{b:1,sz:11.5});x+=w+8});y-=52}
+  head();
+  G.forEach(g=>{
+    if(g.title){need(rh*3);rect(M,y-rh+5,CW,rh,'0.86 0.90 0.97');T(M+6,y-rh+10,g.title,{b:1,c:BLUE});y-=rh}
+    g.rows.forEach((r,i)=>{need(rh);if(i%2)rect(M,y-rh+5,CW,rh,'0.975 0.98 0.99');cells(r);hl(M,W-M,y-rh+5,'0.88 0.9 0.94',0.4);y-=rh});
+    if(!g.rows.length){need(rh);T(M+6,y-rh+10,'Nenhuma nota neste grupo.',{c:'0.4 g'});y-=rh}
+    if(g.foot){need(rh);hl(M,W-M,y+5,'0 0.27 0.56',0.8);cells(g.foot,{b:1,span:1});y-=rh+6}
+  });
+  need(rh+4);rect(M,y-rh+5,CW,rh+2,BLUE);{let x=M;d.foot.forEach((c,i)=>{const rr=d.al[i]==='r';let free=cw[i];if(!rr)for(let j=i+1;j<d.foot.length&&d.foot[j]==='';j++)free+=cw[j];T(rr?x+cw[i]-6:x+6,y-rh+11,pdfFit(c,free-12,sz),{b:1,c:'1 g',r:rr});x+=cw[i]})}y-=rh+2;
   const foot='Gerado em '+new Date().toLocaleString('pt-BR')+' · MultMix Sistema '+window.APP_VERSION;
-  pages.forEach((c,i)=>{const t=foot+' · página '+(i+1)+' de '+pages.length;c.push(`BT /F1 7.5 Tf 0.45 g ${((W-pdfW(t,7.5))/2).toFixed(2)} 22 Td (${pdfEnc(t)}) Tj ET`)});
-  // monta o arquivo
+  pages.forEach((c,i)=>{const t=foot+' · página '+(i+1)+' de '+pages.length;c.push(`BT /F1 7.5 Tf 0.45 g ${((W-pdfW(t,7.5))/2).toFixed(2)} 20 Td (${pdfEnc(t)}) Tj ET`)});
   const objs=[];const add=s=>objs.push(s)-1;
   add('<< /Type /Catalog /Pages 2 0 R >>');add(null);
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
@@ -2201,11 +2207,16 @@ async function pacoteGerar(){
     });
     const semXml=(r.data||[]).filter(n=>n.status!=='completo').length;
     if(!files.length)return $('#pc_r').innerHTML=`<p class="bad">Nenhuma nota com XML em ${MESES[m-1]}/${y}.${nh?` (${nh} de homologação foram deixadas de fora)`:''}</p>`;
-    const dRows=csv.slice(1).sort((a,b)=>a[0].localeCompare(b[0])||String(a[5]).localeCompare(String(b[5]))).map(r=>[r[0],fmtD(r[5]),r[2]+(r[3]?'/'+r[3]:''),r[1],r[6],r[7],R(+String(r[8]).replace(',','.')||0),r[9]==='Homologação'?'Homol.':'']);
-    const vt=(t,sit)=>csv.slice(1).filter(r=>r[0]===t&&(!sit||r[1]===sit)).reduce((a,r)=>a+(+String(r[8]).replace(',','.')||0),0);
-    const PDF_D={title:'Notas fiscais do mês · '+MESES[m-1]+'/'+y,sub:'Conferência para o contador · chaves no resumo.csv',head:['Tipo','Data','Nº/Série','Situação','Cliente / Fornecedor','CPF/CNPJ','Valor','Obs.'],al:'lllllllr'.slice(0,6)+'rl',
-      rows:dRows,foot:['Total (sem canceladas)','','','','','',R(vt('Emitida','Autorizada')+vt('Recebida','Autorizada')),''],
-      sum:[['Emitidas (autorizadas)',(ne-nc)+' · '+R(vt('Emitida','Autorizada'))],['Canceladas',nc],['Recebidas',nr+' · '+R(vt('Recebida','Autorizada'))]]};
+    const mk=v=>{const d=String(v||'').replace(/\D/g,'');return d.length===11?d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):d.length===14?d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):d};
+    const val=r=>+String(r[8]).replace(',','.')||0,comHom=csv.slice(1).some(r=>r[9]==='Homologação');
+    const lin=r=>[fmtD(r[5]),String(r[2]),String(r[3]||''),r[1],r[6],mk(r[7]),R(val(r)),...(comHom?[r[9]==='Homologação'?'Homologação':'Produção']:[])];
+    const grp=(t,tit)=>{const L=csv.slice(1).filter(r=>r[0]===t).sort((a,b)=>String(a[5]).localeCompare(String(b[5]))),ok=L.filter(r=>r[1]==='Autorizada'),f=new Array(comHom?8:7).fill('');
+      f[0]='Subtotal ('+ok.length+' autorizada'+(ok.length===1?'':'s')+(L.length>ok.length?', '+(L.length-ok.length)+' cancelada'+(L.length-ok.length===1?'':'s')+' fora':'')+')';f[6]=R(ok.reduce((a,r)=>a+val(r),0));
+      return{title:tit+' ('+L.length+')',rows:L.map(lin),foot:f,tot:ok.reduce((a,r)=>a+val(r),0)}};
+    const gE=grp('Emitida','NOTAS EMITIDAS'),gR=grp('Recebida','NOTAS RECEBIDAS'),gf=new Array(comHom?8:7).fill('');gf[0]='TOTAL DO MÊS (sem canceladas)';gf[6]=R(gE.tot+gR.tot);
+    const PDF_D={title:'Notas fiscais · '+MESES[m-1]+'/'+y,sub:'Conferência para o contador · chaves de acesso no resumo.csv',head:['Data','Número','Série','Situação','Cliente / Fornecedor','CPF / CNPJ','Valor',...(comHom?['Ambiente']:[])],al:'llllllr'+(comHom?'l':''),
+      groups:[gE,gR].filter(g=>g.rows.length),rows:[],foot:gf,
+      sum:[['Emitidas autorizadas',(ne-nc)+' · '+R(gE.tot)],['Canceladas',String(nc)],['Recebidas',nr+' · '+R(gR.tot)],['Total do mês',R(gE.tot+gR.tot)]]};
     const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
     files.push({name:`relatorio-notas-${ym}.pdf`,data:pdfMake(PDF_D,CO())});
     // Excel transforma chave e CNPJ longos em notação científica: o formato ="..." mantém o número inteiro.
@@ -2677,9 +2688,12 @@ function relBuild(){
     sum:Object.entries(by).map(([n,o])=>[n,R(o.c)+' (base '+R(o.b)+')'])};
 }
 function relHtml(d,forPdf){
-  const al=i=>d.al[i]==='r'?' style="text-align:right"':'',co=CO();
-  return`<table class="rt"><thead><tr>${d.head.map((h,i)=>`<th${al(i)}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.length?d.rows.map(r=>`<tr>${r.map((c,i)=>`<td${al(i)}>${esc(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${d.head.length}" style="text-align:center;padding:14px">Nada encontrado neste filtro.</td></tr>`}</tbody>
-  ${d.rows.length?`<tfoot><tr>${d.foot.map((c,i)=>`<td${al(i)}><b>${esc(c)}</b></td>`).join('')}</tr></tfoot>`:''}</table>`;
+  const al=i=>d.al[i]==='r'?' style="text-align:right"':'',n=d.head.length,G=d.groups;
+  const tr=(r,b)=>`<tr${b?' class="gs"':''}>${r.map((c,i)=>`<td${al(i)}>${b?'<b>'+esc(c)+'</b>':esc(c)}</td>`).join('')}</tr>`;
+  const body=G?G.map(g=>(g.title?`<tr class="gt"><td colspan="${n}"><b>${esc(g.title)}</b></td></tr>`:'')+g.rows.map(r=>tr(r)).join('')+(g.foot?tr(g.foot,1):'')).join(''):
+    (d.rows.length?d.rows.map(r=>tr(r)).join(''):`<tr><td colspan="${n}" style="text-align:center;padding:14px">Nada encontrado neste filtro.</td></tr>`);
+  return`<table class="rt"><thead><tr>${d.head.map((h,i)=>`<th${al(i)}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody>
+  ${(G||d.rows.length)?`<tfoot><tr>${d.foot.map((c,i)=>`<td${al(i)}><b>${esc(c)}</b></td>`).join('')}</tr></tfoot>`:''}</table>`;
 }
 function vRel(){
   if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
@@ -2700,12 +2714,12 @@ function vRel(){
 }
 function relPdf(d0){
   const d=d0||relBuild(),co=CO(),logo=new URL(logoIcon(),location.href).href;
-  const css=`@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#111;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  const css=`@page{size:A4${d.head.length>7?' landscape':''};margin:14mm 12mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#111;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .h{display:flex;gap:12px;align-items:center;border-bottom:2px solid #00468f;padding-bottom:8px;margin-bottom:10px}.h img{width:54px;height:54px;object-fit:contain}
   .h b{font-size:14px}.h .t{margin-left:auto;text-align:right}.h h1{font-size:16px;margin:0;color:#00468f}
   .sm{color:#555;font-size:10px}.rs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.rs div{border:1px solid #ccd;border-radius:6px;padding:5px 9px;min-width:120px}.rs span{display:block;color:#555;font-size:9.5px}.rs b{font-size:12px}
   table{width:100%;border-collapse:collapse}th{background:#00468f;color:#fff;text-align:left;padding:5px 6px;font-size:10px}td{padding:4px 6px;border-bottom:1px solid #dde}tbody tr:nth-child(even){background:#f4f6fb}
-  thead{display:table-header-group}tr{page-break-inside:avoid}tfoot td{border-top:2px solid #00468f;background:#eef2fa}.f{margin-top:12px;color:#666;font-size:9px;text-align:center}`;
+  thead{display:table-header-group}tr{page-break-inside:avoid}tfoot td{border-top:2px solid #00468f;background:#eef2fa}tr.gt td{background:#dce6f7;color:#00468f;padding:5px 6px}tr.gs td{border-top:1px solid #00468f}.f{margin-top:12px;color:#666;font-size:9px;text-align:center}`;
   const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(d.title)} - ${esc(co.trade_name||'MultMix')}</title><style>${css}</style></head><body>
   <div class="h"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div><b>${esc(co.trade_name||co.legal_name||'MultMix Eletros e Variedades')}</b><div class="sm">${esc(coLine())}</div></div><div class="t"><h1>${esc(d.title)}</h1><div class="sm">${esc(d.sub)}</div></div></div>
   <div class="rs">${d.sum.map(([l,v])=>`<div><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div>${relHtml(d)}
