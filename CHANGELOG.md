@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.10.0 — 27/10/2026
+- Tela Notas recebidas: busca automática (no máximo 1x por hora) das NF-e emitidas contra o CNPJ da loja pela Distribuição DF-e da SEFAZ, aviso na central, baixa do XML completo (com ciência da operação) e entrada no estoque sem baixar arquivo. Exige API fiscal `dfe-1`, função `fiscal` nova e `supabase-v19.sql`.
+
 ### 1.9.0 — 27/10/2026
 - Promoção por produto (desconto em %, datas opcionais de início e fim). A venda usa o preço promocional; a Arte do produto já sai com o preço antigo riscado. Rode `supabase-v18.sql` antes.
 

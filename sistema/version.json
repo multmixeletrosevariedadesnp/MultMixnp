@@ -1,5 +1,5 @@
 {
- "version": "1.9.0",
+ "version": "1.10.0",
  "date": "2026-10-27",
- "notes": "Promoção por produto (desconto em %, com datas): vende com o preço promocional e a arte já sai com preço antigo riscado."
+ "notes": "Notas recebidas: busca automática das notas emitidas contra o CNPJ da loja (DF-e), baixa e entrada no estoque sem baixar XML."
 }

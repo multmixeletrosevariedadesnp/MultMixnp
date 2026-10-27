@@ -24,6 +24,95 @@ async function api(path: string, init: RequestInit = {}, ms = 70000) {
   return r;
 }
 
+const nowIso = () => new Date().toISOString();
+
+async function apiJson(path: string, body: unknown) {
+  const r = await api(path, { method: "POST", body: JSON.stringify(body) });
+  const txt = await r.text();
+  try { return JSON.parse(txt); }
+  catch { throw new Error(`Resposta inválida da API fiscal (HTTP ${r.status}): ${txt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 200)}`); }
+}
+
+// Grava no banco o que a SEFAZ entregou. Nunca "rebaixa" uma nota completa para resumo.
+async function saveDocs(db: ReturnType<typeof createClient>, docs: any[], ownCnpj: string) {
+  let novas = 0, completas = 0, canceladas = 0;
+  for (const d of docs) {
+    if (!d.chave) continue;
+    if (d.tipo !== "evento" && dig(d.emit_cnpj) === ownCnpj) continue; // notas emitidas pela própria loja
+    const { data: ex } = await db.from("dfe_notas").select("chave,status").eq("chave", d.chave).maybeSingle();
+    if (d.tipo === "evento") {
+      if (String(d.tp_evento) === "110111" && ex) { await db.from("dfe_notas").update({ canceled: true, updated_at: nowIso() }).eq("chave", d.chave); canceladas++; }
+      continue;
+    }
+    const row: Record<string, unknown> = {
+      chave: d.chave, nsu: d.nsu, emit_cnpj: dig(d.emit_cnpj), emit_nome: d.emit_nome, valor: d.valor,
+      dh_emi: d.dh_emi || null, updated_at: nowIso(),
+    };
+    if (d.numero) row.numero = d.numero;
+    if (d.tipo === "completo") { row.status = "completo"; row.xml = d.xml; if (ex?.status !== "completo") completas++; }
+    else if (ex) continue; // resumo de algo que já temos
+    else row.status = "resumo";
+    if (!ex) novas++;
+    const { error } = await db.from("dfe_notas").upsert(row);
+    if (error) throw new Error("Falha ao gravar nota recebida: " + error.message);
+  }
+  return { novas, completas, canceladas };
+}
+
+async function dfe(db: ReturnType<typeof createClient>, b: any) {
+  const { data: co } = await db.from("company").select("cnpj").eq("id", 1).maybeSingle();
+  const own = dig(co?.cnpj);
+
+  // ---- baixar uma nota completa: dá ciência (se faltar) e consulta pela chave ----
+  if (b.action === "dfe_baixar") {
+    const chave = dig(b.chave);
+    if (chave.length !== 44) return json({ ok: false, erro: "Chave inválida." }, 422);
+    const { data: n } = await db.from("dfe_notas").select("chave,status,ciencia_at").eq("chave", chave).maybeSingle();
+    if (!n) return json({ ok: false, erro: "Nota não encontrada na lista." }, 404);
+    if (n.status === "completo") return json({ ok: true, completa: true });
+    if (!n.ciencia_at) {
+      const m = await apiJson("/nfe/manifestar", { chave });
+      if (!m.ok) return json({ ok: false, erro: [m.cStat, m.xMotivo, m.erro].filter(Boolean).join(" · ") || "A SEFAZ recusou a ciência." }, 422);
+      await db.from("dfe_notas").update({ ciencia_at: nowIso(), updated_at: nowIso() }).eq("chave", chave);
+    }
+    const d = await apiJson("/nfe/distdfe", { chave });
+    if (!d.ok) return json({ ok: false, erro: [d.cStat, d.erro].filter(Boolean).join(" · ") || "Falha ao consultar a nota." }, 422);
+    const r = await saveDocs(db, d.docs ?? [], own);
+    const { data: n2 } = await db.from("dfe_notas").select("status").eq("chave", chave).maybeSingle();
+    return json({ ok: true, completa: n2?.status === "completo", ...r,
+      aviso: n2?.status === "completo" ? undefined : "Ciência registrada. A SEFAZ costuma liberar o XML completo em alguns minutos: toque em Baixar de novo mais tarde." });
+  }
+
+  // ---- buscar notas novas (respeita a regra de 1 hora da SEFAZ) ----
+  if (b.action === "dfe_sync") {
+    const { data: st0 } = await db.from("dfe_state").select("*").eq("id", 1).maybeSingle();
+    const st = st0 ?? { id: 1, ult_nsu: "0", max_nsu: null, last_check: null, last_cstat: null, last_msg: null };
+    const ago = st.last_check ? (Date.now() - new Date(st.last_check).getTime()) / 60000 : 9999;
+    const espera = ["137", "656"].includes(String(st.last_cstat)) ? 62 : 2; // 137/656: a SEFAZ exige ~1 hora
+    if (ago < espera) return json({ ok: true, ignorado: true, proxima_em_min: Math.ceil(espera - ago), novas: 0, completas: 0, canceladas: 0 });
+
+    let ult = String(st.ult_nsu || "0"), max = st.max_nsu, cstat = "", msg = "";
+    const tot = { novas: 0, completas: 0, canceladas: 0 };
+    for (let i = 0; i < 6; i++) {
+      const d = await apiJson("/nfe/distdfe", { ultNSU: Number(ult) || 0 });
+      if (!d.ok) { cstat = "erro"; msg = d.erro ?? "falha"; break; }
+      cstat = String(d.cStat); msg = String(d.xMotivo ?? "");
+      if (cstat === "138") {
+        const r = await saveDocs(db, d.docs ?? [], own);
+        tot.novas += r.novas; tot.completas += r.completas; tot.canceladas += r.canceladas;
+        ult = String(d.ultNSU); max = String(d.maxNSU);
+        if (Number(ult) >= Number(max)) break;
+      } else { if (d.ultNSU) ult = String(d.ultNSU); if (d.maxNSU) max = String(d.maxNSU); break; }
+    }
+    await db.from("dfe_state").upsert({ id: 1, ult_nsu: ult, max_nsu: max, last_check: nowIso(), last_cstat: cstat, last_msg: msg });
+    if (cstat === "erro") return json({ ok: false, erro: msg }, 422);
+    if (cstat === "656") return json({ ok: false, erro: "A SEFAZ pediu para aguardar cerca de 1 hora antes de consultar de novo." }, 429);
+    if (!["137", "138"].includes(cstat)) return json({ ok: false, erro: `SEFAZ: ${cstat} ${msg}` }, 422);
+    return json({ ok: true, ...tot, cstat });
+  }
+  return json({ ok: false, erro: "Ação desconhecida." }, 400);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
@@ -40,6 +129,13 @@ Deno.serve(async (req) => {
     const admin = prof.role === "admin";
 
     const b = await req.json().catch(() => ({}));
+
+    // ---------- NOTAS RECEBIDAS (DF-e): só administrador ----------
+    if (typeof b.action === "string" && b.action.startsWith("dfe_")) {
+      if (!admin) return json({ ok: false, erro: "Só o administrador acessa as notas recebidas." }, 403);
+      return await dfe(db, b);
+    }
+
     const { data: s } = await db.from("sales").select("*").eq("id", b.sale_id).maybeSingle();
     if (!s) return json({ ok: false, erro: "Venda não encontrada." }, 404);
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.9.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.10.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1143,7 +1143,7 @@ async function masterOk(){
 let view='login',cat='Todos',q='';
 function go(v){view=v;render()}
 const NN=()=>db.orders.filter(o=>o.status==='novo').length;
-const ICON={bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/>',box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
+const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.5-6.9A2 2 0 0016.8 4H7.2a2 2 0 00-1.7 1.1z"/>',bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/>',box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
  file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
  receipt:'<path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5z"/><path d="M9 8h6M9 12h6"/>',building:'<path d="M4 21V4a1 1 0 011-1h9a1 1 0 011 1v17M15 9h4a1 1 0 011 1v11M2 21h20M8 7h3M8 11h3M8 15h3"/>',
@@ -1154,7 +1154,7 @@ const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</
 function render(){
   try{applyTema(CO())}catch(e){}
   if(sb&&!role&&view!=='login')view='login';
-  if(['ini','prod','cx','fis','emp','usr','arte','pag'].includes(view)&&!ADM())view='pdv';
+  if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag'].includes(view)&&!ADM())view='pdv';
   document.body.className=isAdmin()?'in':'out';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
@@ -1162,12 +1162,12 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -1273,9 +1273,12 @@ function xmlOpen(){
 }
 function xmlRead(inp){
   const f=inp.files[0];if(!f)return;
-  const r=new FileReader();r.onload=()=>{
+  const r=new FileReader();r.onload=()=>xmlLoad(r.result);r.readAsText(f);
+}
+function xmlLoad(txt){
+  {
     try{
-      const d=new DOMParser().parseFromString(r.result,'text/xml');
+      const d=new DOMParser().parseFromString(txt,'text/xml');
       if(d.getElementsByTagName('parsererror').length)throw new Error('xml');
       const t=(el,n)=>{const x=el&&el.getElementsByTagName(n)[0];return x?x.textContent.trim():''};
       const inf=d.getElementsByTagName('infNFe')[0];if(!inf)throw new Error('Este arquivo não é uma NF-e (infNFe não encontrado).');
@@ -1294,7 +1297,7 @@ function xmlRead(inp){
       XML={key,num:t(inf.getElementsByTagName('ide')[0],'nNF'),forn:t(em,'xNome'),cnpj:t(em,'CNPJ'),items,dups};
       xmlView();
     }catch(e){$('#xmlv').innerHTML=`<p class="bad">${esc(e.message==='xml'?'Não foi possível ler o arquivo. Envie o XML original da nota.':e.message)}</p>`}
-  };r.readAsText(f);
+  }
 }
 function xmlDone(){try{return JSON.parse(localStorage.mmxml||'[]')}catch(e){return[]}}
 function xmlView(){
@@ -1323,7 +1326,7 @@ function xmlApply(){
     }
   });
   if(pay)x.dups.forEach(d=>{put('payables',{id:uid(),supplier:x.forn,supplier_cnpj:x.cnpj,doc:x.num,parcel:d.n,due_date:d.venc,amount:d.v,paid_at:null,source:'xml',nfe_key:x.key||null,created_at:now()});cp++});
-  if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-200))}
+  if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-200));if(sb&&role)Promise.resolve(sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',x.key)).then(()=>dfeLoad()).catch(()=>{})}
   closeM();XML=null;render();
   alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
 }
@@ -1939,6 +1942,7 @@ function notifs(){
     const n=dleft(p.due_date);if(n>aP)return;
     out.push({id:'p'+p.id+(n<0?'L':n===0?'H':'S'),kind:'pagar',days:n,title:'Pagar '+(p.supplier||'fornecedor'),sub:`${p.doc?'NF '+p.doc+' · ':''}${p.parcel?'parcela '+p.parcel+' · ':''}${dtxt(n)}`,amount:+p.amount,pid:p.id});
   });
+  if(ADM()){const n=dfePend();if(n)out.push({id:'n'+ld(now())+':'+n,kind:'nota',days:0,title:`${n} nota${n>1?'s':''} de compra recebida${n>1?'s':''}`,sub:'Notas emitidas contra o CNPJ da loja, aguardando entrada no estoque',amount:0})}
   if(ADM()){const lo=lowStock();if(lo.length)out.push({id:'e'+ld(now()),kind:'estoque',days:0,title:`${lo.length} produto${lo.length>1?'s':''} com estoque baixo`,sub:lo.slice(0,3).map(x=>x.name+' ('+(+x.stock||0)+')').join(', ')+(lo.length>3?'…':''),amount:0})}
   if(ADM()){const bk=bkLast(),dd=bk?-dleft(bk):99;if(dd>=7)out.push({id:'bk'+ld(now()).slice(0,7),kind:'backup',days:-dd,title:'Fazer backup dos dados',sub:bk?`último backup há ${dd} dias`:'nenhum backup feito neste aparelho',amount:0})}
   return out.sort((a,b)=>a.days-b.days||a.title.localeCompare(b.title,'pt-BR'));
@@ -1962,7 +1966,7 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',es?'estoque baixo':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+' · '+R(n.amount)).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
@@ -1971,8 +1975,8 @@ function notifCheck(){
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${n.kind==='backup'||n.kind==='estoque'?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>n.kind==='backup'||n.kind==='estoque');
+    <span class="pv">${['backup','estoque','nota'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
@@ -1997,6 +2001,71 @@ function notifPerm(el){
 setInterval(()=>{try{notifCheck()}catch(e){}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)try{notifCheck()}catch(e){}});
 setTimeout(()=>{try{notifCheck()}catch(e){}},4000);
+
+/* ========= Notas recebidas (Distribuição DF-e da SEFAZ) ========= */
+let DFE=[],dfeF='pend',dfeBusy=false;
+const dfeKey=n=>String(n.chave||'');
+const dfeOk=n=>n.canceled||n.entrada_at||xmlDone().includes(dfeKey(n));
+const dfePend=()=>ADM()?DFE.filter(n=>!dfeOk(n)).length:0;
+async function dfeLoad(){
+  if(!sb||!role||role!=='admin')return;
+  try{
+    const{data,error}=await sb.from('dfe_notas').select('chave,emit_cnpj,emit_nome,valor,dh_emi,numero,status,canceled,ciencia_at,entrada_at,created_at').order('dh_emi',{ascending:false}).limit(300);
+    if(!error&&data){DFE=data;if(view==='dfe'&&!$('#modal').classList.contains('open'))vDfe()}
+  }catch(e){}
+}
+async function dfeSync(manual){
+  if(dfeBusy||!sb||role!=='admin')return;
+  dfeBusy=true;try{localStorage.mmdfe=Date.now()}catch(e){}
+  if(manual)setSync('buscando notas…');
+  try{
+    const d=await fisCall({action:'dfe_sync'});
+    await dfeLoad();try{notifCheck()}catch(e){}
+    if(manual)alert(d.ignorado?`A SEFAZ só permite consultar de tempos em tempos. Tente de novo em cerca de ${d.proxima_em_min} min.`:`Busca concluída: ${d.novas} nota(s) nova(s)${d.canceladas?`, ${d.canceladas} cancelada(s)`:''}.`);
+  }catch(e){if(manual)alert('Não foi possível buscar agora:\n'+e.message)}
+  dfeBusy=false;if(manual)setSync('');
+  if(view==='dfe')vDfe();
+}
+setInterval(()=>{try{if(sb&&role==='admin'&&navigator.onLine!==false&&Date.now()-(+localStorage.mmdfe||0)>65*60000)dfeSync(false)}catch(e){}},60000);
+setTimeout(()=>{try{if(sb&&role==='admin')dfeLoad()}catch(e){}},5000);
+setInterval(()=>{try{if(sb&&role==='admin')dfeLoad()}catch(e){}},10*60000);
+async function dfeBaixar(chave){
+  const n=DFE.find(x=>x.chave===chave);if(!n)return;
+  if(!n.ciencia_at&&!confirm('Para baixar a nota completa, o sistema registra na SEFAZ a "Ciência da operação" em nome da empresa. Ela não confirma nem recusa o recebimento, só informa que você tem conhecimento da nota. Continuar?'))return;
+  setSync('baixando nota…');
+  try{const d=await fisCall({action:'dfe_baixar',chave});await dfeLoad();alert(d.completa?'Nota baixada. Já dá para dar entrada no estoque.':(d.aviso||'Pedido enviado.'))}
+  catch(e){alert('Não foi possível baixar:\n'+e.message)}
+  setSync('');vDfe();
+}
+async function dfeEntrada(chave){
+  try{
+    const{data,error}=await sb.from('dfe_notas').select('xml').eq('chave',chave).maybeSingle();
+    if(error||!data||!data.xml)return alert('XML não encontrado. Baixe a nota antes.');
+    xmlOpen();xmlLoad(data.xml);
+  }catch(e){alert('Não foi possível abrir a nota: '+e.message)}
+}
+async function dfeIgnorar(chave){
+  if(!confirm('Marcar esta nota como já lançada/ignorada? Ela sai da lista de pendentes e dos avisos.'))return;
+  await sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',chave);await dfeLoad();vDfe();
+}
+async function dfeIgnorarTodas(){
+  const n=DFE.filter(x=>!dfeOk(x)).length;if(!n)return;
+  if(!confirm(`Marcar as ${n} notas pendentes como já lançadas? Use isto na primeira vez, para as compras antigas que você já deu entrada.`))return;
+  await sb.from('dfe_notas').update({entrada_at:now()}).is('entrada_at',null).eq('canceled',false);await dfeLoad();vDfe();
+}
+function vDfe(){
+  const L=DFE.filter(n=>dfeF==='todas'||!dfeOk(n)||dfeF==='canc'&&n.canceled);
+  const cnpjF=c=>String(c||'').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="dfeSync(true)">Buscar notas agora</button>
+  <select style="max-width:220px" onchange="dfeF=this.value;vDfe()"><option value="pend" ${dfeF==='pend'?'selected':''}>Pendentes de entrada</option><option value="todas" ${dfeF==='todas'?'selected':''}>Todas</option></select>
+  ${dfePend()>1?'<button class="btn g" onclick="dfeIgnorarTodas()">Marcar pendentes como já lançadas</button>':''}</div>
+  <p class="sm">O sistema consulta a SEFAZ sozinho, no máximo uma vez por hora, enquanto estiver aberto, e avisa quando chega nota nova. Primeiro chega só o resumo da nota; <b>Baixar nota</b> registra a ciência na SEFAZ e traz o XML completo, e então <b>Dar entrada</b> lança os itens no estoque.</p>
+  ${L.length?`<div style="overflow:auto"><table><tr><th>Emissão</th><th>Fornecedor</th><th>Nº</th><th>Valor</th><th>Situação</th><th></th></tr>
+  ${L.map(n=>{const done=n.entrada_at||xmlDone().includes(n.chave),st=n.canceled?'<span class="bad">Cancelada</span>':done?'<span class="ok">Entrada feita</span>':n.status==='completo'?'Pronta para entrada':n.ciencia_at?'Ciência registrada':'Só resumo';
+   const ac=n.canceled||done?'':(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
+   return`<tr><td>${n.dh_emi?fmtD(n.dh_emi):'—'}</td><td>${esc(n.emit_nome||'—')}<div class="sm">${esc(cnpjF(n.emit_cnpj))}</div></td><td>${esc(n.numero||'—')}</td><td>${R(n.valor)}</td><td>${st}</td><td style="white-space:nowrap">${ac}</td></tr>`}).join('')}</table></div>`
+  :`<p>${DFE.length?'Nenhuma nota pendente. 🎉':'Nenhuma nota recebida ainda. Toque em <b>Buscar notas agora</b>.'}</p>`}`;
+}
 
 /* ========= Início (painel) ========= */
 const stockMin=()=>+(NS().stockMin??3);
