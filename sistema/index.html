@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.15.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.15.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -89,6 +89,14 @@ body.out header{display:none}
  nav .out{margin-top:14px;border-top:1px solid rgba(255,255,255,.2);border-radius:0}
  .sync{margin-top:auto;padding:0 8px}
  main{width:100%}
+}
+nav button{transition:background .15s,opacity .15s,transform .15s,box-shadow .15s}
+nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacity:1}
+@media(hover:hover){
+ nav button:hover{opacity:1;background:rgba(255,255,255,.16);box-shadow:inset 3px 0 0 rgba(255,255,255,.55)}
+ nav button:hover .ic{color:var(--tag)}
+ nav button.on:hover{background:rgba(255,255,255,.26);box-shadow:inset 3px 0 0 var(--tag)}
+ nav button:active{transform:scale(.98)}
 }
 .pres{display:grid;gap:6px;margin:8px 0 12px}.pri{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;font:inherit}.pri:hover,.pri:focus{border-color:var(--pri);outline:none}.pri img,.pri .pno{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--line);flex:none;display:grid;place-items:center;color:var(--mut);font-size:11px}.pri .pn{flex:1;min-width:0}.pri .pn b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pri .pv{text-align:right;white-space:nowrap}.pri .pv b{font-size:1.05em}.cthumb{width:36px;height:36px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;background:var(--line)}.cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
 .art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
