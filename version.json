@@ -1,5 +1,5 @@
 {
- "version": "1.4.1",
+ "version": "1.6.0",
  "date": "2026-10-26",
- "notes": "NF-e (modelo 55) passa a ser o documento padrão das vendas novas; a NFC-e continua disponível pelo botão Documento."
+ "notes": "Código de barras no produto e leitura pela câmera do celular na venda (adiciona vários itens seguidos) e no cadastro."
 }

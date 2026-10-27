@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.4.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.6.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -90,7 +90,7 @@ body.out header{display:none}
  .sync{margin-top:auto;padding:0 8px}
  main{width:100%}
 }
-.cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
+.pres{display:grid;gap:6px;margin:8px 0 12px}.pri{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;font:inherit}.pri:hover,.pri:focus{border-color:var(--pri);outline:none}.pri img,.pri .pno{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--line);flex:none;display:grid;place-items:center;color:var(--mut);font-size:11px}.pri .pn{flex:1;min-width:0}.pri .pn b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pri .pv{text-align:right;white-space:nowrap}.pri .pv b{font-size:1.05em}.cthumb{width:36px;height:36px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;background:var(--line)}.cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
 .art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
 .artp{position:sticky;top:12px}
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
@@ -1064,7 +1064,7 @@ function render(){
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
-function closeM(){$('#modal').classList.remove('open')}
+function closeM(){scanStop();$('#modal').classList.remove('open')}
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
 
 /* ========= Login ========= */
@@ -1271,6 +1271,7 @@ function prodForm(id){
    <div><label>CFOP</label><input id="f_cfop" value="${v('cfop')}"></div>
    <div><label>Unidade</label><input id="f_unit" value="${v('unit')}"></div>
    <div><label>CEST (opcional)</label><input id="f_cest" value="${v('cest')}"></div>
+   <div class="w"><label>Código de barras (EAN)</label><div class="pwd"><input id="f_ean" inputmode="numeric" autocomplete="off" value="${v('ean')}" placeholder="Digite, use o leitor ou escaneie"><button type="button" class="btn g s" onclick="scanOpen(c=>{$('#f_ean').value=c})">Escanear</button></div></div>
    <div><label>CSOSN / CST</label><input id="f_csosn" value="${v('csosn')||'102'}"></div>
    <div><label>No catálogo?</label><select id="f_active"><option value="true" ${p.active!==false?'selected':''}>Sim</option><option value="false" ${p.active===false?'selected':''}>Não</option></select></div></div>
    <button class="btn" onclick="saveProd('${p.id||''}')">Salvar produto</button>`);
@@ -1292,6 +1293,9 @@ function saveProd(id){
    max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
    photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
+  const ean=digits(g('ean'));
+  if(ean){const dup=db.products.find(x=>x.ean===ean&&x.id!==row.id);if(dup&&!confirm('Este código de barras já está no produto "'+dup.name+'". Salvar mesmo assim?'))return;row.ean=ean}
+  else if('ean' in row)row.ean=null;
   const old=db.products.find(x=>x.id===id);
   const go=()=>{put('products',row);closeM();render()};
   old&&['price_cash','price_card','price_credit'].some(k=>(+old[k]||0)!==(+row[k]||0))?master(go):go();
@@ -1303,9 +1307,10 @@ window.appBusy=()=>cart.length>0||$('#modal').classList.contains('open');
 function vPdv(){
   selCli=null;
   $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Nova venda</h2>
-  <div class="f"><div class="w"><label>Produto</label><select id="s_p">${db.products.map(p=>`<option value="${p.id}">${esc(p.name)} · estoque ${p.stock}</option>`).join('')}</select></div>
-  <div><label>Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
-  <div style="align-self:end"><button class="btn g" onclick="addCart()">Adicionar</button></div></div>
+  <div class="f"><div class="w"><label>Buscar produto (nome, categoria ou código de barras) · toque no produto para adicionar</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
+  <div style="align-self:end"><button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
+  <div><label>Qtd</label><input id="s_q" type="number" min="1" value="1"></div></div>
+  <div id="p_res" class="pres"></div>
   <div id="cartv"></div>
   <div class="f"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
@@ -1320,12 +1325,84 @@ function vPdv(){
 }
 const unit=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
 const total=()=>cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),$('#s_t')?.value||'avista')*i.qty,0);
-function addCart(){const i=cart.find(x=>x.id===s_p.value);i?i.qty+=+s_q.value:cart.push({id:s_p.value,qty:+s_q.value});cartView()}
+const pPhoto=p=>(p.photos&&p.photos[0])||'';
+function pdvList(){
+  const k=norm($('#p_q').value),d=digits($('#p_q').value);
+  let l=db.products.filter(p=>p.active!==false&&(!k.trim()||norm([p.name,p.category,p.supplier_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d)));
+  return l.sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,8);
+}
+function pdvSearch(){
+  if(!$('#p_res'))return;
+  const t=($('#s_t')||{}).value||'avista',l=pdvList(),all=db.products.filter(p=>p.active!==false).length;
+  $('#p_res').innerHTML=l.length?l.map(p=>`<button type="button" class="pri" onclick="addProd('${p.id}')">
+    ${pPhoto(p)?`<img src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=pno>sem foto</span>'">`:'<span class="pno">sem foto</span>'}
+    <span class="pn"><b>${esc(p.name)}</b><span class="sm ${(+p.stock||0)>0?'':'bad'}">${(+p.stock||0)>0?'Estoque '+p.stock:'Sem estoque'}${p.category?' · '+esc(p.category):''}</span></span>
+    <span class="pv"><b>${R(unit(p,t))}</b><span class="sm" style="display:block">${t!=='avista'&&p.price_cash?'à vista '+R(p.price_cash):p.price_card>0?'cartão '+R(p.price_card):''}</span></span></button>`).join('')
+    +(all>l.length&&!$('#p_q').value.trim()?`<p class="sm">Mostrando ${l.length} de ${all}. Digite para filtrar.</p>`:''):'<p class="sm">Nenhum produto encontrado.</p>';
+}
+function addProd(id){
+  const q=Math.max(1,Math.round(+($('#s_q')||{}).value||1)),i=cart.find(x=>x.id===id);
+  i?i.qty+=q:cart.push({id,qty:q});
+  if($('#s_q'))$('#s_q').value=1;cartView();
+}
+/* ========= Leitor de código de barras (câmera) ========= */
+let scanStream=null,scanTimer=null,scanH5=null,scanLast={c:'',t:0};
+function scanStop(){
+  clearInterval(scanTimer);scanTimer=null;
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+  if(scanH5){const h=scanH5;scanH5=null;Promise.resolve().then(()=>h.stop()).then(()=>h.clear()).catch(()=>{})}
+}
+function scanOpen(cb,multi){
+  scanStop();
+  modal(`<h2>Escanear código de barras</h2><p class="sm">Aponte a câmera para o código de barras do produto.</p>
+  <div id="scanbox" style="background:#000;border-radius:12px;overflow:hidden;min-height:180px"><video id="scanv" playsinline muted style="width:100%;display:block"></video></div>
+  <p id="scanmsg" class="sm" role="status" aria-live="polite">Abrindo a câmera…</p><button class="btn g" onclick="closeM()">${multi?'Concluir':'Cancelar'}</button>`);
+  const got=code=>{
+    const n=Date.now();if(code===scanLast.c&&n-scanLast.t<2500)return;scanLast={c:code,t:n};
+    if(navigator.vibrate)navigator.vibrate(60);
+    const m=cb(code);
+    if(multi){const e=$('#scanmsg');if(e)e.textContent=m||'Lido: '+code}else closeM();
+  };
+  startScan(got);
+}
+const loadScript=u=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('script'));document.head.appendChild(e)});
+async function startScan(got){
+  const msg=t=>{const e=$('#scanmsg');if(e)e.textContent=t};
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return msg('Este navegador não permite usar a câmera. Digite o código no campo.');
+  try{
+    if('BarcodeDetector' in window){
+      const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+      const v=$('#scanv');if(!v){scanStop();return}
+      v.srcObject=scanStream;await v.play();msg('Procurando o código…');
+      scanTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length)got(r[0].rawValue)}catch(e){}},250);
+      return;
+    }
+    // Sem leitor nativo (ex.: iPhone/Safari): usa a biblioteca html5-qrcode.
+    if(!window.Html5Qrcode)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js');
+    const F=window.Html5QrcodeSupportedFormats;
+    $('#scanbox').innerHTML='';
+    scanH5=new Html5Qrcode('scanbox',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128],verbose:false});
+    await scanH5.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:140}},got,()=>{});
+    msg('Procurando o código…');
+  }catch(e){
+    scanStop();
+    msg(e&&e.name==='NotAllowedError'?'Permita o uso da câmera no navegador para escanear.':e&&e.name==='NotFoundError'?'Nenhuma câmera encontrada neste aparelho.':'Não foi possível abrir a câmera. Digite o código no campo.');
+  }
+}
+function pdvScanned(code){
+  const d=digits(code),p=db.products.find(x=>x.ean===d&&x.active!==false);
+  if(!p)return'Código '+d+' não cadastrado. Cadastre o código de barras no produto.';
+  addProd(p.id);return'Adicionado: '+p.name;
+}
+function pdvEnter(){const v=$('#p_q').value.trim(),d=digits(v);const ex=d.length>=6&&db.products.find(p=>p.ean===d&&p.active!==false);const l=pdvList();
+  const p=ex||(l.length===1?l[0]:null);if(p){addProd(p.id);$('#p_q').value='';pdvSearch();$('#p_q').focus()}else if(l.length>1)alert('Vários produtos encontrados. Toque no que deseja ou digite mais letras.')}
 function cartView(){
+  pdvSearch();
   const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1;
   document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
   if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
-  $('#cartv').innerHTML=`<table>${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);return`<tr><td>${esc(p.name)}</td><td>${i.qty} × ${R(unit(p,t))}</td><td><button class="btn g s" onclick="cart.splice(${ix},1);cartView()">Remover</button></td></tr>`}).join('')}</table>
+  $('#cartv').innerHTML=`<table>${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);return`<tr><td>${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.remove()">`:''}${esc(p.name)}</td><td>${i.qty} × ${R(unit(p,t))}</td><td><button class="btn g s" onclick="cart.splice(${ix},1);cartView()">Remover</button></td></tr>`}).join('')}</table>
   <p><b>Total: ${R(tot)}</b>${t==='crediario'&&tot?` · restante ${n}x de ${R((tot-e)/n)}`:''}</p>`;
 }
 const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p.stock||0)+d;save()}};
