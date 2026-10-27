@@ -1,5 +1,5 @@
 {
- "version": "1.15.1",
+ "version": "1.16.1",
  "date": "2026-10-27",
- "notes": "Menu lateral com destaque ao passar o mouse."
+ "notes": "Pacote do contador agora inclui o relatório em PDF das notas dentro do .zip."
 }

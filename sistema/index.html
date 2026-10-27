@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.15.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.16.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2095,7 +2095,7 @@ function zipMake(files){ // files: [{name,data(string)}] ; ZIP sem compressão (
   const enc=new TextEncoder(),parts=[],cen=[];let off=0;const d=new Date();
   const dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF,dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
   files.forEach(f=>{
-    const nm=enc.encode(f.name),da=enc.encode(f.data),crc=crc32(da),h=new DataView(new ArrayBuffer(30));
+    const nm=enc.encode(f.name),da=f.data instanceof Uint8Array?f.data:enc.encode(f.data),crc=crc32(da),h=new DataView(new ArrayBuffer(30));
     h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);
     h.setUint32(14,crc,true);h.setUint32(18,da.length,true);h.setUint32(22,da.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
     parts.push(new Uint8Array(h.buffer),nm,da);
@@ -2107,6 +2107,51 @@ function zipMake(files){ // files: [{name,data(string)}] ; ZIP sem compressão (
   const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
   e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
   return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/zip'});
+}
+
+/* ========= PDF simples (tabela) sem biblioteca: Helvetica padrão do PDF ========= */
+const PDFHW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+function pdfW(t,sz){let w=0;for(const ch of String(t)){const b=ch.normalize('NFD')[0],c=b.charCodeAt(0);w+=(c>=32&&c<=126?PDFHW[c-32]:556)}return w*sz/1000}
+function pdfEnc(t){ // WinAnsi: Latin-1 + alguns sinais
+  const M={'—':'\x97','–':'\x96','“':'"','”':'"','‘':"'",'’':"'",'•':'\x95','…':'\x85'};
+  let o='';for(const ch of String(t)){const c=ch.charCodeAt(0);o+=M[ch]||(c<256?ch:'?')}
+  return o.replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+}
+function pdfFit(t,w,sz){t=String(t);if(pdfW(t,sz)<=w)return t;while(t.length>1&&pdfW(t+'…',sz)>w)t=t.slice(0,-1);return t+'…'}
+function pdfMake(d,co){
+  const W=595.28,H=841.89,M=36,CW=W-2*M,sz=8.5,rh=15,pages=[];let cur=null,y=0;
+  const wid=d.head.map((h,i)=>Math.min(Math.max(pdfW(h,sz),...d.rows.map(r=>pdfW(r[i],sz)),...(d.foot[i]?[pdfW(d.foot[i],sz)]:[0]))+8,220));
+  const k=Math.min(1,CW/wid.reduce((a,b)=>a+b,0)),extra=Math.max(0,CW-wid.reduce((a,b)=>a+b,0)*k),cw=wid.map(w=>w*k+extra/wid.length);
+  const T=(x,yy,t,o={})=>{const f=o.b?'F2':'F1',z=o.sz||sz;let xx=x;if(o.r)xx=x-pdfW(t,z);cur.push(`BT /${f} ${z} Tf ${o.c||'0 g'} ${xx.toFixed(2)} ${yy.toFixed(2)} Td (${pdfEnc(t)}) Tj ET`)};
+  const newPage=()=>{cur=[];pages.push(cur);y=H-M;
+    T(M,y-12,co.trade_name||co.legal_name||'MultMix',{b:1,sz:13});
+    T(W-M,y-12,d.title,{b:1,sz:12,r:1,c:'0 0.27 0.56 rg'});y-=26;
+    if(co.cnpj)T(M,y,'CNPJ '+co.cnpj,{sz:8,c:'0.35 g'});T(W-M,y,pdfFit(d.sub,330,8),{sz:8,r:1,c:'0.35 g'});y-=8;
+    cur.push(`0 0.27 0.56 RG 1.5 w ${M} ${y} m ${W-M} ${y} l S`);y-=14};
+  const head=()=>{cur.push(`0 0.27 0.56 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);let x=M;d.head.forEach((h,i)=>{const r=d.al[i]==='r';T(r?x+cw[i]-4:x+4,y-rh+8,pdfFit(h,cw[i]-8,sz),{b:1,c:'1 g',r});x+=cw[i]});y-=rh};
+  const row=(r,o={})=>{if(y-rh<M+20){newPage();head()}
+    if(o.zebra)cur.push(`0.95 0.96 0.98 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);
+    if(o.foot)cur.push(`0 0.27 0.56 RG 1 w ${M} ${y+4} m ${W-M} ${y+4} l S`);
+    let x=M;r.forEach((c,i)=>{const rr=d.al[i]==='r';T(rr?x+cw[i]-4:x+4,y-rh+8,pdfFit(c,cw[i]-8,sz),{b:o.foot,r:rr});x+=cw[i]});y-=rh};
+  newPage();
+  // resumo
+  d.sum.forEach(([l,v])=>{T(M,y,l+': ',{sz:9,c:'0.35 g'});T(M+pdfW(l+': ',9)+2,y,String(v),{b:1,sz:9});y-=13});y-=6;
+  head();d.rows.forEach((r,i)=>row(r,{zebra:i%2}));
+  if(d.rows.length)row(d.foot,{foot:1});else{T(M+4,y-rh+8,'Nada encontrado neste filtro.');y-=rh}
+  const foot='Gerado em '+new Date().toLocaleString('pt-BR')+' · MultMix Sistema '+window.APP_VERSION;
+  pages.forEach((c,i)=>{const t=foot+' · página '+(i+1)+' de '+pages.length;c.push(`BT /F1 7.5 Tf 0.45 g ${((W-pdfW(t,7.5))/2).toFixed(2)} 22 Td (${pdfEnc(t)}) Tj ET`)});
+  // monta o arquivo
+  const objs=[];const add=s=>objs.push(s)-1;
+  add('<< /Type /Catalog /Pages 2 0 R >>');add(null);
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids=[];
+  pages.forEach(c=>{const body=c.join('\n'),ci=objs.length+1;add(`<< /Length ${body.length} >>\nstream\n${body}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${ci} 0 R >>`)+1)});
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`;
+  let out='%PDF-1.4\n',offs=[];objs.forEach((o,i)=>{offs.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`});
+  const xr=out.length;out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`;
+  const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;return u;
 }
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 let PAC=null;
@@ -2147,14 +2192,20 @@ async function pacoteGerar(){
     });
     const semXml=(r.data||[]).filter(n=>n.status!=='completo').length;
     if(!files.length)return $('#pc_r').innerHTML=`<p class="bad">Nenhuma nota com XML em ${MESES[m-1]}/${y}.${nh?` (${nh} de homologação foram deixadas de fora)`:''}</p>`;
+    const dRows=csv.slice(1).sort((a,b)=>a[0].localeCompare(b[0])||String(a[5]).localeCompare(String(b[5]))).map(r=>[r[0],fmtD(r[5]),r[2]+(r[3]?'/'+r[3]:''),r[1],r[6],r[7],R(+String(r[8]).replace(',','.')||0),r[9]==='Homologação'?'Homol.':'']);
+    const vt=(t,sit)=>csv.slice(1).filter(r=>r[0]===t&&(!sit||r[1]===sit)).reduce((a,r)=>a+(+String(r[8]).replace(',','.')||0),0);
+    const PDF_D={title:'Notas fiscais do mês · '+MESES[m-1]+'/'+y,sub:'Conferência para o contador · chaves no resumo.csv',head:['Tipo','Data','Nº/Série','Situação','Cliente / Fornecedor','CPF/CNPJ','Valor','Obs.'],al:'lllllllr'.slice(0,6)+'rl',
+      rows:dRows,foot:['Total (sem canceladas)','','','','','',R(vt('Emitida','Autorizada')+vt('Recebida','Autorizada')),''],
+      sum:[['Emitidas (autorizadas)',(ne-nc)+' · '+R(vt('Emitida','Autorizada'))],['Canceladas',nc],['Recebidas',nr+' · '+R(vt('Recebida','Autorizada'))]]};
     const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    files.push({name:`relatorio-notas-${ym}.pdf`,data:pdfMake(PDF_D,CO())});
     files.push({name:'resumo.csv',data:'﻿'+csv.map(l=>l.map(q).join(';')).join('\r\n')});
     const co=CO(),nome=`contador-MultMix-${ym}.zip`,blob=zipMake(files);
-    PAC={blob,nome,ym,ne,nc,nr,txt:`Olá${co.accountant_name?', '+co.accountant_name.split(' ')[0]:''}! Segue o pacote fiscal de ${MESES[m-1]}/${y} da ${co.legal_name||co.trade_name||'MultMix'}${co.cnpj?' (CNPJ '+co.cnpj+')':''}: ${ne} nota(s) emitida(s), ${nc} cancelada(s) e ${nr} recebida(s). Os XMLs estão no arquivo ${nome}, com a planilha resumo.csv.`};
+    PAC={d:PDF_D,blob,nome,ym,ne,nc,nr,txt:`Olá${co.accountant_name?', '+co.accountant_name.split(' ')[0]:''}! Segue o pacote fiscal de ${MESES[m-1]}/${y} da ${co.legal_name||co.trade_name||'MultMix'}${co.cnpj?' (CNPJ '+co.cnpj+')':''}: ${ne} nota(s) emitida(s), ${nc} cancelada(s) e ${nr} recebida(s). Os XMLs estão no arquivo ${nome}, com o relatório em PDF e a planilha resumo.csv.`};
     $('#pc_r').innerHTML=`<div class="prices"><div class="pr"><span>Emitidas</span><b>${ne}</b></div><div class="pr"><span>Canceladas</span><b>${nc}</b></div><div class="pr"><span>Recebidas</span><b>${nr}</b></div></div>
     ${semXml?`<p class="sm bad">${semXml} nota(s) recebida(s) do mês só têm resumo e ficaram de fora. Baixe-as em Notas recebidas.</p>`:''}${nh?`<p class="sm">${nh} nota(s) de homologação deixadas de fora.</p>`:''}
     <p><b>${nome}</b> · ${(blob.size/1024).toFixed(0)} KB</p>
-    <div class="bar"><button class="btn" onclick="pacoteEnviar()">Enviar (WhatsApp, e-mail…)</button><button class="btn g" onclick="pacoteBaixar()">Baixar .zip</button></div>
+    <div class="bar"><button class="btn" onclick="pacoteEnviar()">Enviar (WhatsApp, e-mail…)</button><button class="btn g" onclick="pacoteBaixar()">Baixar .zip</button><button class="btn g" onclick="relPdf(PAC.d)">Relatório em PDF</button></div>
     <div class="bar"><button class="btn g" onclick="pacoteZap()">Abrir WhatsApp do contador</button><button class="btn g" onclick="pacoteMail()">Abrir e-mail ao contador</button></div>
     <p class="sm">No celular, <b>Enviar</b> abre o menu do aparelho com o arquivo já anexado: escolha WhatsApp ou e-mail. No computador, baixe o .zip e use os botões de WhatsApp ou e-mail: eles abrem a conversa com a mensagem pronta e você anexa o arquivo baixado.</p>`;
   }catch(e){$('#pc_r').innerHTML=`<p class="bad">Não foi possível gerar: ${esc(e.message||e)}</p>`}
@@ -2634,8 +2685,8 @@ function vRel(){
   <p class="sm">"Gerar PDF" abre a impressão: escolha <b>Salvar como PDF</b> (no celular, <b>Compartilhar</b> ou <b>Imprimir &gt; PDF</b>).</p>`;
   if(k==='com'&&ADM()&&!PROF.length&&!REL.pl){REL.pl=1;loadProf().then(()=>vRel())}
 }
-function relPdf(){
-  const d=relBuild(),co=CO(),logo=new URL(logoIcon(),location.href).href;
+function relPdf(d0){
+  const d=d0||relBuild(),co=CO(),logo=new URL(logoIcon(),location.href).href;
   const css=`@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#111;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .h{display:flex;gap:12px;align-items:center;border-bottom:2px solid #00468f;padding-bottom:8px;margin-bottom:10px}.h img{width:54px;height:54px;object-fit:contain}
   .h b{font-size:14px}.h .t{margin-left:auto;text-align:right}.h h1{font-size:16px;margin:0;color:#00468f}
