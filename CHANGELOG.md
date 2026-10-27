@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.10.1 — 27/10/2026
+- Notas recebidas: Baixar todas as pendentes e Dar entrada nas selecionadas (várias notas de uma vez, com tela de conferência; produtos novos repetidos entre notas viram um só cadastro).
+
 ### 1.10.0 — 27/10/2026
 - Tela Notas recebidas: busca automática (no máximo 1x por hora) das NF-e emitidas contra o CNPJ da loja pela Distribuição DF-e da SEFAZ, aviso na central, baixa do XML completo (com ciência da operação) e entrada no estoque sem baixar arquivo. Exige API fiscal `dfe-1`, função `fiscal` nova e `supabase-v19.sql`.
 

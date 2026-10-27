@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.10.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.10.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1275,29 +1275,28 @@ function xmlRead(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();r.onload=()=>xmlLoad(r.result);r.readAsText(f);
 }
+function xmlParse(txt){
+  const d=new DOMParser().parseFromString(txt,'text/xml');
+  if(d.getElementsByTagName('parsererror').length)throw new Error('xml');
+  const t=(el,n)=>{const x=el&&el.getElementsByTagName(n)[0];return x?x.textContent.trim():''};
+  const inf=d.getElementsByTagName('infNFe')[0];if(!inf)throw new Error('Este arquivo não é uma NF-e (infNFe não encontrado).');
+  const key=(inf.getAttribute('Id')||'').replace(/\D/g,''),em=inf.getElementsByTagName('emit')[0];
+  const items=[...inf.getElementsByTagName('det')].map(det=>{
+    const pr=det.getElementsByTagName('prod')[0],ean=t(pr,'cEAN'),ean2=t(pr,'cEANTrib');
+    return{code:t(pr,'cProd'),ean:/^\d{8,14}$/.test(ean)?ean:/^\d{8,14}$/.test(ean2)?ean2:'',name:t(pr,'xProd'),ncm:t(pr,'NCM'),cest:t(pr,'CEST'),un:t(pr,'uCom')||'UN',
+      qty:Math.round(parseFloat(t(pr,'qCom'))||0),cost:+(parseFloat(t(pr,'vUnCom'))||0).toFixed(2)};
+  }).filter(i=>i.qty>0);
+  if(!items.length)throw new Error('Nenhum item com quantidade encontrado.');
+  items.forEach(i=>{
+    const p=(i.ean&&db.products.find(x=>x.ean===i.ean))||db.products.find(x=>x.supplier_code&&x.supplier_code===i.code&&i.code)||db.products.find(x=>norm(x.name)===norm(i.name));
+    i.pid=p?p.id:'novo';
+  });
+  const dups=[...inf.getElementsByTagName('dup')].map(x=>({n:t(x,'nDup'),venc:t(x,'dVenc'),v:+(parseFloat(t(x,'vDup'))||0).toFixed(2)})).filter(x=>x.venc&&x.v>0);
+  return{key,num:t(inf.getElementsByTagName('ide')[0],'nNF'),forn:t(em,'xNome'),cnpj:t(em,'CNPJ'),items,dups};
+}
 function xmlLoad(txt){
-  {
-    try{
-      const d=new DOMParser().parseFromString(txt,'text/xml');
-      if(d.getElementsByTagName('parsererror').length)throw new Error('xml');
-      const t=(el,n)=>{const x=el&&el.getElementsByTagName(n)[0];return x?x.textContent.trim():''};
-      const inf=d.getElementsByTagName('infNFe')[0];if(!inf)throw new Error('Este arquivo não é uma NF-e (infNFe não encontrado).');
-      const key=(inf.getAttribute('Id')||'').replace(/\D/g,''),em=inf.getElementsByTagName('emit')[0];
-      const items=[...inf.getElementsByTagName('det')].map(det=>{
-        const pr=det.getElementsByTagName('prod')[0],ean=t(pr,'cEAN'),ean2=t(pr,'cEANTrib');
-        return{code:t(pr,'cProd'),ean:/^\d{8,14}$/.test(ean)?ean:/^\d{8,14}$/.test(ean2)?ean2:'',name:t(pr,'xProd'),ncm:t(pr,'NCM'),cest:t(pr,'CEST'),un:t(pr,'uCom')||'UN',
-          qty:Math.round(parseFloat(t(pr,'qCom'))||0),cost:+(parseFloat(t(pr,'vUnCom'))||0).toFixed(2)};
-      }).filter(i=>i.qty>0);
-      if(!items.length)throw new Error('Nenhum item com quantidade encontrado.');
-      items.forEach(i=>{
-        const p=(i.ean&&db.products.find(x=>x.ean===i.ean))||db.products.find(x=>x.supplier_code&&x.supplier_code===i.code&&i.code)||db.products.find(x=>norm(x.name)===norm(i.name));
-        i.pid=p?p.id:'novo';
-      });
-      const dups=[...inf.getElementsByTagName('dup')].map(x=>({n:t(x,'nDup'),venc:t(x,'dVenc'),v:+(parseFloat(t(x,'vDup'))||0).toFixed(2)})).filter(x=>x.venc&&x.v>0);
-      XML={key,num:t(inf.getElementsByTagName('ide')[0],'nNF'),forn:t(em,'xNome'),cnpj:t(em,'CNPJ'),items,dups};
-      xmlView();
-    }catch(e){$('#xmlv').innerHTML=`<p class="bad">${esc(e.message==='xml'?'Não foi possível ler o arquivo. Envie o XML original da nota.':e.message)}</p>`}
-  }
+  try{XML=xmlParse(txt);xmlView()}
+  catch(e){$('#xmlv').innerHTML=`<p class="bad">${esc(e.message==='xml'?'Não foi possível ler o arquivo. Envie o XML original da nota.':e.message)}</p>`}
 }
 function xmlDone(){try{return JSON.parse(localStorage.mmxml||'[]')}catch(e){return[]}}
 function xmlView(){
@@ -1313,9 +1312,8 @@ function xmlView(){
   <div class="sm">${x.dups.map(d=>`${esc(d.n||'—')}: vence ${fmtD(d.venc)} · ${R(d.v)}`).join('<br>')}</div>`:'<p class="sm">Esta nota não traz parcelas (pagamento à vista), então não gera conta a pagar.</p>'}
   <button class="btn" onclick="xmlApply()">Dar entrada no estoque</button>`;
 }
-function xmlApply(){
-  const x=XML;if(!x)return;
-  const upd=$('#xml_cost').checked,pay=$('#xml_pay')&&$('#xml_pay').checked&&ADM();let a=0,n=0,cp=0;
+function xmlCore(x,upd,pay){
+  let a=0,n=0,cp=0;
   x.items.forEach(i=>{
     if(i.pid==='ignorar')return;
     if(i.pid==='novo'){
@@ -1326,8 +1324,14 @@ function xmlApply(){
     }
   });
   if(pay)x.dups.forEach(d=>{put('payables',{id:uid(),supplier:x.forn,supplier_cnpj:x.cnpj,doc:x.num,parcel:d.n,due_date:d.venc,amount:d.v,paid_at:null,source:'xml',nfe_key:x.key||null,created_at:now()});cp++});
-  if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-200));if(sb&&role)Promise.resolve(sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',x.key)).then(()=>dfeLoad()).catch(()=>{})}
-  closeM();XML=null;render();
+  if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-1000));if(sb&&role)Promise.resolve(sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',x.key)).catch(()=>{})}
+  return{a,n,cp};
+}
+function xmlApply(){
+  const x=XML;if(!x)return;
+  const upd=$('#xml_cost').checked,pay=$('#xml_pay')&&$('#xml_pay').checked&&ADM();
+  const{a,n,cp}=xmlCore(x,upd,pay);
+  closeM();XML=null;render();dfeLoad();
   alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
 }
 function impModel(){
@@ -2003,7 +2007,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)try{notifC
 setTimeout(()=>{try{notifCheck()}catch(e){}},4000);
 
 /* ========= Notas recebidas (Distribuição DF-e da SEFAZ) ========= */
-let DFE=[],dfeF='pend',dfeBusy=false;
+let DFE=[],dfeF='pend',dfeBusy=false,dfeSel=new Set();
 const dfeKey=n=>String(n.chave||'');
 const dfeOk=n=>n.canceled||n.entrada_at||xmlDone().includes(dfeKey(n));
 const dfePend=()=>ADM()?DFE.filter(n=>!dfeOk(n)).length:0;
@@ -2053,17 +2057,70 @@ async function dfeIgnorarTodas(){
   if(!confirm(`Marcar as ${n} notas pendentes como já lançadas? Use isto na primeira vez, para as compras antigas que você já deu entrada.`))return;
   await sb.from('dfe_notas').update({entrada_at:now()}).is('entrada_at',null).eq('canceled',false);await dfeLoad();vDfe();
 }
+async function dfeBaixarTodas(){
+  const L=DFE.filter(n=>!dfeOk(n)&&n.status!=='completo');
+  if(!L.length)return alert('Não há notas só com resumo.');
+  if(!confirm(`Baixar ${L.length} nota(s)? O sistema registra a "Ciência da operação" na SEFAZ, em nome da empresa, para cada uma (não confirma nem recusa o recebimento). Se a SEFAZ pedir para esperar, o sistema para e você continua mais tarde.`))return;
+  let ok=0,falha='';
+  for(const n of L){
+    setSync(`baixando nota ${ok+1} de ${L.length}…`);
+    try{const d=await fisCall({action:'dfe_baixar',chave:n.chave});if(d.completa)ok++}catch(e){falha=e.message;break}
+    await new Promise(r=>setTimeout(r,1500));
+  }
+  setSync('');await dfeLoad();vDfe();
+  alert(`${ok} de ${L.length} nota(s) com XML completo.${falha?'\nParou por: '+falha:''}\nAs que ficaram só com ciência costumam liberar o XML em alguns minutos: toque em Baixar todas de novo mais tarde.`);
+}
+function dfeTog(chave,on){on?dfeSel.add(chave):dfeSel.delete(chave);vDfe()}
+function dfeSelTodas(){const L=DFE.filter(n=>!dfeOk(n)&&n.status==='completo');const all=L.every(n=>dfeSel.has(n.chave));L.forEach(n=>all?dfeSel.delete(n.chave):dfeSel.add(n.chave));vDfe()}
+async function dfeLote(){
+  const ch=[...dfeSel].filter(c=>{const n=DFE.find(x=>x.chave===c);return n&&!dfeOk(n)&&n.status==='completo'});
+  if(!ch.length)return alert('Marque as notas prontas para entrada.');
+  setSync('lendo notas…');
+  const{data,error}=await sb.from('dfe_notas').select('chave,xml').in('chave',ch);
+  setSync('');
+  if(error||!data)return alert('Não foi possível ler as notas: '+(error&&error.message||''));
+  const ok=[],bad=[];window.LOTE_XML={};
+  data.forEach(r=>{try{const x=xmlParse(r.xml);window.LOTE_XML[x.key]=r.xml;if(x.key&&xmlDone().includes(x.key))bad.push(`NF ${x.num} (${x.forn}): já lançada neste aparelho`);else ok.push(x)}catch(e){bad.push(`${r.chave.slice(-12)}: ${e.message==='xml'?'XML ilegível':e.message}`)}});
+  if(!ok.length)return alert('Nenhuma nota pôde ser lançada:\n'+bad.join('\n'));
+  // resumo: soma por produto (os que já existem) e por produto novo (aglutina repetidos entre notas)
+  const ex=new Map(),nv=new Map();let itens=0,parc=0,vparc=0;
+  ok.forEach(x=>{itens+=x.items.length;x.dups.forEach(d=>{parc++;vparc+=d.v});
+    x.items.forEach(i=>{
+      if(i.pid!=='novo'){const p=db.products.find(y=>y.id===i.pid);if(p)ex.set(p.id,{nome:p.name,qtd:(ex.get(p.id)?.qtd||0)+i.qty,est:+p.stock||0})}
+      else{const k=i.ean||(i.code&&x.cnpj+i.code)||norm(i.name);nv.set(k,{nome:i.name,qtd:(nv.get(k)?.qtd||0)+i.qty})}
+    })});
+  window.LOTE=ok;
+  modal(`<h2>Dar entrada em ${ok.length} nota(s)</h2>
+  <p class="sm">Confira antes de confirmar. Depois de lançar, não há desfazer em lote.</p>
+  <div class="prices"><div class="pr"><span>Notas</span><b>${ok.length}</b></div><div class="pr"><span>Itens</span><b>${itens}</b></div><div class="pr"><span>Produtos que já existem</span><b>${ex.size}</b></div><div class="pr ${nv.size?'k':''}"><span>Produtos novos a cadastrar</span><b>${nv.size}</b></div></div>
+  ${bad.length?`<p class="bad sm">Ficam de fora:<br>${bad.map(esc).join('<br>')}</p>`:''}
+  ${ex.size?`<details open><summary><b>Estoque que será somado</b></summary><div style="overflow:auto;max-height:220px"><table><tr><th>Produto</th><th>Estoque hoje</th><th>Entra</th></tr>${[...ex.values()].map(e=>`<tr><td>${esc(e.nome)}</td><td>${e.est}</td><td><b>+${e.qtd}</b></td></tr>`).join('')}</table></div></details>`:''}
+  ${nv.size?`<details><summary><b>Produtos novos (ficam inativos e sem preço)</b></summary><div style="overflow:auto;max-height:220px"><table><tr><th>Produto</th><th>Qtd</th></tr>${[...nv.values()].map(e=>`<tr><td>${esc(e.nome)}</td><td>${e.qtd}</td></tr>`).join('')}</table></div><p class="sm">Defina preço e ative em Produtos depois. Produto da nota que não for reconhecido por código de barras, código do fornecedor ou nome vira cadastro novo.</p></details>`:''}
+  <p><label><input type="checkbox" id="lt_cost" checked style="width:auto"> Atualizar o custo dos produtos</label></p>
+  ${parc?`<p><label><input type="checkbox" id="lt_pay" checked style="width:auto"> Lançar em <b>Contas a pagar</b> ${parc} parcela(s), total ${R(vparc)}</label></p>`:'<p class="sm">Nenhuma nota traz parcelas.</p>'}
+  <button class="btn" onclick="dfeLoteOk()">Confirmar entrada de ${ok.length} nota(s)</button>`);
+}
+function dfeLoteOk(){
+  const L=window.LOTE||[],upd=$('#lt_cost').checked,pay=!!($('#lt_pay')&&$('#lt_pay').checked)&&ADM();let a=0,n=0,cp=0,k=0;
+  L.forEach(x0=>{ // reler a nota para casar de novo com os produtos já cadastrados pelas notas anteriores do lote
+    const x=xmlParse(window.LOTE_XML[x0.key]);const r=xmlCore(x,upd,pay);a+=r.a;n+=r.n;cp+=r.cp;k++});
+  window.LOTE=null;window.LOTE_XML=null;dfeSel.clear();closeM();render();dfeLoad();
+  alert(`Entrada concluída em ${k} nota(s): ${a} atualização(ões) de produto e ${n} produto(s) novo(s) cadastrado(s)${n?' (inativos, sem preço)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
+}
 function vDfe(){
   const L=DFE.filter(n=>dfeF==='todas'||!dfeOk(n)||dfeF==='canc'&&n.canceled);
   const cnpjF=c=>String(c||'').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
   $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="dfeSync(true)">Buscar notas agora</button>
   <select style="max-width:220px" onchange="dfeF=this.value;vDfe()"><option value="pend" ${dfeF==='pend'?'selected':''}>Pendentes de entrada</option><option value="todas" ${dfeF==='todas'?'selected':''}>Todas</option></select>
+  ${DFE.some(n=>!dfeOk(n)&&n.status!=='completo')?'<button class="btn g" onclick="dfeBaixarTodas()">Baixar todas as pendentes</button>':''}
+  ${DFE.some(n=>!dfeOk(n)&&n.status==='completo')?'<button class="btn g" onclick="dfeSelTodas()">Selecionar todas as prontas</button>':''}
+  ${dfeSel.size?`<button class="btn" onclick="dfeLote()">Dar entrada nas selecionadas (${dfeSel.size})</button>`:''}
   ${dfePend()>1?'<button class="btn g" onclick="dfeIgnorarTodas()">Marcar pendentes como já lançadas</button>':''}</div>
   <p class="sm">O sistema consulta a SEFAZ sozinho, no máximo uma vez por hora, enquanto estiver aberto, e avisa quando chega nota nova. Primeiro chega só o resumo da nota; <b>Baixar nota</b> registra a ciência na SEFAZ e traz o XML completo, e então <b>Dar entrada</b> lança os itens no estoque.</p>
-  ${L.length?`<div style="overflow:auto"><table><tr><th>Emissão</th><th>Fornecedor</th><th>Nº</th><th>Valor</th><th>Situação</th><th></th></tr>
+  ${L.length?`<div style="overflow:auto"><table><tr><th></th><th>Emissão</th><th>Fornecedor</th><th>Nº</th><th>Valor</th><th>Situação</th><th></th></tr>
   ${L.map(n=>{const done=n.entrada_at||xmlDone().includes(n.chave),st=n.canceled?'<span class="bad">Cancelada</span>':done?'<span class="ok">Entrada feita</span>':n.status==='completo'?'Pronta para entrada':n.ciencia_at?'Ciência registrada':'Só resumo';
    const ac=n.canceled||done?'':(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
-   return`<tr><td>${n.dh_emi?fmtD(n.dh_emi):'—'}</td><td>${esc(n.emit_nome||'—')}<div class="sm">${esc(cnpjF(n.emit_cnpj))}</div></td><td>${esc(n.numero||'—')}</td><td>${R(n.valor)}</td><td>${st}</td><td style="white-space:nowrap">${ac}</td></tr>`}).join('')}</table></div>`
+   return`<tr><td>${!n.canceled&&!done&&n.status==='completo'?`<input type="checkbox" style="width:auto" ${dfeSel.has(n.chave)?'checked':''} onchange="dfeTog('${n.chave}',this.checked)" aria-label="Selecionar nota">`:''}</td><td>${n.dh_emi?fmtD(n.dh_emi):'—'}</td><td>${esc(n.emit_nome||'—')}<div class="sm">${esc(cnpjF(n.emit_cnpj))}</div></td><td>${esc(n.numero||'—')}</td><td>${R(n.valor)}</td><td>${st}</td><td style="white-space:nowrap">${ac}</td></tr>`}).join('')}</table></div>`
   :`<p>${DFE.length?'Nenhuma nota pendente. 🎉':'Nenhuma nota recebida ainda. Toque em <b>Buscar notas agora</b>.'}</p>`}`;
 }
 

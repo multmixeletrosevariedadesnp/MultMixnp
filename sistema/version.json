@@ -1,5 +1,5 @@
 {
- "version": "1.10.0",
+ "version": "1.10.1",
  "date": "2026-10-27",
- "notes": "Notas recebidas: busca automática das notas emitidas contra o CNPJ da loja (DF-e), baixa e entrada no estoque sem baixar XML."
+ "notes": "Notas recebidas: baixar todas as pendentes e dar entrada em várias notas de uma vez, com conferência antes."
 }
