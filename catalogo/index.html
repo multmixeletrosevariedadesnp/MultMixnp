@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.1.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.2.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -57,6 +57,8 @@ header h1 span{background:none;color:var(--tag);padding:0;margin:0}
 .lg{width:44px;height:44px;border-radius:10px}
 .hero{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#002e68,var(--brand));color:#fff;border-radius:16px;padding:14px 18px;margin-bottom:14px}.hero img{width:76px;height:76px;border-radius:14px}.hero b{font-size:20px;display:block}.hero span{opacity:.85}
 .ph,.main{position:relative}
+.vidb{position:absolute;right:8px;bottom:8px;background:rgba(16,24,40,.78);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px}
+.lnks{margin:8px 0}
 .offb{position:absolute;top:8px;left:8px;background:#d92d20;color:#fff;font-weight:800;font-size:12px;padding:3px 8px;border-radius:6px;letter-spacing:.02em}
 s.old{color:var(--mut);font-size:13px;font-weight:500}
 .ar{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:0;width:38px;height:38px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer}
@@ -233,6 +235,8 @@ const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Da
 const promoAt=(v,p)=>{const x=promoPct(p);return x?+(v*(1-x/100)).toFixed(2):+v};
 const price0=(p,t)=>has(p,t)?+(t==='avista'?p.price_cash:t==='cartao'?p.price_card:p.price_credit):0;
 const price=(p,t)=>promoAt(price0(p,t),p);
+const safeUrl=u=>{u=String(u||'').trim();return /^https?:\/\/[^\s"'<>]+$/i.test(u)?u:''};
+const isYT=u=>/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(u);
 const offTag=p=>{const x=promoPct(p);return x?`<span class="offb">${String(x).replace('.',',')}% OFF</span>`:''};
 const promoEnd=p=>promoPct(p)&&p.promo_to?' · até '+String(p.promo_to).slice(0,10).split('-').reverse().slice(0,2).join('/'):'';
 function offers(p){return vis(p).slice(1).map(t=>txt(p,t)).join(' · ')}
@@ -289,7 +293,7 @@ function list(){
   const l=P.filter(p=>(cat==='Todos'||(cat==='Ofertas'?promoPct(p)>0:p.category===cat))&&p.name.toLowerCase().includes(q.toLowerCase())).sort((a,b)=>(a.stock<=0)-(b.stock<=0));
   summary(l.length);
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
-   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}</div>
+   <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}${safeUrl(p.video_url)?'<span class="vidb" title="Tem vídeo">▶ vídeo</span>':''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
    <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div></div></div>`}).join('')||EMPTY;
   fab();
@@ -365,6 +369,7 @@ function detail(id){
    <p>${esc(p.description)}</p>
    ${out?'<div class="avis"><b>Indisponível no momento</b><br><span class="sm">Aguardando reposição de estoque. Avise-nos e chamamos você quando chegar.</span></div>':''}
    ${promoPct(p)?`<p class="sm"><b style="color:#d92d20">${String(promoPct(p)).replace('.',',')}% OFF</b>${promoEnd(p)}</p>`:''}<div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${promoPct(p)?`<s class="old">${R(t==='crediario'?price0(p,t)/m:price0(p,t))}</s> `:''}${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
+   ${safeUrl(p.video_url)||safeUrl(p.site_url)?`<div class="row lnks">${safeUrl(p.video_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.video_url))}">▶ Ver vídeo${isYT(safeUrl(p.video_url))?' no YouTube':''}</a>`:''}${safeUrl(p.site_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.site_url))}">Site do fabricante</a>`:''}</div>`:''}
    <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a>
    <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div></div></div>

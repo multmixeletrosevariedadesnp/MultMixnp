@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.11.0 — 27/10/2026
+- Produto com link de vídeo (YouTube ou outro) e site do fabricante. Rode `supabase-v20.sql` antes.
+
 ### 1.10.2 — 27/10/2026
 - Tela de venda renovada: produtos à esquerda e carrinho fixo à direita (no celular, busca no topo, carrinho abaixo e barra com o total); quantidade com + e −, total em destaque e botão Finalizar com o valor.
 
@@ -85,6 +88,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
 - Dados da empresa, pedidos do catálogo, caixa, controle fiscal (NFC-e e NF-e) e preços configuráveis.
 
 ## Catálogo (`catalogo/`)
+### 1.2.0 — 27/10/2026
+- Botões Ver vídeo (abre no YouTube) e Site do fabricante no detalhe do produto; selo "vídeo" no card.
+
 ### 1.1.0 — 27/10/2026
 - Ofertas: preço antigo riscado, selo % OFF nos cards, aviso com a data final e filtro Ofertas.
 

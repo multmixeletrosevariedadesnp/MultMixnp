@@ -1,4 +1,4 @@
-const VER='1.1.0',V='mm-catalogo-'+VER,SHELL=['./','index.html','manifest.json','pwa.js','version.json','logo.jpg','logo-icon.png','favicon.png','icon-192.png','icon-512.png'];
+const VER='1.2.0',V='mm-catalogo-'+VER,SHELL=['./','index.html','manifest.json','pwa.js','version.json','logo.jpg','logo-icon.png','favicon.png','icon-192.png','icon-512.png'];
 const LIB=/^https:\/\/(cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)\//;
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});

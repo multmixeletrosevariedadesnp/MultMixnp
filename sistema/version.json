@@ -1,5 +1,5 @@
 {
- "version": "1.10.2",
+ "version": "1.11.0",
  "date": "2026-10-27",
- "notes": "Tela de venda renovada: produtos de um lado, carrinho do outro, quantidade com + e -."
+ "notes": "Produto com link de vídeo (YouTube ou outro) e site do fabricante."
 }

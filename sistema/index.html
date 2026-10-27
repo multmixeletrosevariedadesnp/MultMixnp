@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.10.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.11.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1413,6 +1413,8 @@ function prodForm(id){
    <div><label>até</label><input id="f_promo_to" type="date" value="${esc(String(p.promo_to||'').slice(0,10))}"></div>
    <div class="w"><label>Descrição</label><textarea id="f_description" rows="2">${v('description')}</textarea></div>
    <div class="w"><label>Especificações (uma por linha, formato Nome: valor)</label><textarea id="f_specs" rows="4">${(p.specs||[]).map(s=>s.k+': '+s.v).join('\n')}</textarea></div>
+   <div class="w"><label>Vídeo do produto (link do YouTube ou outro site, opcional)</label><input id="f_video_url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." value="${esc(p.video_url||'')}"></div>
+   <div class="w"><label>Site do fabricante (opcional)</label><input id="f_site_url" type="url" inputmode="url" placeholder="https://www.marca.com.br/produto" value="${esc(p.site_url||'')}"></div>
    <div class="w"><label>Fotos (até 5, um link por linha)</label><textarea id="f_photos" rows="3">${(p.photos||[]).join('\n')}</textarea>
    ${sb?'<input type="file" id="up" accept="image/*" multiple onchange="upload(this)">':''}</div>
    <div><label>NCM (fiscal)</label><input id="f_ncm" value="${v('ncm')}"></div>
@@ -1441,6 +1443,12 @@ function saveProd(id){
    max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
    photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
+  { // vídeo e site: só envia as colunas se houver link (evita erro caso o SQL v20 ainda não tenha sido rodado)
+    const fix=v=>{v=(v||'').trim();if(!v)return null;if(/^www\./i.test(v))v='https://'+v;return /^https?:\/\/[^\s]+\.[^\s]+$/i.test(v)?v:false},vu=fix(g('video_url')),su=fix(g('site_url')),o=db.products.find(x=>x.id===id)||{};
+    if(vu===false)return alert('O link do vídeo precisa começar com http:// ou https://');
+    if(su===false)return alert('O link do site do fabricante precisa começar com http:// ou https://');
+    if(vu||su||'video_url' in o){row.video_url=vu;row.site_url=su}
+  }
   { // só envia as colunas de promoção se houver promoção (evita erro caso o SQL v18 ainda não tenha sido rodado)
     const pp=+g('promo_pct')>0?Math.min(90,+g('promo_pct')):null,pf=g('promo_from')||null,pt=g('promo_to')||null,o=db.products.find(x=>x.id===id)||{};
     if(pp||pf||pt||'promo_pct' in o){row.promo_pct=pp;row.promo_from=pf;row.promo_to=pt}
