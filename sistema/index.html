@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.11.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.12.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1067,6 +1067,9 @@ function vEmp(){
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_credit" style="width:auto" ${c.show_credit!==false?'checked':''}> Preço no carnê</label></div>
   <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
   <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p>
+  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Contador</b>
+  <p class="sm" style="margin:2px 0 8px">Usado para enviar o pacote fiscal do mês (XMLs e resumo) em Fiscal &gt; Pacote do contador.</p>
+  <div class="f"><div><label>Nome</label><input id="e_ac_name" value="${esc(c.accountant_name||'')}"></div><div><label>E-mail</label><input id="e_ac_email" type="email" value="${esc(c.accountant_email||'')}"></div><div><label>WhatsApp (com DDD)</label><input id="e_ac_phone" inputmode="tel" value="${esc(c.accountant_phone||'')}"></div></div></div>
   <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Versão do sistema: ${esc(window.APP_VERSION)}</b>
   <p class="sm" style="margin:2px 0 8px">Se algo não apareceu depois de uma atualização, verifique ou force a atualização. Seus dados e vendas não são apagados.</p>
   <button class="btn g" type="button" onclick="appCheck()">Verificar atualização</button> <button class="btn g" type="button" onclick="appForce()">Forçar atualização</button></div>
@@ -1127,6 +1130,11 @@ function saveEmp(){
   if(row.cnpj&&!okCnpj(row.cnpj))return alert('CNPJ inválido. Confira os 14 dígitos.');
   row.uf=row.uf.toUpperCase();
   row.theme=$('#e_theme').value;row.theme_cfg=temaForm();
+  { // contador: só envia as colunas se houver dados (evita erro caso o SQL v21 ainda não tenha sido rodado)
+    const an=$('#e_ac_name').value.trim(),ae=$('#e_ac_email').value.trim(),ap=$('#e_ac_phone').value.trim();
+    if(ae&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ae))return alert('E-mail do contador inválido.');
+    if(an||ae||ap||'accountant_name' in CO()){row.accountant_name=an||null;row.accountant_email=ae||null;row.accountant_phone=ap||null}
+  }
   row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
   const pt=$('#e_pix_key_type').value,pk=pixNorm(pt,$('#e_pix_key').value);
@@ -2057,6 +2065,92 @@ setInterval(()=>{try{notifCheck()}catch(e){}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)try{notifCheck()}catch(e){}});
 setTimeout(()=>{try{notifCheck()}catch(e){}},4000);
 
+/* ========= Pacote do contador (XMLs do mês + resumo, em .zip) ========= */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+function zipMake(files){ // files: [{name,data(string)}] ; ZIP sem compressão (XML é pequeno), nomes em UTF-8
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;const d=new Date();
+  const dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF,dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name),da=enc.encode(f.data),crc=crc32(da),h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);
+    h.setUint32(14,crc,true);h.setUint32(18,da.length,true);h.setUint32(22,da.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),nm,da);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);
+    c.setUint32(16,crc,true);c.setUint32(20,da.length,true);c.setUint32(24,da.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+da.length;
+  });
+  const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/zip'});
+}
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+let PAC=null;
+function pacoteOpen(){
+  const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const c=CO();
+  modal(`<h2>Pacote do contador</h2>
+  <p class="sm">Reúne os XMLs do mês (notas emitidas, canceladas e recebidas) e uma planilha-resumo em um arquivo .zip, pronto para enviar por WhatsApp ou e-mail.</p>
+  <div class="f"><div><label>Mês</label><input id="pc_m" type="month" value="${ym}"></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pc_h" style="width:auto"> Incluir notas de homologação (teste, sem valor fiscal)</label></div>
+  <p class="sm">Contador: ${c.accountant_name||c.accountant_email||c.accountant_phone?`<b>${esc(c.accountant_name||'—')}</b> · ${esc(c.accountant_email||'sem e-mail')} · ${esc(c.accountant_phone||'sem WhatsApp')}`:'<span class="bad">não cadastrado</span>'} (cadastre em Empresa).</p>
+  <button class="btn" onclick="pacoteGerar()">Gerar pacote</button><div id="pc_r" style="margin-top:12px"></div>`);
+}
+async function pacoteGerar(){
+  const ym=$('#pc_m').value,hom=$('#pc_h').checked;if(!ym)return alert('Escolha o mês.');
+  if(!sb)return alert('O pacote usa os XMLs guardados no Supabase. Entre com sua conta online.');
+  const[y,m]=ym.split('-').map(Number),a=new Date(y,m-1,1).toISOString(),b=new Date(y,m,1).toISOString();
+  $('#pc_r').innerHTML='<p class="sm">Reunindo os arquivos…</p>';
+  try{
+    const[f,r]=await Promise.all([
+      sb.from('fiscal_docs').select('sale_id,xml,cancel_xml,created_at').gte('created_at',a).lt('created_at',b),
+      sb.from('dfe_notas').select('chave,emit_cnpj,emit_nome,numero,valor,dh_emi,status,canceled,xml').gte('dh_emi',a).lt('dh_emi',b)]);
+    if(f.error)throw f.error;
+    const files=[],csv=[['Tipo','Situação','Número','Série','Chave de acesso','Data','Cliente/Fornecedor','CNPJ/CPF','Valor','Ambiente']];
+    let ne=0,nc=0,nr=0,nh=0;
+    (f.data||[]).forEach(d=>{
+      const s=db.sales.find(x=>x.id===d.sale_id);if(!s||!s.fiscal_key||!d.xml)return;
+      if(s.fiscal_env===2&&!hom){nh++;return}
+      const cu=db.customers.find(x=>x.id===s.customer_id)||{},can=s.fiscal_status==='cancelada'||!!d.cancel_xml;
+      files.push({name:`emitidas/NFe_${s.fiscal_key}.xml`,data:d.xml});ne++;
+      if(d.cancel_xml){files.push({name:`canceladas/NFe_${s.fiscal_key}_cancelamento.xml`,data:d.cancel_xml});nc++}
+      csv.push(['Emitida',can?'Cancelada':'Autorizada',s.fiscal_number||'',s.fiscal_series||'1',s.fiscal_key,ld(d.created_at),cu.name||'Consumidor',cu.cpf||'',(+s.total||0).toFixed(2).replace('.',','),s.fiscal_env===2?'Homologação':'Produção']);
+    });
+    if(!r.error)(r.data||[]).forEach(n=>{
+      if(n.status!=='completo'||!n.xml)return;
+      files.push({name:`recebidas/NFe_${n.chave}.xml`,data:n.xml});nr++;
+      csv.push(['Recebida',n.canceled?'Cancelada pelo emitente':'Autorizada',n.numero||'','',n.chave,n.dh_emi?ld(n.dh_emi):'',n.emit_nome||'',n.emit_cnpj||'',(+n.valor||0).toFixed(2).replace('.',','),'Produção']);
+    });
+    const semXml=(r.data||[]).filter(n=>n.status!=='completo').length;
+    if(!files.length)return $('#pc_r').innerHTML=`<p class="bad">Nenhuma nota com XML em ${MESES[m-1]}/${y}.${nh?` (${nh} de homologação foram deixadas de fora)`:''}</p>`;
+    const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    files.push({name:'resumo.csv',data:'﻿'+csv.map(l=>l.map(q).join(';')).join('\r\n')});
+    const co=CO(),nome=`contador-MultMix-${ym}.zip`,blob=zipMake(files);
+    PAC={blob,nome,ym,ne,nc,nr,txt:`Olá${co.accountant_name?', '+co.accountant_name.split(' ')[0]:''}! Segue o pacote fiscal de ${MESES[m-1]}/${y} da ${co.legal_name||co.trade_name||'MultMix'}${co.cnpj?' (CNPJ '+co.cnpj+')':''}: ${ne} nota(s) emitida(s), ${nc} cancelada(s) e ${nr} recebida(s). Os XMLs estão no arquivo ${nome}, com a planilha resumo.csv.`};
+    $('#pc_r').innerHTML=`<div class="prices"><div class="pr"><span>Emitidas</span><b>${ne}</b></div><div class="pr"><span>Canceladas</span><b>${nc}</b></div><div class="pr"><span>Recebidas</span><b>${nr}</b></div></div>
+    ${semXml?`<p class="sm bad">${semXml} nota(s) recebida(s) do mês só têm resumo e ficaram de fora. Baixe-as em Notas recebidas.</p>`:''}${nh?`<p class="sm">${nh} nota(s) de homologação deixadas de fora.</p>`:''}
+    <p><b>${nome}</b> · ${(blob.size/1024).toFixed(0)} KB</p>
+    <div class="bar"><button class="btn" onclick="pacoteEnviar()">Enviar (WhatsApp, e-mail…)</button><button class="btn g" onclick="pacoteBaixar()">Baixar .zip</button></div>
+    <div class="bar"><button class="btn g" onclick="pacoteZap()">Abrir WhatsApp do contador</button><button class="btn g" onclick="pacoteMail()">Abrir e-mail ao contador</button></div>
+    <p class="sm">No celular, <b>Enviar</b> abre o menu do aparelho com o arquivo já anexado: escolha WhatsApp ou e-mail. No computador, baixe o .zip e use os botões de WhatsApp ou e-mail: eles abrem a conversa com a mensagem pronta e você anexa o arquivo baixado.</p>`;
+  }catch(e){$('#pc_r').innerHTML=`<p class="bad">Não foi possível gerar: ${esc(e.message||e)}</p>`}
+}
+function pacoteBaixar(){if(!PAC)return;const a=document.createElement('a');a.href=URL.createObjectURL(PAC.blob);a.download=PAC.nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function pacoteEnviar(){
+  if(!PAC)return;const f=new File([PAC.blob],PAC.nome,{type:'application/zip'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Pacote fiscal '+PAC.ym,text:PAC.txt});return}}catch(e){if(e&&e.name==='AbortError')return}
+  pacoteBaixar();alert('Este aparelho não anexa arquivo direto. O .zip foi baixado: use os botões de WhatsApp ou e-mail e anexe o arquivo.');
+}
+function pacoteZap(){
+  if(!PAC)return;const d=String(CO().accountant_phone||'').replace(/\D/g,''),n=d?(d.length>=12&&d.startsWith('55')?d:'55'+d):'';
+  window.open('https://wa.me/'+n+'?text='+encodeURIComponent(PAC.txt),'_blank','noopener');
+}
+function pacoteMail(){
+  if(!PAC)return;const c=CO();
+  location.href='mailto:'+encodeURIComponent(c.accountant_email||'')+'?subject='+encodeURIComponent('Pacote fiscal '+PAC.ym+' - '+(c.trade_name||c.legal_name||'MultMix'))+'&body='+encodeURIComponent(PAC.txt+'\n\n(Anexe o arquivo '+PAC.nome+')');
+}
+
 /* ========= Notas recebidas (Distribuição DF-e da SEFAZ) ========= */
 let DFE=[],dfeF='pend',dfeBusy=false,dfeSel=new Set();
 const dfeKey=n=>String(n.chave||'');
@@ -2318,7 +2412,7 @@ function vFis(){
   const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'&&!x.s.canceled_at),prontas=pend.filter(x=>!x.p.length).length;
   $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). O botão Emitir nota envia a venda à API fiscal (em homologação, a nota não tem valor fiscal).</p>
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
-  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button></div>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${ADM()?'<button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':s.fiscal_status==='cancelada'?'<span class="bad">Nota cancelada</span>':em?`<span class="ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>

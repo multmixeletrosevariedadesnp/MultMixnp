@@ -6,7 +6,7 @@ Dois aplicativos independentes, publicados no GitHub Pages, que compartilham só
 - `catalogo/`: catálogo público para os clientes. Endereço: `.../MultMixnp/catalogo/`
 - `index.html` e `catalogo.html` (raiz): só redirecionam para as pastas acima.
 - `sw.js` (raiz): limpa o cache de versões antigas.
-- `supabase*.sql`: banco de dados. Rode no SQL Editor na ordem: `supabase.sql`, `-v2`, `-v3`, ... `-v20`.
+- `supabase*.sql`: banco de dados. Rode no SQL Editor na ordem: `supabase.sql`, `-v2`, `-v3`, ... `-v21`.
 
 Cada pasta é autocontida (HTML, manifest, service worker, `pwa.js`, logo e ícones). Mexer em uma não altera a outra.
 

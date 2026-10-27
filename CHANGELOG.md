@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.12.0 — 27/10/2026
+- Fiscal > Pacote do contador: .zip do mês com XMLs emitidos, cancelados e recebidos mais resumo.csv; envio por WhatsApp/e-mail (compartilhar no celular). Contador cadastrado em Empresa. Rode `supabase-v21.sql` antes.
+
 ### 1.11.0 — 27/10/2026
 - Produto com link de vídeo (YouTube ou outro) e site do fabricante. Rode `supabase-v20.sql` antes.
 

@@ -1,5 +1,5 @@
 {
- "version": "1.11.0",
+ "version": "1.12.0",
  "date": "2026-10-27",
- "notes": "Produto com link de vídeo (YouTube ou outro) e site do fabricante."
+ "notes": "Pacote do contador: XMLs do mês e resumo em .zip, para enviar por WhatsApp ou e-mail."
 }
