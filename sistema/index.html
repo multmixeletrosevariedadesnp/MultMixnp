@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.13.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.14.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1196,12 +1196,12 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,rel:vRel,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -2522,6 +2522,114 @@ function csvFis(){
     s.items.forEach(i=>rows.push([s.created_at.slice(0,10),s.doc_type==='nfce'?'NFC-e 65':'NF-e 55',c.name||'',c.cpf||'',c.ie||'',c.cep||'',c.street||'',c.number||'',c.district||'',c.city||'',c.uf||'',c.ibge||'',s.nat_op||'Venda de mercadoria',s.freight||'9',i.name,i.ncm||'',i.cfop||'',i.csosn||'',i.unit||'UN',i.qty,i.price,(i.price*i.qty).toFixed(2)]))});
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();
+}
+
+
+/* ========= Relatórios (PDF) ========= */
+let REL={k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
+const RELN={vendas:'Vendas por período',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
+function relBuild(){
+  const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
+  const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
+  if(k==='vendas'){
+    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)).sort((a,b)=>a.created_at.localeCompare(b.created_at)),by={};
+    L.forEach(s=>{const m=s.pay_type==='crediario'?'Carnê':(s.method||'Não informado');by[m]=(by[m]||0)+ +s.total});
+    const tot=sum(L,s=>+s.total),nc=db.sales.filter(s=>s.canceled_at&&inP(s.created_at)).length;
+    return{title:RELN[k],sub:'Período: '+per,head:['Data','Cliente','Vendedor','Pagamento','Itens','Total'],al:'lllllr',
+      rows:L.map(s=>[fmtD(ld(s.created_at)),cn(s.customer_id),s.seller_name||'—',s.pay_type==='crediario'?'Carnê':(s.method||'—'),(s.items||[]).reduce((a,i)=>a+ +i.qty,0),R(s.total)]),
+      foot:['','','','','Total',R(tot)],
+      sum:[['Vendas',L.length],['Total vendido',R(tot)],['Ticket médio',R(L.length?tot/L.length:0)],...Object.entries(by).map(([m,v])=>['Em '+m,R(v)]),...(nc?[['Vendas canceladas',nc]]:[])]};
+  }
+  if(k==='estoque'){
+    let L=db.products.filter(p=>p.active!==false&&p.active!==0).sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''),'pt-BR')||String(a.name).localeCompare(b.name,'pt-BR'));
+    if(REL.low)L=L.filter(p=>(+p.stock||0)<=stockMin());
+    const vc=sum(L,p=>(+p.stock||0)*(+p.cost||0)),vv=sum(L,p=>(+p.stock||0)*(+p.price_cash||0));
+    return{title:'Estoque'+(REL.low?' · estoque baixo':''),sub:'Posição em '+fmtD(ld(now())),head:['Produto','Categoria','Qtd','Custo','Preço à vista','Valor a custo'],al:'llrrrr',
+      rows:L.map(p=>[p.name,p.category||'—',+p.stock||0,p.cost?R(p.cost):'—',R(p.price_cash),R((+p.stock||0)*(+p.cost||0))]),
+      foot:['Total','',sum(L,p=>+p.stock||0),'','',R(vc)],
+      sum:[['Produtos',L.length],['Unidades',sum(L,p=>+p.stock||0)],['Valor a custo',R(vc)],['Valor a preço à vista',R(vv)],['Sem custo cadastrado',L.filter(p=>!+p.cost).length]]};
+  }
+  if(k==='receber'){
+    const rows=[];
+    db.installments.forEach(i=>{if(i.paid_at||i.canceled_at)return;const sl=db.sales.find(x=>x.id===i.sale_id);if(!sl||sl.canceled_at)return;
+      const d=due(i),n=days(i.due_date);if(REL.cr==='atraso'&&n<=0)return;
+      rows.push({c:cn(sl.customer_id),ph:(db.customers.find(c=>c.id===sl.customer_id)||{}).phone||'',n:i.number,tot:db.installments.filter(x=>x.sale_id===sl.id&&!x.canceled_at).length,due:i.due_date,dl:Math.max(n,0),a:+i.amount,v:d.v})});
+    rows.sort((a,b)=>a.c.localeCompare(b.c,'pt-BR')||a.due.localeCompare(b.due));
+    const late=rows.filter(r=>r.dl>0);
+    return{title:REL.cr==='atraso'?'Carnês em atraso':'Carnês a receber (todas em aberto)',sub:'Posição em '+fmtD(ld(now()))+' · valores com multa e juros',head:['Cliente','Telefone','Parcela','Vencimento','Atraso','Valor','Valor hoje'],al:'lllllrr',
+      rows:rows.map(r=>[r.c,r.ph||'—',r.n+'/'+r.tot,fmtD(r.due),r.dl?r.dl+' dias':'—',R(r.a),R(r.v)]),foot:['Total','','','','',R(sum(rows,r=>r.a)),R(sum(rows,r=>r.v))],
+      sum:[['Parcelas',rows.length],['Clientes',new Set(rows.map(r=>r.c)).size],['Em atraso',late.length+' · '+R(sum(late,r=>r.v))],['Total hoje',R(sum(rows,r=>r.v))]]};
+  }
+  if(k==='pagar'){
+    const P=(db.payables||[]).filter(p=>!p.canceled_at);
+    const L=(REL.pg==='pagas'?P.filter(p=>p.paid_at&&inP(p.paid_at)):P.filter(p=>!p.paid_at)).sort((a,b)=>String(REL.pg==='pagas'?a.paid_at:a.due_date).localeCompare(String(REL.pg==='pagas'?b.paid_at:b.due_date)));
+    const amt=p=>+(REL.pg==='pagas'?(p.paid_amount||p.amount):p.amount)||0,lt=L.filter(p=>!p.paid_at&&dleft(p.due_date)<0);
+    return{title:REL.pg==='pagas'?'Contas pagas':'Contas a pagar em aberto',sub:REL.pg==='pagas'?'Pagas no período: '+per:'Posição em '+fmtD(ld(now())),head:['Fornecedor','Documento','Vencimento',REL.pg==='pagas'?'Pago em':'Situação','Valor'],al:'llllr',
+      rows:L.map(p=>[p.supplier||'—',(p.doc?'NF '+p.doc:'—')+(p.parcel?' · '+p.parcel:''),fmtD(p.due_date),REL.pg==='pagas'?fmtD(p.paid_at)+(p.method?' · '+p.method:''):(dleft(p.due_date)<0?'Vencida':'A vencer'),R(amt(p))]),
+      foot:['Total','','','',R(sum(L,amt))],sum:[['Contas',L.length],['Total',R(sum(L,amt))],...(REL.pg==='pagas'?[]:[['Vencidas',lt.length+' · '+R(sum(lt,amt))]])]};
+  }
+  if(k==='caixa'){
+    const rows=[],tm={};
+    for(let d=new Date(f+'T12:00:00');ld(d.toISOString())<=t&&rows.length<400;d.setDate(d.getDate()+1)){
+      const day=ld(d.toISOString()),by={},add=(m,v)=>by[m]=(by[m]||0)+v;
+      const sd=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at)===day);
+      db.sales.filter(s=>ld(s.created_at)===day).forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
+      db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===day).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+      db.sales.filter(s=>s.canceled_at&&ld(s.canceled_at)===day&&+s.refund_amount>0).forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount));
+      const tot=Object.values(by).reduce((a,b)=>a+b,0);for(const m in by)tm[m]=(tm[m]||0)+by[m];
+      if(sd.length||tot)rows.push([fmtD(day),sd.length,Object.entries(by).map(([m,v])=>m+' '+R(v)).join(' · ')||'—',R(tot),tot]);
+    }
+    const gt=rows.reduce((a,r)=>a+r[4],0);
+    return{title:RELN[k],sub:'Período: '+per+' · recebido = vendas à vista, entradas e parcelas pagas, menos devoluções',head:['Dia','Vendas','Recebimentos por forma','Total do dia'],al:'lrlr',
+      rows:rows.map(r=>r.slice(0,4)),foot:['Total','','',R(gt)],sum:[['Recebido no período',R(gt)],...Object.entries(tm).map(([m,v])=>[m,R(v)])]};
+  }
+  const m=f.slice(0,7),L=comRows(m,ADM()?REL.sel:(me?me.id:'todos')),by={};
+  L.forEach(r=>{const o=by[r.sname]=by[r.sname]||{b:0,c:0};o.b+=r.base;o.c+=r.comm});
+  return{title:RELN[k],sub:'Mês: '+m.split('-').reverse().join('/'),head:['Data','Cliente','Origem','Vendedor','Base','%','Comissão'],al:'llllrrr',
+    rows:L.map(r=>[fmtD(r.date),r.cust,r.kind,r.sname,R(r.base),r.pct+'%',R(r.comm)]),foot:['Total','','','',R(sum(L,r=>r.base)),'',R(sum(L,r=>r.comm))],
+    sum:Object.entries(by).map(([n,o])=>[n,R(o.c)+' (base '+R(o.b)+')'])};
+}
+function relHtml(d,forPdf){
+  const al=i=>d.al[i]==='r'?' style="text-align:right"':'',co=CO();
+  return`<table class="rt"><thead><tr>${d.head.map((h,i)=>`<th${al(i)}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.length?d.rows.map(r=>`<tr>${r.map((c,i)=>`<td${al(i)}>${esc(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${d.head.length}" style="text-align:center;padding:14px">Nada encontrado neste filtro.</td></tr>`}</tbody>
+  ${d.rows.length?`<tfoot><tr>${d.foot.map((c,i)=>`<td${al(i)}><b>${esc(c)}</b></td>`).join('')}</tr></tfoot>`:''}</table>`;
+}
+function vRel(){
+  if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
+  const k=REL.k,needP=['vendas','caixa','com'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
+  const d=relBuild();
+  $('#app').innerHTML=`<div class="bar"><select style="max-width:230px" onchange="REL.k=this.value;vRel()">${Object.entries(RELN).map(([v,l])=>`<option value="${v}" ${k===v?'selected':''}>${l}</option>`).join('')}</select>
+  ${needP?`<input type="date" style="max-width:170px" value="${REL.from}" onchange="REL.from=this.value||REL.from;vRel()"><input type="date" style="max-width:170px" value="${REL.to}" onchange="REL.to=this.value||REL.to;vRel()">`:''}
+  ${k==='estoque'?`<label class="sm"><input type="checkbox" style="width:auto" ${REL.low?'checked':''} onchange="REL.low=this.checked;vRel()"> Só estoque baixo</label>`:''}
+  ${k==='receber'?`<select style="max-width:200px" onchange="REL.cr=this.value;vRel()"><option value="atraso" ${REL.cr==='atraso'?'selected':''}>Só em atraso</option><option value="todas" ${REL.cr==='todas'?'selected':''}>Todas em aberto</option></select>`:''}
+  ${k==='pagar'?`<select style="max-width:200px" onchange="REL.pg=this.value;vRel()"><option value="abertas" ${REL.pg==='abertas'?'selected':''}>Em aberto</option><option value="pagas" ${REL.pg==='pagas'?'selected':''}>Pagas no período</option></select>`:''}
+  ${k==='com'?`<select style="max-width:220px" onchange="REL.sel=this.value;vRel()"><option value="todos">Todos os vendedores</option>${PROF.map(u=>`<option value="${u.id}" ${REL.sel===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select>`:''}
+  <button class="btn" onclick="relPdf()">Gerar PDF</button><button class="btn g" onclick="relCsv()">Planilha (CSV)</button></div>
+  ${k==='com'?'<p class="sm">Comissões usam o mês da primeira data.</p>':''}
+  <div class="prices">${d.sum.slice(0,6).map(([l,v])=>`<div class="pr"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div>
+  <div style="overflow:auto" class="relv">${relHtml(d)}</div>
+  <p class="sm">"Gerar PDF" abre a impressão: escolha <b>Salvar como PDF</b> (no celular, <b>Compartilhar</b> ou <b>Imprimir &gt; PDF</b>).</p>`;
+  if(k==='com'&&ADM()&&!PROF.length&&!REL.pl){REL.pl=1;loadProf().then(()=>vRel())}
+}
+function relPdf(){
+  const d=relBuild(),co=CO(),logo=new URL(logoIcon(),location.href).href;
+  const css=`@page{size:A4;margin:14mm 12mm}*{box-sizing:border-box}body{font:11px/1.35 Arial,sans-serif;color:#111;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .h{display:flex;gap:12px;align-items:center;border-bottom:2px solid #00468f;padding-bottom:8px;margin-bottom:10px}.h img{width:54px;height:54px;object-fit:contain}
+  .h b{font-size:14px}.h .t{margin-left:auto;text-align:right}.h h1{font-size:16px;margin:0;color:#00468f}
+  .sm{color:#555;font-size:10px}.rs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.rs div{border:1px solid #ccd;border-radius:6px;padding:5px 9px;min-width:120px}.rs span{display:block;color:#555;font-size:9.5px}.rs b{font-size:12px}
+  table{width:100%;border-collapse:collapse}th{background:#00468f;color:#fff;text-align:left;padding:5px 6px;font-size:10px}td{padding:4px 6px;border-bottom:1px solid #dde}tbody tr:nth-child(even){background:#f4f6fb}
+  thead{display:table-header-group}tr{page-break-inside:avoid}tfoot td{border-top:2px solid #00468f;background:#eef2fa}.f{margin-top:12px;color:#666;font-size:9px;text-align:center}`;
+  const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(d.title)} - ${esc(co.trade_name||'MultMix')}</title><style>${css}</style></head><body>
+  <div class="h"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div><b>${esc(co.trade_name||co.legal_name||'MultMix Eletros e Variedades')}</b><div class="sm">${esc(coLine())}</div></div><div class="t"><h1>${esc(d.title)}</h1><div class="sm">${esc(d.sub)}</div></div></div>
+  <div class="rs">${d.sum.map(([l,v])=>`<div><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div>${relHtml(d)}
+  <div class="f">Gerado em ${new Date().toLocaleString('pt-BR')} · MultMix Sistema ${esc(window.APP_VERSION)}</div></body></html>`;
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},300)};
+}
+function relCsv(){
+  const d=relBuild(),rows=[d.head,...d.rows,d.foot];
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='relatorio-'+REL.k+'.csv';a.click();
 }
 
 /* ========= Início ========= */

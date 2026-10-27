@@ -1,5 +1,5 @@
 {
- "version": "1.13.0",
+ "version": "1.14.0",
  "date": "2026-10-27",
- "notes": "Contingência fiscal: situação da SEFAZ, emitir todas as prontas, inutilização de numeração e refazer nota sem duplicar."
+ "notes": "Relatórios em PDF: vendas, estoque, carnês, contas a pagar, caixa e comissões."
 }
