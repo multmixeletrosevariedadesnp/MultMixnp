@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.10.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.10.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -97,6 +97,32 @@ body.out header{display:none}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{position:static;max-width:360px;margin:0 auto}}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
+
+/* PDV: produtos à esquerda, carrinho à direita (no celular, um abaixo do outro) */
+.pdv{display:grid;gap:14px;align-items:start}
+@media(min-width:900px){.pdv{grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr)}.pdvr{position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto}.pbar{display:none!important}}
+.pdv .box{max-width:none}.pdv h2{margin:0 0 12px}
+.psr{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.pq{flex:1 1 220px}.pqq{width:78px}.psr .btn{height:42px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:12px}
+.pgh{grid-column:1/-1;margin:4px 2px}
+.pcard{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;min-width:0}
+.pcard:hover,.pcard:focus-visible{border-color:var(--pri)}.pcard.off{opacity:.65}
+.pcard img,.pcard .pno{width:48px;height:48px;border-radius:9px;object-fit:cover;flex:none;background:var(--line);font-size:10px;color:var(--mut);display:grid;place-items:center;text-align:center}
+.pcard .pt{display:flex;flex-direction:column;min-width:0;flex:1}.pn2{font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .pp{display:flex;flex-direction:column;align-items:flex-end;flex:none}.pcard .pp>b{font-size:15px}.offt{color:var(--bad)}.low{color:#b54708}
+.citems{display:grid;gap:8px;margin-bottom:10px}
+.citem{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto 26px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.cthumb{width:44px;height:44px;border-radius:9px;object-fit:cover;background:var(--line);display:grid;place-items:center;color:var(--mut)}
+.cn{min-width:0;display:flex;flex-direction:column}.cn b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.stp{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}.stp button{border:0;background:var(--card);color:var(--ink);width:32px;height:32px;font-size:18px;cursor:pointer}.stp span{min-width:26px;text-align:center;font-weight:700}
+.lt{min-width:76px;text-align:right}.rx{border:0;background:none;color:var(--mut);font-size:20px;cursor:pointer;line-height:1}.rx:hover{color:var(--bad)}
+.cempty{text-align:center;padding:22px 8px;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin:0 0 10px}
+.ctot{display:flex;justify-content:space-between;align-items:flex-end;margin:6px 0 14px;padding:10px 12px;border-radius:12px;background:var(--bg)}.ctot>div{display:flex;flex-direction:column;align-items:flex-end}.ctot b{font-size:26px;line-height:1.1}
+.pay,.cli{margin-top:6px}.fin{width:100%;margin-top:12px;padding:14px;font-size:17px}
+.pbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.15)}
+.pbar>div{display:flex;flex-direction:column}.pbar b{font-size:17px}
+@media(max-width:899px){main{padding-bottom:86px}.citem{grid-template-columns:40px minmax(0,1fr) auto 26px}.citem .lt{grid-column:2;text-align:left;grid-row:2}.citem .stp{grid-row:2;grid-column:3}.citem .rx{grid-row:1;grid-column:4}}
+body:not(.in) .pbar{display:none}
 </style>
 </head>
 <body>
@@ -1432,21 +1458,25 @@ let cart=[],pre=null,fromOrder=null,selCli=null;
 window.appBusy=()=>cart.length>0||$('#modal').classList.contains('open');
 function vPdv(){
   selCli=null;
-  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Nova venda</h2>
-  <div class="f"><div class="w"><label>Buscar produto (nome, categoria ou código de barras) · toque no produto para adicionar</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
-  <div style="align-self:end"><button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
-  <div><label>Qtd</label><input id="s_q" type="number" min="1" value="1"></div></div>
-  <div id="p_res" class="pres"></div>
-  <div id="cartv"></div>
-  <div class="f"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
-  <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
-  ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
-  <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
-  <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
-  <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
-  <div class="f"><div><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c')"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
-  <div id="cs" class="cs" aria-live="polite"></div>
-  <button class="btn" onclick="finish()">Finalizar venda</button></div>`;cartView();
+  $('#app').innerHTML=`<div class="pdv">
+  <section class="pdvl box" aria-label="Produtos"><h2>Nova venda</h2>
+   <div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
+    <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
+    <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
+   <div id="p_res" class="pgrid"></div></section>
+  <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
+   <div id="cartv"></div>
+   <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
+   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+   ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
+   <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
+   <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
+   <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
+   <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c')"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
+   <div id="cs" class="cs" aria-live="polite"></div>
+   <button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></section>
+  </div>
+  <div class="pbar" id="pbar"><div><span class="sm">Carrinho</span><b id="pbt">R$ 0,00</b></div><button class="btn" onclick="document.getElementById('pdvcart').scrollIntoView({behavior:'smooth',block:'start'})">Ver carrinho</button></div>`;cartView();
   if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
 }
 const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Date(),h=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1459,17 +1489,21 @@ const pPhoto=p=>(p.photos&&p.photos[0])||'';
 function pdvList(){
   const k=norm($('#p_q').value),d=digits($('#p_q').value);
   let l=db.products.filter(p=>p.active!==false&&(!k.trim()||norm([p.name,p.category,p.supplier_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d)));
-  return l.sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,8);
+  return l.sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
 }
+const pdvNarrow=()=>matchMedia('(max-width:899px)').matches;
 function pdvSearch(){
   if(!$('#p_res'))return;
-  const t=($('#s_t')||{}).value||'avista',l=pdvList(),all=db.products.filter(p=>p.active!==false).length;
-  $('#p_res').innerHTML=l.length?l.map(p=>`<button type="button" class="pri" onclick="addProd('${p.id}')">
+  const t=($('#s_t')||{}).value||'avista',qv=$('#p_q').value.trim(),all=db.products.filter(p=>p.active!==false).length;
+  if(!qv&&pdvNarrow()){$('#p_res').innerHTML='<p class="sm pgh">Digite o nome, escaneie ou use o leitor para achar um produto.</p>';return}
+  const l=pdvList();
+  $('#p_res').innerHTML=l.length?l.map(p=>{const st=+p.stock||0,pr=promoPct(p);return`<button type="button" class="pcard ${st>0?'':'off'}" onclick="pdvPick('${p.id}')">
     ${pPhoto(p)?`<img src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=pno>sem foto</span>'">`:'<span class="pno">sem foto</span>'}
-    <span class="pn"><b>${esc(p.name)}</b><span class="sm ${(+p.stock||0)>0?'':'bad'}">${(+p.stock||0)>0?'Estoque '+p.stock:'Sem estoque'}${p.category?' · '+esc(p.category):''}</span></span>
-    <span class="pv"><b>${R(unit(p,t))}</b>${promoPct(p)?`<span class="sm" style="display:block"><s>${R(unit0(p,t))}</s> <b style="color:var(--bad)">-${promoPct(p)}%</b></span>`:`<span class="sm" style="display:block">${t!=='avista'&&p.price_cash?'à vista '+R(p.price_cash):p.price_card>0?'cartão '+R(p.price_card):''}</span>`}</span></button>`).join('')
-    +(all>l.length&&!$('#p_q').value.trim()?`<p class="sm">Mostrando ${l.length} de ${all}. Digite para filtrar.</p>`:''):'<p class="sm">Nenhum produto encontrado.</p>';
+    <span class="pt"><b class="pn2">${esc(p.name)}</b><span class="sm ${st>0?(st<=stockMin()?'low':''):'bad'}">${st>0?'Estoque '+st:'Sem estoque'}${p.category?' · '+esc(p.category):''}</span></span>
+    <span class="pp"><b>${R(unit(p,t))}</b>${pr?`<span class="sm"><s>${R(unit0(p,t))}</s> <b class="offt">-${pr}%</b></span>`:''}</span></button>`}).join('')
+    +(!qv&&all>l.length?`<p class="sm pgh">Mostrando ${l.length} de ${all}. Digite para filtrar.</p>`:''):'<p class="sm pgh">Nenhum produto encontrado.</p>';
 }
+function pdvPick(id){addProd(id);const q=$('#p_q');q.value='';pdvSearch();if(!pdvNarrow())q.focus()}
 function addProd(id){
   const q=Math.max(1,Math.round(+($('#s_q')||{}).value||1)),i=cart.find(x=>x.id===id);
   i?i.qty+=q:cart.push({id,qty:q});
@@ -1527,14 +1561,23 @@ function pdvScanned(code){
 }
 function pdvEnter(){const v=$('#p_q').value.trim(),d=digits(v);const ex=d.length>=6&&db.products.find(p=>p.ean===d&&p.active!==false);const l=pdvList();
   const p=ex||(l.length===1?l[0]:null);if(p){addProd(p.id);$('#p_q').value='';pdvSearch();$('#p_q').focus()}else if(l.length>1)alert('Vários produtos encontrados. Toque no que deseja ou digite mais letras.')}
+function cartQty(ix,d){const i=cart[ix];if(!i)return;i.qty+=d;if(i.qty<1)cart.splice(ix,1);cartView()}
 function cartView(){
   pdvSearch();
-  const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1;
+  const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1,un=cart.reduce((a,i)=>a+i.qty,0);
   document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
   if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
-  $('#cartv').innerHTML=`<table>${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);return`<tr><td>${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.remove()">`:''}${esc(p.name)}</td><td>${i.qty} × ${R(unit(p,t))}</td><td><button class="btn g s" onclick="cart.splice(${ix},1);cartView()">Remover</button></td></tr>`}).join('')}</table>
-  <p><b>Total: ${R(tot)}</b>${t==='crediario'&&tot?` · restante ${n}x de ${R((tot-e)/n)}`:''}</p>`;
+  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);if(!p)return'';const u=unit(p,t),pr=promoPct(p);return`<div class="citem">
+    ${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=cthumb>·</span>'">`:'<span class="cthumb">·</span>'}
+    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(u)} un.${pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''}</span></div>
+    <div class="stp"><button type="button" aria-label="Diminuir" onclick="cartQty(${ix},-1)">−</button><span>${i.qty}</span><button type="button" aria-label="Aumentar" onclick="cartQty(${ix},1)">+</button></div>
+    <b class="lt">${R(u*i.qty)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
+   :'<p class="cempty">Carrinho vazio.<br><span class="sm">Busque, toque num produto ou escaneie o código de barras.</span></p>')
+   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div><span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
+  const pb=$('#pbt');if(pb)pb.textContent=R(tot)+(un?` · ${un} ${un===1?'item':'itens'}`:'');
+  const bf=$('#btnfin');if(bf)bf.textContent=tot?'Finalizar venda · '+R(tot):'Finalizar venda';
 }
+
 const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p.stock||0)+d;save()}};
 function finish(){
   if(!cart.length)return alert('Adicione ao menos um produto.');

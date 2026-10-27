@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.10.2 — 27/10/2026
+- Tela de venda renovada: produtos à esquerda e carrinho fixo à direita (no celular, busca no topo, carrinho abaixo e barra com o total); quantidade com + e −, total em destaque e botão Finalizar com o valor.
+
 ### 1.10.1 — 27/10/2026
 - Notas recebidas: Baixar todas as pendentes e Dar entrada nas selecionadas (várias notas de uma vez, com tela de conferência; produtos novos repetidos entre notas viram um só cadastro).
 
