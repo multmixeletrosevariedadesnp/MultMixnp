@@ -1,5 +1,5 @@
 {
- "version": "1.16.2",
+ "version": "1.16.3",
  "date": "2026-10-27",
- "notes": "Relatório PDF do contador: folha deitada quando precisa e textos sem cortar."
+ "notes": "resumo.csv do contador: chave e CNPJ sem notação científica no Excel, modelo, série e datas em dd/mm/aaaa."
 }

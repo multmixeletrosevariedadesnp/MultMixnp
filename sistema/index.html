@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.16.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.16.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2197,7 +2197,7 @@ async function pacoteGerar(){
     if(!r.error)(r.data||[]).forEach(n=>{
       if(n.status!=='completo'||!n.xml)return;
       files.push({name:`recebidas/NFe_${n.chave}.xml`,data:n.xml});nr++;
-      csv.push(['Recebida',n.canceled?'Cancelada pelo emitente':'Autorizada',n.numero||'','',n.chave,n.dh_emi?ld(n.dh_emi):'',n.emit_nome||'',n.emit_cnpj||'',(+n.valor||0).toFixed(2).replace('.',','),'Produção']);
+      csv.push(['Recebida',n.canceled?'Cancelada pelo emitente':'Autorizada',n.numero||String(+n.chave.slice(25,34)||''),String(n.chave.slice(22,25)!==''?+n.chave.slice(22,25):''),n.chave,n.dh_emi?ld(n.dh_emi):'',n.emit_nome||'',n.emit_cnpj||'',(+n.valor||0).toFixed(2).replace('.',','),'Produção']);
     });
     const semXml=(r.data||[]).filter(n=>n.status!=='completo').length;
     if(!files.length)return $('#pc_r').innerHTML=`<p class="bad">Nenhuma nota com XML em ${MESES[m-1]}/${y}.${nh?` (${nh} de homologação foram deixadas de fora)`:''}</p>`;
@@ -2208,7 +2208,11 @@ async function pacoteGerar(){
       sum:[['Emitidas (autorizadas)',(ne-nc)+' · '+R(vt('Emitida','Autorizada'))],['Canceladas',nc],['Recebidas',nr+' · '+R(vt('Recebida','Autorizada'))]]};
     const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
     files.push({name:`relatorio-notas-${ym}.pdf`,data:pdfMake(PDF_D,CO())});
-    files.push({name:'resumo.csv',data:'﻿'+csv.map(l=>l.map(q).join(';')).join('\r\n')});
+    // Excel transforma chave e CNPJ longos em notação científica: o formato ="..." mantém o número inteiro.
+    const tx=v=>'="'+String(v).replace(/\D/g,'')+'"',mod=ch=>({'55':'NF-e (55)','65':'NFC-e (65)'}[String(ch).slice(20,22)]||'');
+    const out=[['Tipo','Situação','Modelo','Número','Série','Data','Cliente/Fornecedor','CPF/CNPJ','Valor (R$)','Ambiente','Chave de acesso'],
+      ...csv.slice(1).sort((a,b)=>a[0].localeCompare(b[0])||String(a[5]).localeCompare(String(b[5]))).map(r=>[r[0],r[1],mod(r[4]),r[2],r[3],fmtD(r[5]),r[6],r[7]?tx(r[7]):'',r[8],r[9],tx(r[4])])];
+    files.push({name:'resumo.csv',data:'﻿'+out.map((l,i)=>l.map((v,j)=>(i&&(j===7||j===10)&&v)?v:q(v)).join(';')).join('\r\n')});
     const co=CO(),nome=`contador-MultMix-${ym}.zip`,blob=zipMake(files);
     PAC={d:PDF_D,blob,nome,ym,ne,nc,nr,txt:`Olá${co.accountant_name?', '+co.accountant_name.split(' ')[0]:''}! Segue o pacote fiscal de ${MESES[m-1]}/${y} da ${co.legal_name||co.trade_name||'MultMix'}${co.cnpj?' (CNPJ '+co.cnpj+')':''}: ${ne} nota(s) emitida(s), ${nc} cancelada(s) e ${nr} recebida(s). Os XMLs estão no arquivo ${nome}, com o relatório em PDF e a planilha resumo.csv.`};
     $('#pc_r').innerHTML=`<div class="prices"><div class="pr"><span>Emitidas</span><b>${ne}</b></div><div class="pr"><span>Canceladas</span><b>${nc}</b></div><div class="pr"><span>Recebidas</span><b>${nr}</b></div></div>
