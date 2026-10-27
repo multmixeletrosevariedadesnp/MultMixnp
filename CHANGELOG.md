@@ -11,6 +11,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
    (ou ao reabrir), sem precisar limpar nada.
 
 ## Sistema (`sistema/`)
+### 1.9.0 — 27/10/2026
+- Promoção por produto (desconto em %, datas opcionais de início e fim). A venda usa o preço promocional; a Arte do produto já sai com o preço antigo riscado. Rode `supabase-v18.sql` antes.
+
 ### 1.8.5 — 27/10/2026
 - Botão Forçar atualização (apaga o cache do app, sem apagar dados) e versão visível; também em Empresa.
 
@@ -73,6 +76,9 @@ Cada aplicativo tem a sua própria numeração. O número aparece no rodapé do 
 - Dados da empresa, pedidos do catálogo, caixa, controle fiscal (NFC-e e NF-e) e preços configuráveis.
 
 ## Catálogo (`catalogo/`)
+### 1.1.0 — 27/10/2026
+- Ofertas: preço antigo riscado, selo % OFF nos cards, aviso com a data final e filtro Ofertas.
+
 ### 1.0.4 — 27/10/2026
 - Botão Forçar atualização ao lado da versão.
 
