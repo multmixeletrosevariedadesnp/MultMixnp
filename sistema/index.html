@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.16.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.16.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2119,20 +2119,29 @@ function pdfEnc(t){ // WinAnsi: Latin-1 + alguns sinais
 }
 function pdfFit(t,w,sz){t=String(t);if(pdfW(t,sz)<=w)return t;while(t.length>1&&pdfW(t+'…',sz)>w)t=t.slice(0,-1);return t+'…'}
 function pdfMake(d,co){
-  const W=595.28,H=841.89,M=36,CW=W-2*M,sz=8.5,rh=15,pages=[];let cur=null,y=0;
-  const wid=d.head.map((h,i)=>Math.min(Math.max(pdfW(h,sz),...d.rows.map(r=>pdfW(r[i],sz)),...(d.foot[i]?[pdfW(d.foot[i],sz)]:[0]))+8,220));
-  const k=Math.min(1,CW/wid.reduce((a,b)=>a+b,0)),extra=Math.max(0,CW-wid.reduce((a,b)=>a+b,0)*k),cw=wid.map(w=>w*k+extra/wid.length);
+  let sz=8.5,W=595.28,H=841.89;const M=36,rh=15,pages=[];let cur=null,y=0;
+  const nat=()=>d.head.map((h,i)=>Math.max(pdfW(h,sz)+4,...d.rows.map(r=>pdfW(r[i],sz)),d.al[i]==='r'?pdfW(d.foot[i]||'',sz)*1.1:0)+10);
+  let wid=nat();
+  if(wid.reduce((a,b)=>a+b,0)>W-2*M){W=841.89;H=595.28} // não coube em pé: usa a folha deitada
+  const CW=W-2*M;let cw;
+  for(const z of [8.5,8,7.5,7]){
+    sz=z;wid=nat();const tot=wid.reduce((a,b)=>a+b,0);
+    if(tot<=CW){const flex=wid.map((w,i)=>d.al[i]==='l'&&w>110?i:-1).filter(i=>i>=0),pool=flex.length?flex:wid.map((_,i)=>i),ex=(CW-tot)/pool.length;cw=wid.map((w,i)=>pool.includes(i)?w+ex:w);break}
+    const flex=wid.map((w,i)=>w>110&&d.al[i]==='l'?i:-1).filter(i=>i>=0),fixed=wid.reduce((a,w,i)=>flex.includes(i)?a:a+w,0),room=CW-fixed;
+    if(flex.length&&room/flex.length>=90){const sumF=flex.reduce((a,i)=>a+wid[i],0);cw=wid.map((w,i)=>flex.includes(i)?w*room/sumF:w);break}
+    cw=wid.map(w=>w*CW/tot);
+  }
   const T=(x,yy,t,o={})=>{const f=o.b?'F2':'F1',z=o.sz||sz;let xx=x;if(o.r)xx=x-pdfW(t,z);cur.push(`BT /${f} ${z} Tf ${o.c||'0 g'} ${xx.toFixed(2)} ${yy.toFixed(2)} Td (${pdfEnc(t)}) Tj ET`)};
   const newPage=()=>{cur=[];pages.push(cur);y=H-M;
     T(M,y-12,co.trade_name||co.legal_name||'MultMix',{b:1,sz:13});
     T(W-M,y-12,d.title,{b:1,sz:12,r:1,c:'0 0.27 0.56 rg'});y-=26;
-    if(co.cnpj)T(M,y,'CNPJ '+co.cnpj,{sz:8,c:'0.35 g'});T(W-M,y,pdfFit(d.sub,330,8),{sz:8,r:1,c:'0.35 g'});y-=8;
+    if(co.cnpj)T(M,y,'CNPJ '+co.cnpj,{sz:8,c:'0.35 g'});T(W-M,y,pdfFit(d.sub,CW*0.6,8),{sz:8,r:1,c:'0.35 g'});y-=8;
     cur.push(`0 0.27 0.56 RG 1.5 w ${M} ${y} m ${W-M} ${y} l S`);y-=14};
   const head=()=>{cur.push(`0 0.27 0.56 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);let x=M;d.head.forEach((h,i)=>{const r=d.al[i]==='r';T(r?x+cw[i]-4:x+4,y-rh+8,pdfFit(h,cw[i]-8,sz),{b:1,c:'1 g',r});x+=cw[i]});y-=rh};
   const row=(r,o={})=>{if(y-rh<M+20){newPage();head()}
     if(o.zebra)cur.push(`0.95 0.96 0.98 rg ${M} ${y-rh+4} ${CW} ${rh} re f`);
     if(o.foot)cur.push(`0 0.27 0.56 RG 1 w ${M} ${y+4} m ${W-M} ${y+4} l S`);
-    let x=M;r.forEach((c,i)=>{const rr=d.al[i]==='r';T(rr?x+cw[i]-4:x+4,y-rh+8,pdfFit(c,cw[i]-8,sz),{b:o.foot,r:rr});x+=cw[i]});y-=rh};
+    let x=M;r.forEach((c,i)=>{const rr=d.al[i]==='r';let free=cw[i];if(o.foot&&!rr)for(let j=i+1;j<r.length&&r[j]==='';j++)free+=cw[j];T(rr?x+cw[i]-4:x+4,y-rh+8,pdfFit(c,free-8,sz),{b:o.foot,r:rr});x+=cw[i]});y-=rh};
   newPage();
   // resumo
   d.sum.forEach(([l,v])=>{T(M,y,l+': ',{sz:9,c:'0.35 g'});T(M+pdfW(l+': ',9)+2,y,String(v),{b:1,sz:9});y-=13});y-=6;

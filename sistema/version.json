@@ -1,5 +1,5 @@
 {
- "version": "1.16.1",
+ "version": "1.16.2",
  "date": "2026-10-27",
- "notes": "Pacote do contador agora inclui o relatório em PDF das notas dentro do .zip."
+ "notes": "Relatório PDF do contador: folha deitada quando precisa e textos sem cortar."
 }
