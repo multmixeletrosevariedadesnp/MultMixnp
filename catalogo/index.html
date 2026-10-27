@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.0.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.0.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -144,7 +144,7 @@ body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))
 </main>
 <button class="btn" id="fab" onclick="bagView()"></button>
 <footer id="ft">Preços sujeitos a alteração e disponibilidade em estoque.</footer>
-<div class="appv"><button type="button" data-appver></button></div>
+<div class="appv"><button type="button" data-appver></button> · <button type="button" data-appforce></button></div>
 <div id="modal"></div>
 <div id="lb" role="dialog" aria-label="Foto ampliada"><img id="lbi" alt=""><button class="lbx" onclick="closeLb()">✕ Voltar</button><button class="lbn l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="lbn r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span id="lbc"></span></div>
 <button id="top" aria-label="Voltar ao topo" onclick="toTop()"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
@@ -163,6 +163,61 @@ const setC=(k,v)=>{cust[k]=v;localStorage.mmcli=JSON.stringify(cust)};
 let bag=[];try{bag=JSON.parse(localStorage.mmbag||'[]')}catch(e){}
 const saveBag=()=>{localStorage.mmbag=JSON.stringify(bag);fab()};
 const prod=id=>P.find(p=>p.id===id);
+/* ===== Tema sazonal (Black Friday, Natal...) — mesmo bloco no sistema e no catálogo ===== */
+const TEMAS={
+ padrao:{n:'Padrão (azul MultMix)'},
+ blackfriday:{n:'Black Friday',e:'🖤',faixa:'BLACK FRIDAY',v:{bg:'#0a0a0d',card:'#16161b',ink:'#f4f4f6',mut:'#a3a3ad',line:'#2a2a32',pri:'#ffc400',tag:'#ffc400',brand:'#1b1b22',b2:'#000',on:'#111',dark:1}},
+ natal:{n:'Natal',e:'🎄',faixa:'FELIZ NATAL',v:{pri:'#b3122a',tag:'#ffd166',brand:'#8f0e22',b2:'#0f5132',on:'#fff'}},
+ anonovo:{n:'Ano Novo',e:'🎆',faixa:'FELIZ ANO NOVO',v:{pri:'#1f3a8a',tag:'#ffd54f',brand:'#12234f',b2:'#050b22',on:'#fff'}},
+ maes:{n:'Dia das Mães',e:'🌸',faixa:'DIA DAS MÃES',v:{pri:'#b0125a',tag:'#ffd1e3',brand:'#c2185b',b2:'#7a0c3e',on:'#fff'}},
+ pais:{n:'Dia dos Pais',e:'👔',faixa:'DIA DOS PAIS',v:{pri:'#0b4f8a',tag:'#ffc21a',brand:'#0b4f8a',b2:'#062c50',on:'#fff'}},
+ criancas:{n:'Dia das Crianças',e:'🎈',faixa:'DIA DAS CRIANÇAS',v:{pri:'#d84315',tag:'#ffe082',brand:'#e65100',b2:'#a33000',on:'#fff'}},
+ namorados:{n:'Dia dos Namorados',e:'❤️',faixa:'DIA DOS NAMORADOS',v:{pri:'#b0124a',tag:'#ffc2d4',brand:'#c2185b',b2:'#6d0a2e',on:'#fff'}}
+};
+function temaAuto(){
+  const d=new Date(),y=d.getFullYear(),bf=new Date(y,10,30);while(bf.getDay()!==5)bf.setDate(bf.getDate()-1);
+  const t=new Date(y,d.getMonth(),d.getDate()),dif=Math.round((t-bf)/864e5);
+  if(dif>=-14&&dif<=3)return'blackfriday';
+  if(d.getMonth()===11&&d.getDate()<=26)return'natal';
+  return'padrao';
+}
+const _hoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const _hex=h=>/^#[0-9a-f]{6}$/i.test(h||'')?h:null;
+const _lum=h=>{const n=parseInt(h.slice(1),16),f=x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)};return .2126*f(n>>16&255)+.7152*f(n>>8&255)+.0722*f(n&255)};
+const _mix=(h,k)=>{const n=parseInt(h.slice(1),16),c=s=>Math.max(0,Math.min(255,Math.round((n>>s&255)*k)));return'#'+[16,8,0].map(s=>c(s).toString(16).padStart(2,'0')).join('')};
+function temaKey(c){
+  const k=(c&&c.theme)||'auto',g=(c&&c.theme_cfg)||{},h=_hoje();
+  if(k==='auto')return temaAuto();
+  if(k!=='padrao'&&((g.from&&h<g.from)||(g.to&&h>g.to)))return'padrao'; // fora do período marcado
+  return k==='custom'||TEMAS[k]?k:'padrao';
+}
+function temaDef(k,g){
+  if(k!=='custom')return TEMAS[k]||TEMAS.padrao;
+  const pri=_hex(g.pri)||'#00539f',tag=_hex(g.tag)||'#ffc21a';
+  if(g.dark)return{n:'Personalizado',v:{bg:'#0a0a0d',card:'#16161b',ink:'#f4f4f6',mut:'#a3a3ad',line:'#2a2a32',pri:tag,tag,brand:_mix(pri,.45),b2:'#000',on:_lum(tag)>.4?'#111':'#fff',dark:1}};
+  return{n:'Personalizado',v:{pri,tag,brand:pri,b2:_mix(pri,.5),on:_lum(pri)>.4?'#111':'#fff'}};
+}
+function applyTema(c){
+  const g=(c&&c.theme_cfg)||{},k=temaKey(c),sig=k+'|'+JSON.stringify(g);
+  if(window.__tema===sig)return;window.__tema=sig;
+  let st=document.getElementById('mmtema');if(!st){st=document.createElement('style');st.id='mmtema';document.head.appendChild(st)}
+  const T=temaDef(k,g);
+  if(!T.v){st.textContent='';document.documentElement.removeAttribute('data-tema')}
+  else{
+    const v=T.v,o=['bg','card','ink','mut','line','pri','tag','brand'].filter(x=>v[x]).map(x=>`--${x}:${v[x]}`).join(';');
+    st.textContent=`:root:root{${o};${v.dark?'color-scheme:dark':''}}header,.hero{background:linear-gradient(135deg,${v.b2},${v.brand})!important}`+
+     `.btn:not(.g),.thb.on,.occb.on,.vm button[aria-pressed=true]{color:${v.on}}.btn.g{color:var(--ink)}`;
+    document.documentElement.setAttribute('data-tema',k);
+  }
+  const m=document.querySelector('meta[name=theme-color]');if(m&&T.v)m.content=T.v.brand;
+  const txt=(g.faixa!=null&&g.faixa!==''?g.faixa:T.faixa)||'',emo=g.emoji!=null?g.emoji:(T.e||''),show=g.show!==false&&!!txt&&k!=='padrao';
+  let f=document.getElementById('mmfaixa');
+  if(show){
+    if(!f){f=document.createElement('div');f.id='mmfaixa';f.setAttribute('style','text-align:center;font-weight:800;letter-spacing:.12em;font-size:12px;padding:6px 10px;background:var(--tag);color:#101828;text-transform:uppercase');const h=document.querySelector('header');h.parentNode.insertBefore(f,h.nextSibling)}
+    f.textContent=(emo?emo+'  ':'')+txt+(emo?'  '+emo:'');
+  }else if(f)f.remove();
+}
+try{applyTema(JSON.parse(localStorage.mmco||'{}'))}catch(e){}
 const SHOW=t=>CO[{avista:'show_cash',cartao:'show_card',crediario:'show_credit'}[t]]!==false;
 const has=(p,t)=>(t==='avista'?+p.price_cash>0:t==='cartao'?+p.price_card>0:+p.price_credit>0)&&SHOW(t);
 const vis=p=>['avista','cartao','crediario'].filter(t=>has(p,t));
@@ -198,7 +253,7 @@ async function load(){
   try{CO=JSON.parse(localStorage.mmco||'{}')}catch(e){}
   if(sb){const{data}=await sb.from('company').select('*').eq('id',1).maybeSingle();if(data){CO=data;localStorage.mmco=JSON.stringify(CO)}}
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
-  brand();
+  brand();applyTema(CO);
   bag=bag.filter(i=>prod(i.id)&&!(prod(i.id).stock<=0));saveBag();
   list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);

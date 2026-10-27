@@ -1,5 +1,5 @@
 {
- "version": "1.0.1",
- "date": "2026-10-26",
- "notes": "Chamar no WhatsApp leva a foto do produto com prévia (imagem reduzida) junto do nome e da descrição."
+ "version": "1.0.4",
+ "date": "2026-10-27",
+ "notes": "Botão Forçar atualização ao lado da versão."
 }

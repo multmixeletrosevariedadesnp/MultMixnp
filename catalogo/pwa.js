@@ -81,7 +81,14 @@
     }catch(e){if(manual)toast('Não foi possível verificar agora. Confira a internet.')}
   }
   window.appCheck=()=>check(true);
-  function label(){document.querySelectorAll('[data-appver]').forEach(b=>{b.textContent='Versão '+V;b.title='Toque para verificar atualização';b.onclick=()=>check(true)})}
+  function label(){document.querySelectorAll('[data-appver]').forEach(b=>{b.textContent='Versão '+V;b.title='Toque para verificar atualização';b.onclick=()=>check(true)})
+    document.querySelectorAll('[data-appforce]').forEach(b=>{b.textContent='Forçar atualização';b.title='Apaga o cache do aplicativo e baixa tudo de novo (seus dados não são apagados)';b.onclick=()=>force()})}
+  function force(){
+    if(window.appBusy&&window.appBusy()&&!confirm('Há uma operação em andamento (venda ou janela aberta). Continuar vai interrompê-la. Continuar?'))return;
+    if(!confirm('Forçar atualização: o aplicativo vai apagar o cache e baixar tudo de novo. Seus dados e vendas não são apagados. Continuar?'))return;
+    applying=true;show('Forçando atualização... versão atual '+V);setTimeout(()=>hard(Date.now()),600);
+  }
+  window.appForce=force;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',label);else label();
   if('serviceWorker' in navigator){
     hadCtl=!!navigator.serviceWorker.controller;
