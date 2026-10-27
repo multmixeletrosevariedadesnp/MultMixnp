@@ -1,5 +1,5 @@
 {
- "version": "1.8.0",
- "date": "2026-10-26",
- "notes": "Central de avisos com bip, tela de Cobrança, Contas a pagar (geradas pela entrada de XML ou à mão) e aviso de vencimentos."
+ "version": "1.8.1",
+ "date": "2026-10-27",
+ "notes": "Backup dos dados em um clique, envio para o Google Drive e aviso quando faz 7 dias sem backup."
 }

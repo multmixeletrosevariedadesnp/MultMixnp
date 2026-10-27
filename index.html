@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.8.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.8.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -971,7 +971,31 @@ function vEmp(){
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_card" style="width:auto" ${c.show_card!==false?'checked':''}> Preço no cartão</label>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_credit" style="width:auto" ${c.show_credit!==false?'checked':''}> Preço no carnê</label></div>
   <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
-  <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p></div>`;
+  <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p>
+  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup dos dados</b>
+  <p class="sm" style="margin:2px 0 8px">Baixa um arquivo com produtos, clientes, vendas, parcelas, pedidos e contas a pagar. Guarde em local seguro (pendrive, Google Drive pessoal). O arquivo tem dados de clientes: não publique nem envie a terceiros. ${bkLast()?`Último backup: <b>${fmtD(bkLast())}</b>.`:'<b class="bad">Nenhum backup feito neste aparelho.</b>'}</p>
+  <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button></div></div>`;
+}
+const bkLast=()=>{try{return localStorage.mmbk||''}catch(e){return''}};
+async function backupNow(drive){
+  try{if(sb&&role)await doSync()}catch(e){}
+  const o={app:'MultMix',versao:window.APP_VERSION,gerado_em:now()};
+  T.forEach(t=>{o[t]=db[t]||[]});
+  const nome='backup-multmix-'+ld(now())+'.json',txt=JSON.stringify(o);
+  let feito=false;
+  if(drive){
+    try{
+      const f=new File([txt],nome,{type:'application/json'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Backup MultMix'});feito='share'}
+    }catch(e){if(e&&e.name==='AbortError')return}
+  }
+  if(!feito){
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=nome;document.body.appendChild(a);a.click();a.remove();
+    if(drive)window.open('https://drive.google.com/drive/my-drive','_blank');
+  }
+  try{localStorage.mmbk=now()}catch(e){}
+  alert(feito==='share'?'Backup enviado. Confira no Drive se o arquivo apareceu.':drive?'Backup baixado e o Google Drive foi aberto. Arraste o arquivo '+nome+' para dentro dele.':'Backup baixado. Guarde o arquivo em local seguro, fora deste aparelho.');
+  vEmp();
 }
 async function cepFill(){
   const c=digits($('#e_cep').value);if(c.length!==8)return;
@@ -1825,6 +1849,7 @@ function notifs(){
     const n=dleft(p.due_date);if(n>aP)return;
     out.push({id:'p'+p.id+(n<0?'L':n===0?'H':'S'),kind:'pagar',days:n,title:'Pagar '+(p.supplier||'fornecedor'),sub:`${p.doc?'NF '+p.doc+' · ':''}${p.parcel?'parcela '+p.parcel+' · ':''}${dtxt(n)}`,amount:+p.amount,pid:p.id});
   });
+  if(ADM()){const bk=bkLast(),dd=bk?-dleft(bk):99;if(dd>=7)out.push({id:'bk'+ld(now()).slice(0,7),kind:'backup',days:-dd,title:'Fazer backup dos dados',sub:bk?`último backup há ${dd} dias`:'nenhum backup feito neste aparelho',amount:0})}
   return out.sort((a,b)=>a.days-b.days||a.title.localeCompare(b.title,'pt-BR'));
 }
 let actx=null;
@@ -1846,7 +1871,7 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:''].filter(Boolean).join(' e ');
+  const bk=nw.some(n=>n.kind==='backup'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+' · '+R(n.amount)).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
@@ -1855,12 +1880,13 @@ function notifCheck(){
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv"><b>${R(n.amount)}</b><span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar');
+    <span class="pv">${n.kind==='backup'?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>n.kind==='backup');
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
   ${P.length?`<h3>Para pagar (${P.length})</h3><div class="pres">${P.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('pag')">Abrir contas a pagar</button></p>`:''}
+  ${B.length?`<h3>Segurança</h3><div class="pres">${B.map(row).join('')}</div>`:''}
   <details class="sm" style="margin-top:12px"><summary style="cursor:pointer"><b>Configurar avisos</b></summary>
   <p><label><input type="checkbox" style="width:auto" ${o.sound!==false?'checked':''} onchange="nset('sound',this.checked)"> Tocar um bip e vibrar quando surgir aviso novo</label></p>
   <p><label><input type="checkbox" style="width:auto" ${o.push?'checked':''} onchange="notifPerm(this)"> Mostrar aviso do navegador/celular (com o app aberto em segundo plano)</label></p>
