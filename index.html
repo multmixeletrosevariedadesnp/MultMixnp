@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.8.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.8.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1075,7 +1075,7 @@ const ICON={bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M1
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 function render(){
   if(sb&&!role&&view!=='login')view='login';
-  if(['prod','cx','fis','emp','usr','arte','pag'].includes(view)&&!ADM())view='pdv';
+  if(['ini','prod','cx','fis','emp','usr','arte','pag'].includes(view)&&!ADM())view='pdv';
   document.body.className=isAdmin()?'in':'out';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
@@ -1083,12 +1083,12 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('com','Comissões','coin')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -1849,6 +1849,7 @@ function notifs(){
     const n=dleft(p.due_date);if(n>aP)return;
     out.push({id:'p'+p.id+(n<0?'L':n===0?'H':'S'),kind:'pagar',days:n,title:'Pagar '+(p.supplier||'fornecedor'),sub:`${p.doc?'NF '+p.doc+' · ':''}${p.parcel?'parcela '+p.parcel+' · ':''}${dtxt(n)}`,amount:+p.amount,pid:p.id});
   });
+  if(ADM()){const lo=lowStock();if(lo.length)out.push({id:'e'+ld(now()),kind:'estoque',days:0,title:`${lo.length} produto${lo.length>1?'s':''} com estoque baixo`,sub:lo.slice(0,3).map(x=>x.name+' ('+(+x.stock||0)+')').join(', ')+(lo.length>3?'…':''),amount:0})}
   if(ADM()){const bk=bkLast(),dd=bk?-dleft(bk):99;if(dd>=7)out.push({id:'bk'+ld(now()).slice(0,7),kind:'backup',days:-dd,title:'Fazer backup dos dados',sub:bk?`último backup há ${dd} dias`:'nenhum backup feito neste aparelho',amount:0})}
   return out.sort((a,b)=>a.days-b.days||a.title.localeCompare(b.title,'pt-BR'));
 }
@@ -1871,7 +1872,7 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const bk=nw.some(n=>n.kind==='backup'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',es?'estoque baixo':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+' · '+R(n.amount)).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
@@ -1880,18 +1881,19 @@ function notifCheck(){
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${n.kind==='backup'?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>n.kind==='backup');
+    <span class="pv">${n.kind==='backup'||n.kind==='estoque'?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>n.kind==='backup'||n.kind==='estoque');
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
   ${P.length?`<h3>Para pagar (${P.length})</h3><div class="pres">${P.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('pag')">Abrir contas a pagar</button></p>`:''}
-  ${B.length?`<h3>Segurança</h3><div class="pres">${B.map(row).join('')}</div>`:''}
+  ${B.length?`<h3>Atenção</h3><div class="pres">${B.map(row).join('')}</div>`:''}
   <details class="sm" style="margin-top:12px"><summary style="cursor:pointer"><b>Configurar avisos</b></summary>
   <p><label><input type="checkbox" style="width:auto" ${o.sound!==false?'checked':''} onchange="nset('sound',this.checked)"> Tocar um bip e vibrar quando surgir aviso novo</label></p>
   <p><label><input type="checkbox" style="width:auto" ${o.push?'checked':''} onchange="notifPerm(this)"> Mostrar aviso do navegador/celular (com o app aberto em segundo plano)</label></p>
   <div class="f"><div><label>Avisar cobrança quantos dias antes</label><input type="number" min="0" max="15" value="${+(o.aheadR??1)}" onchange="nset('aheadR',+this.value||0)"></div>
   <div><label>Avisar contas a pagar quantos dias antes</label><input type="number" min="0" max="30" value="${+(o.aheadP??3)}" onchange="nset('aheadP',+this.value||0)"></div></div>
+  <div class="f"><div><label>Estoque baixo: avisar quando restar até</label><input type="number" min="0" max="99" value="${stockMin()}" onchange="nset('stockMin',+this.value||0)"></div></div>
   <p><button class="btn g s" onclick="beep()">Testar o bip</button></p>
   <p>Cada aviso toca uma vez por dia. Os avisos funcionam com o sistema aberto (inclusive em segundo plano no celular). Com o app fechado, ele não consegue avisar.</p></details>`);
 }
@@ -1905,6 +1907,31 @@ function notifPerm(el){
 setInterval(()=>{try{notifCheck()}catch(e){}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)try{notifCheck()}catch(e){}});
 setTimeout(()=>{try{notifCheck()}catch(e){}},4000);
+
+/* ========= Início (painel) ========= */
+const stockMin=()=>+(NS().stockMin??3);
+const lowStock=()=>db.products.filter(p=>p.active!==false&&p.active!==0&&(+p.stock||0)<=stockMin()).sort((a,b)=>(+a.stock||0)-(+b.stock||0)||String(a.name).localeCompare(b.name,'pt-BR'));
+function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('prod')}
+function vIni(){
+  const today=ld(now()),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+  const vd=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at)===today),vm=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===today.slice(0,7));
+  const rec=db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===today),open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&(db.sales.find(x=>x.id===i.sale_id)||{}).canceled_at==null);
+  const late=open.filter(i=>i.due_date.slice(0,10)<today),pg=(db.payables||[]).filter(p=>!p.paid_at&&!p.canceled_at),pl=pg.filter(p=>String(p.due_date).slice(0,10)<today),p7=pg.filter(p=>{const n=dleft(p.due_date);return n>=0&&n<=7});
+  const lo=lowStock();
+  const card=(t,v,sub,go_,bad)=>`<div class="pr ${go_?'':''}" ${go_?`style="cursor:pointer" onclick="go('${go_}')"`:''}><span ${bad?'class="bad"':''}>${t}</span><b ${bad?'class="bad"':''}>${v}</b>${sub?`<span class="sm">${sub}</span>`:''}</div>`;
+  $('#app').innerHTML=`<div class="prices">
+  ${card('Vendas hoje',R(sum(vd,s=>+s.total)),vd.length+' venda(s)','cx')}
+  ${card('Vendas no mês',R(sum(vm,s=>+s.total)),vm.length+' venda(s)')}
+  ${card('Parcelas recebidas hoje',R(sum(rec,i=>+i.paid_amount||+i.amount)),rec.length+' parcela(s)','cx')}
+  ${card('Parcelas em atraso',R(sum(late,i=>due(i).v)),late.length+' parcela(s)','cob',late.length)}
+  ${card('Contas a pagar vencidas',R(sum(pl,p=>+p.amount)),pl.length+' conta(s)','pag',pl.length)}
+  ${card('Contas a pagar em 7 dias',R(sum(p7,p=>+p.amount)),p7.length+' conta(s)','pag')}
+  ${card('Pedidos novos',NN(),'do catálogo','ped',NN())}
+  </div>
+  <div class="box" style="max-width:none"><h2>Estoque baixo (${lo.length})</h2>
+  <p class="sm">Produtos ativos com ${stockMin()} unidade(s) ou menos. Mude o limite em Avisos &gt; Configurar avisos.</p>
+  ${lo.length?`<div style="overflow:auto"><table><tr><th>Produto</th><th>Estoque</th><th></th></tr>${lo.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td class="${(+p.stock||0)<=0?'bad':''}"><b>${+p.stock||0}</b></td><td><button class="btn g s" onclick="iniProd('${p.id}')">Abrir</button></td></tr>`).join('')}</table></div>`:'<p>Nenhum produto com estoque baixo. 🎉</p>'}</div>`;
+}
 
 /* ========= Tela de cobrança (parcelas a receber) ========= */
 let cobF='atraso';
