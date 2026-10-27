@@ -1,5 +1,5 @@
 {
- "version": "1.8.2",
+ "version": "1.8.4",
  "date": "2026-10-27",
- "notes": "Nova tela Início com o resumo do dia e aviso de estoque baixo."
+ "notes": "Tema editável: cores próprias, texto e emoji da faixa, período de validade e pré-visualização."
 }
