@@ -1,5 +1,5 @@
 {
- "version": "1.16.4",
+ "version": "1.17.0",
  "date": "2026-10-27",
- "notes": "PDF do contador mais profissional: grupos Emitidas e Recebidas com subtotais, cartões de resumo e colunas bem distribuídas."
+ "notes": "Curva ABC de produtos e clientes nos Relatórios."
 }

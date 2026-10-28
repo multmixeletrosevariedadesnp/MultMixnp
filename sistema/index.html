@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.16.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.17.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2624,8 +2624,8 @@ function csvFis(){
 
 
 /* ========= Relatórios (PDF) ========= */
-let REL={k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
-const RELN={vendas:'Vendas por período',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
+let REL={abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
+const RELN={vendas:'Vendas por período',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
 function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
@@ -2637,6 +2637,24 @@ function relBuild(){
       rows:L.map(s=>[fmtD(ld(s.created_at)),cn(s.customer_id),s.seller_name||'—',s.pay_type==='crediario'?'Carnê':(s.method||'—'),(s.items||[]).reduce((a,i)=>a+ +i.qty,0),R(s.total)]),
       foot:['','','','','Total',R(tot)],
       sum:[['Vendas',L.length],['Total vendido',R(tot)],['Ticket médio',R(L.length?tot/L.length:0)],...Object.entries(by).map(([m,v])=>['Em '+m,R(v)]),...(nc?[['Vendas canceladas',nc]]:[])]};
+  }
+  if(k==='abc'){
+    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)),M={},cli=REL.abcFor==='cli',by=cli&&REL.abcBy==='lucro'?'fat':REL.abcBy;
+    L.forEach(s=>{
+      if(cli){const id=s.customer_id||'-',o=M[id]=M[id]||{n:cn(s.customer_id),q:0,f:0,l:0,v:0};o.q+=1;o.f+=+s.total||0;o.v+=1;return}
+      (s.items||[]).forEach(i=>{const o=M[i.id]=M[i.id]||{n:i.name,q:0,f:0,l:0,c:0},pr=db.products.find(x=>x.id===i.id)||{},q=+i.qty||0,f=q*(+i.price||0);
+        o.q+=q;o.f+=f;if(+pr.cost>0)o.l+=f-q*pr.cost;else o.sc=1});
+    });
+    const key=by==='qtd'?'q':by==='lucro'?'l':'f',A=Object.values(M).filter(o=>by!=='lucro'||!o.sc||o.l!==0).sort((a,b)=>b[key]-a[key]);
+    const tot=A.reduce((a,o)=>a+Math.max(o[key],0),0)||1;let ac=0;
+    A.forEach(o=>{const pc=Math.max(o[key],0)/tot*100;o.pc=pc;ac+=pc;o.ac=ac;o.cl=ac-pc<80?'A':ac-pc<95?'B':'C'});
+    const nm=cli?'Clientes':'Produtos',lab=by==='qtd'?(cli?'Nº de compras':'Quantidade'):by==='lucro'?'Lucro':'Faturamento',fmt=v=>by==='qtd'?String(Math.round(v)):R(v);
+    const cls=c=>A.filter(o=>o.cl===c);
+    return{title:'Curva ABC de '+nm.toLowerCase()+' · por '+lab.toLowerCase(),sub:'Período: '+per+' · A = até 80% do total, B = até 95%, C = o restante'+(by==='lucro'?' · produtos sem custo cadastrado ficam de fora':''),
+      head:['#',cli?'Cliente':'Produto','Classe',cli?'Compras':'Qtd','Faturamento',...(by==='lucro'?['Lucro']:[]),'% do total','% acumulado'],al:'llllr'+(by==='lucro'?'r':'')+'rr',
+      rows:A.map((o,i)=>[i+1,o.n,o.cl,Math.round(o.q),R(o.f),...(by==='lucro'?[o.sc&&!o.l?'sem custo':R(o.l)]:[]),pc1(o.pc),pc1(o.ac)]),
+      foot:['','Total','',Math.round(A.reduce((a,o)=>a+o.q,0)),R(A.reduce((a,o)=>a+o.f,0)),...(by==='lucro'?[R(A.reduce((a,o)=>a+o.l,0))]:[]),'100%',''],
+      sum:[[cli?'Clientes que compraram':'Produtos vendidos',A.length],...['A','B','C'].map(c=>['Classe '+c,cls(c).length+' ('+(A.length?Math.round(cls(c).length/A.length*100):0)+'%) · '+pc1(cls(c).reduce((a,o)=>a+o.pc,0))+' do total'])]};
   }
   if(k==='estoque'){
     let L=db.products.filter(p=>p.active!==false&&p.active!==0).sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''),'pt-BR')||String(a.name).localeCompare(b.name,'pt-BR'));
@@ -2697,10 +2715,11 @@ function relHtml(d,forPdf){
 }
 function vRel(){
   if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
-  const k=REL.k,needP=['vendas','caixa','com'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
+  const k=REL.k,needP=['vendas','caixa','com','abc'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
   const d=relBuild();
   $('#app').innerHTML=`<div class="bar"><select style="max-width:230px" onchange="REL.k=this.value;vRel()">${Object.entries(RELN).map(([v,l])=>`<option value="${v}" ${k===v?'selected':''}>${l}</option>`).join('')}</select>
   ${needP?`<input type="date" style="max-width:170px" value="${REL.from}" onchange="REL.from=this.value||REL.from;vRel()"><input type="date" style="max-width:170px" value="${REL.to}" onchange="REL.to=this.value||REL.to;vRel()">`:''}
+  ${k==='abc'?`<select style="max-width:150px" onchange="REL.abcFor=this.value;vRel()"><option value="prod" ${REL.abcFor==='prod'?'selected':''}>Produtos</option><option value="cli" ${REL.abcFor==='cli'?'selected':''}>Clientes</option></select><select style="max-width:170px" onchange="REL.abcBy=this.value;vRel()"><option value="fat" ${REL.abcBy==='fat'?'selected':''}>Por faturamento</option><option value="qtd" ${REL.abcBy==='qtd'?'selected':''}>Por quantidade</option>${REL.abcFor==='prod'?`<option value="lucro" ${REL.abcBy==='lucro'?'selected':''}>Por lucro</option>`:''}</select>`:''}
   ${k==='estoque'?`<label class="sm"><input type="checkbox" style="width:auto" ${REL.low?'checked':''} onchange="REL.low=this.checked;vRel()"> Só estoque baixo</label>`:''}
   ${k==='receber'?`<select style="max-width:200px" onchange="REL.cr=this.value;vRel()"><option value="atraso" ${REL.cr==='atraso'?'selected':''}>Só em atraso</option><option value="todas" ${REL.cr==='todas'?'selected':''}>Todas em aberto</option></select>`:''}
   ${k==='pagar'?`<select style="max-width:200px" onchange="REL.pg=this.value;vRel()"><option value="abertas" ${REL.pg==='abertas'?'selected':''}>Em aberto</option><option value="pagas" ${REL.pg==='pagas'?'selected':''}>Pagas no período</option></select>`:''}
