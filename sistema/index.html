@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.25.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.26.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -248,7 +248,7 @@ async function doSync(){
         const rows=[...new Map(db.outbox.slice(0,n).map(o=>[o.row.id,o.row])).values()];
         const{error}=await sb.from(t).upsert(rows);if(error)throw error;db.outbox.splice(0,n);save();}
     }
-    for(const t of role?T:['products','company']){
+    for(const t of role?T:['company']){
       if(t==='payables'&&role!=='admin')continue; // contas a pagar: só administrador
       const{data,error}=await sb.from(t).select('*');
       if(error){if(t==='payables')continue;throw error} // se a tabela ainda não existir, não trava o resto
@@ -279,9 +279,9 @@ async function vUsr(){
   $('#app').innerHTML='<p class="sm">Carregando usuários...</p>';
   await loadProf();
   $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="usrForm()">Novo usuário</button><span class="sm" style="align-self:center">${PROF.length} ${PROF.length===1?'usuário':'usuários'}</span></div>
-  <div style="overflow:auto"><table><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Comissão</th><th>Situação</th><th></th></tr>
+  <div style="overflow:auto"><table><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Comissão</th><th>Carnê no PDV</th><th>Situação</th><th></th></tr>
   ${PROF.map(u=>`<tr><td>${esc(u.name)}${me&&u.id===me.id?' <span class="tag">você</span>':''}</td><td>${esc(u.email||'')}</td><td>${ROLE_N[u.role]||esc(u.role)}</td>
-  <td>${+u.commission_pct>0?(+u.commission_pct)+'%':'—'}</td><td>${u.active===false?'<span class="tag">Inativo</span>':'<span class="ok">Ativo</span>'}</td>
+  <td>${+u.commission_pct>0?(+u.commission_pct)+'%':'—'}</td><td>${u.role==='admin'?'—':u.can_carne?'<span class="ok">Liberado</span>':'Bloqueado'}</td><td>${u.active===false?'<span class="tag">Inativo</span>':'<span class="ok">Ativo</span>'}</td>
   <td><button class="btn g s" onclick="usrForm('${u.id}')">Editar</button></td></tr>`).join('')}</table></div>`;
 }
 function usrForm(id){
@@ -294,12 +294,13 @@ function usrForm(id){
   <div><label>Telefone</label><input id="u_phone" inputmode="tel" value="${esc(u.phone||'')}"></div>
   <div><label>Comissão (%)</label><input id="u_pct" type="number" step="0.01" min="0" max="100" value="${+u.commission_pct||0}"></div>
   <div><label>Base da comissão</label><select id="u_mode"><option value="venda" ${sel(u.commission_mode,'venda')}>Sobre a venda, no ato</option><option value="recebimento" ${sel(u.commission_mode,'recebimento')}>Sobre o valor recebido (carnê, conforme as parcelas são pagas)</option></select></div>
+  <div><label>Vendedor pode vender no carnê (PDV)</label><select id="u_carne"><option value="false" ${u.can_carne?'':'selected'}>Não</option><option value="true" ${u.can_carne?'selected':''}>Sim</option></select></div>
   ${nw?'':`<div><label>Situação</label><select id="u_active"><option value="true" ${u.active!==false?'selected':''}>Ativo</option><option value="false" ${u.active===false?'selected':''}>Inativo (sem acesso)</option></select></div>`}</div>
-  <p class="sm">Vendedor: vende, atende pedidos, cadastra clientes e recebe carnês. Não vê Caixa, Fiscal, Empresa nem Usuários e não muda preços. Administrador: acesso total. A comissão vale para as vendas feitas daqui em diante, e as vendas antigas mantêm a taxa da época.</p>
+  <p class="sm">Vendedor: usa só o aplicativo <b>PDV</b> (pasta /pdv/): vê produtos e estoque sem custo, vende e vê as próprias vendas e comissão. O carnê só funciona se você liberar acima. Não entra neste sistema. Administrador: acesso total. A comissão vale para as vendas feitas daqui em diante, e as vendas antigas mantêm a taxa da época.</p>
   <button class="btn" onclick="usrSave('${id||''}')">Salvar</button>${nw?'':` <button class="btn g" onclick="usrPw('${id}')">Redefinir senha</button>`}`);
 }
 function usrSave(id){
-  const g=k=>$('#u_'+k)?$('#u_'+k).value.trim():'',v={name:g('name'),email:g('email').toLowerCase(),pw:g('pw'),role:g('role'),phone:g('phone'),pct:+g('pct'),mode:g('mode'),active:g('active')!=='false'};
+  const g=k=>$('#u_'+k)?$('#u_'+k).value.trim():'',v={name:g('name'),email:g('email').toLowerCase(),pw:g('pw'),role:g('role'),phone:g('phone'),pct:+g('pct'),mode:g('mode'),active:g('active')!=='false',carne:g('carne')==='true'};
   if(v.name.length<3)return alert('Informe o nome completo.');
   if(!(v.pct>=0&&v.pct<=100))return alert('A comissão deve ficar entre 0 e 100%.');
   if(!id){
@@ -307,9 +308,10 @@ function usrSave(id){
     if(v.pw.length<8)return alert('A senha provisória precisa ter ao menos 8 caracteres.');
   }
   master(async()=>{
-    const{error}=id?await sb.rpc('admin_update_user',{p_id:id,p_name:v.name,p_role:v.role,p_commission:v.pct,p_mode:v.mode,p_phone:v.phone,p_active:v.active})
+    const{data:nid,error}=id?await sb.rpc('admin_update_user',{p_id:id,p_name:v.name,p_role:v.role,p_commission:v.pct,p_mode:v.mode,p_phone:v.phone,p_active:v.active})
       :await sb.rpc('admin_create_user',{p_email:v.email,p_password:v.pw,p_name:v.name,p_role:v.role,p_commission:v.pct,p_mode:v.mode,p_phone:v.phone});
     if(error)return alert(error.message);
+    {const uid2=id||nid;if(uid2){const r2=await sb.rpc('admin_set_carne',{p_id:uid2,p_on:v.role==='admin'?false:v.carne});if(r2.error&&!/admin_set_carne/.test(r2.error.message||''))return alert(r2.error.message);if(r2.error)alert('Rode o supabase-v26.sql para liberar o carnê no PDV.')}}
     closeM();await vUsr();
     if(!id)alert('Usuário criado.\n\nLogin: '+v.email+'\nSenha provisória: '+v.pw+'\n\nPasse esses dados ao usuário e peça para trocar a senha em "Alterar senha".');
   });
@@ -1165,6 +1167,7 @@ async function loadRole(){
   const{data}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
   if(data&&data.active===false){loginMsg='Este usuário está desativado. Fale com o administrador.';return}
   role=data?.role||null;me=data||null;
+  if(role==='vendedor'){role=null;me=null;loginMsg='Vendedores usam o aplicativo PDV (endereço terminado em /pdv/). Peça o link ao administrador.';try{await sb.auth.signOut()}catch(e){}session=null;return}
   if(!role)loginMsg='Seu usuário ainda não tem permissão. Peça ao administrador.';
   if(role==='admin')await loadProf();
 }
