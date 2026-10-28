@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.0.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.1.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
-.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}
+.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
 *{box-sizing:border-box}
@@ -216,11 +216,13 @@ async function sync(){
     for(let i=0;i<Q.length;){
       const s=Q[i];if(s._by!==ME.id){i++;continue}
       const{data,error}=await sb.rpc('pdv_sell',{p:s});
-      if(error){if(error.code==='P0001'){FAIL.push({s,msg:error.message,at:now()});Q.splice(i,1);saveQ();continue}throw error}
+      if(error){if(error.code==='P0001'){FAIL.push({s,msg:error.message,at:now(),rep:false});Q.splice(i,1);saveQ();continue}throw error}
       Q.splice(i,1);saveQ();
     }
     const r1=await sb.rpc('pdv_catalogo');if(r1.error)throw r1.error;
     P=r1.data||[];mine().forEach(s=>(s.items||[]).forEach(it=>{const p=P.find(x=>x.id===it.id);if(p)p.stock=(+p.stock||0)-it.qty}));LS.set('pdv_prod',P);
+    for(const f of FAIL){if(f.rep||f.s._by!==ME.id)continue;const{error:er}=await sb.rpc('pdv_reportar',{p_kind:'venda_recusada',p_ref:String(f.s.id),p_detail:f.msg,p_payload:{pay_type:f.s.pay_type,items:f.s.items,created_at:f.s.created_at,customer:f.s.customer&&f.s.customer.name}});if(!er){f.rep=true;saveQ()}}
+    await loadCx();
     const r2=await sb.rpc('pdv_eu');if(r2.error&&/Sem permiss/i.test(r2.error.message)){loginMsg='Seu acesso foi desativado. Fale com o administrador.';syncing=false;return logout(true)}
     if(r2.data&&r2.data[0]){ME=r2.data[0];LS.set('pdv_me',ME)}
     const r3=await sb.from('company').select('*').eq('id',1).maybeSingle();if(r3.data){CO=r3.data;LS.set('pdv_co',CO)}
@@ -246,8 +248,8 @@ function render(){
   if(!ME||view==='login'){view='login';return vLogin()}
   document.body.className='in';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,pend=mine().length+FAIL.filter(f=>f.s._by===ME.id).length;
-  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+`<button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
-  ({venda:vPdv,minhas:vMin}[view]||vPdv)();
+  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+`<button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
+  ({venda:vPdv,caixa:vCx,minhas:vMin}[view]||vPdv)();
 }
 
 /* ----- preço (só para mostrar; quem manda no preço é o servidor) ----- */
@@ -256,7 +258,6 @@ const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Da
 const promoAt=(v,p)=>{const x=promoPct(p);return x?+(v*(1-x/100)).toFixed(2):+v};
 const unit0=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
 const unit=(p,t)=>promoAt(+unit0(p,t),p);
-const total=()=>cart.reduce((s,i)=>s+unit(P.find(p=>p.id===i.id)||{},$('#s_t')?.value||'avista')*i.qty,0);
 const pPhoto=p=>(p.photos&&p.photos[0])||'';
 const stockMin=()=>3,pdvNarrow=()=>matchMedia('(max-width:899px)').matches;
 const maxInst=()=>Math.max(1,Math.min(24,...cart.map(i=>(P.find(p=>p.id===i.id)||{}).max_inst||12)));
@@ -271,12 +272,14 @@ function vPdv(){
    <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div>
    <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p></section>
   <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
+   <div class="bar" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="holdSave()">Pausar venda</button><button type="button" class="btn g s" id="hbtn" onclick="holdList()">Em espera (0)</button></div>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option>${carne?'<option value="crediario">Carnê (crediário)</option>':''}</select></div>
    <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" min="0" value="0" oninput="cartView()"></div>
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
    <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
+   <div class="f"><div><label for="sd_v">Desconto da venda</label><div class="pwd"><select id="sd_m" onchange="sdSet()" style="max-width:90px"><option value="val">R$</option><option value="pct">%</option></select><input id="sd_v" type="number" step="0.01" min="0" value="0" inputmode="decimal" oninput="sdSet()"></div></div></div>
    <div class="f cli"><div class="w"><label id="c_l">Cliente (opcional)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug()"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off"></div></div>
    <div id="cs" class="cs" aria-live="polite"></div>
    <button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></section>
@@ -394,43 +397,145 @@ document.addEventListener('keydown',e=>{
   }
 });
 function cartQty(ix,d){const i=cart[ix];if(!i)return;i.qty+=d;if(i.qty<1)cart.splice(ix,1);cartView()}
+/* ----- cálculo do carrinho: espelha o servidor (desconto por item + desconto da venda rateado, preço unitário em centavos) ----- */
+const r2=x=>Math.round((+x+1e-9)*100)/100;
+let saleDisc={mode:'val',val:0};
+function cartCalc(t){
+  t=t||($('#s_t')&&$('#s_t').value)||'avista';
+  const L=cart.map(i=>{const p=P.find(x=>x.id===i.id)||{},u=unit(p,t),q=i.qty,ld=Math.min(Math.max(+i.disc||0,0),Math.max(u*q-0.01*q,0));return{i,p,q,u,net:u*q-ld,ld}});
+  const gross=L.reduce((a,l)=>a+l.u*l.q,0),sumnet=L.reduce((a,l)=>a+l.net,0);
+  let sd=saleDisc.mode==='pct'?sumnet*(+saleDisc.val||0)/100:(+saleDisc.val||0);
+  sd=r2(Math.min(Math.max(sd,0),Math.max(sumnet-0.01*L.length,0)));let rest=sd,tot=0;
+  L.forEach((l,k)=>{const share=k===L.length-1?rest:r2(sd*l.net/(sumnet||1));rest=r2(rest-share);l.un=Math.max(r2((l.net-share)/l.q),0.01);l.line=r2(l.un*l.q);tot+=l.line});
+  tot=r2(tot);return{L,gross:r2(gross),total:tot,disc:r2(gross-tot),sd}
+}
+const total=()=>cartCalc().total;
+function sdSet(){saleDisc={mode:$('#sd_m').value,val:+$('#sd_v').value||0};cartView()}
+function itemDisc(ix){
+  const i=cart[ix];if(!i)return;
+  modal(`<h2>Desconto no item</h2><p class="sm">${esc((P.find(p=>p.id===i.id)||{}).name||'')}</p>
+  <div class="f"><div><label>Tipo</label><select id="id_m"><option value="val">R$ (valor)</option><option value="pct">% (percentual)</option></select></div><div><label>Desconto</label><input id="id_v" type="number" step="0.01" min="0" value="${i.disc||''}" inputmode="decimal"></div></div>
+  <p class="sm">O desconto vale para todas as unidades deste item. Acima do limite livre, o administrador precisa autorizar ao finalizar.</p>
+  <div class="bar"><button class="btn" onclick="itemDiscOk(${ix})">Aplicar</button><button class="btn g" onclick="itemDiscClr(${ix})">Remover desconto</button></div>`);
+  setTimeout(()=>$('#id_v')&&$('#id_v').focus(),50);
+}
+function itemDiscOk(ix){
+  const i=cart[ix],t=$('#s_t').value,p=P.find(x=>x.id===i.id)||{},v=+$('#id_v').value||0,m=$('#id_m').value,base=unit(p,t)*i.qty;
+  i.disc=r2(m==='pct'?base*v/100:v);if(i.disc>=base)return alert('O desconto precisa ser menor que o valor do item.');
+  if(!(i.disc>0))delete i.disc;closeM();cartView();
+}
+function itemDiscClr(ix){delete cart[ix].disc;closeM();cartView()}
 function cartView(){
   pdvSearch();
-  const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1,un=cart.reduce((a,i)=>a+i.qty,0);
+  const t=$('#s_t').value,cc=cartCalc(t),tot=cc.total,e=+$('#s_e').value||0,n=+$('#s_n').value||1,un=cart.reduce((a,i)=>a+i.qty,0);
   document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
   $('#c_l').textContent=t==='crediario'?'Cliente do carnê (busque por nome, CPF ou telefone)':'Cliente (opcional)';
   if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
   if(t==='crediario'&&$('#s_n'))$('#s_n').max=maxInst();
-  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cart.map((i,ix)=>{const p=P.find(x=>x.id===i.id);if(!p)return'';const u=unit(p,t),pr=promoPct(p);return`<div class="citem">
+  const hb=$('#hbtn');if(hb)hb.textContent='Em espera ('+holdGet().length+')';
+  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cc.L.map((l,ix)=>{const p=l.p,i=l.i;if(!p.id)return'';const pr=promoPct(p);return`<div class="citem">
     ${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=cthumb>·</span>'">`:'<span class="cthumb">·</span>'}
-    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(u)} un.${pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''}</span></div>
+    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(l.un)} un.${l.un<l.u-0.004?` <s>${R(l.u)}</s>`:pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''} · <button type="button" class="lk" onclick="itemDisc(${ix})">${i.disc?'desc. −'+R(i.disc):'desconto'}</button></span></div>
     <div class="stp"><button type="button" aria-label="Diminuir" onclick="cartQty(${ix},-1)">−</button><span>${i.qty}</span><button type="button" aria-label="Aumentar" onclick="cartQty(${ix},1)">+</button></div>
-    <b class="lt">${R(u*i.qty)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
+    <b class="lt">${R(l.line)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
    :'<p class="cempty">Carrinho vazio.<br><span class="sm">Busque, toque num produto ou escaneie o código de barras.</span></p>')
-   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div><span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
+   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div>${cc.disc>0.004?`<span class="sm">Subtotal ${R(cc.gross)} · desconto −${R(cc.disc)}</span>`:''}<span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
   const pb=$('#pbt');if(pb)pb.textContent=R(tot)+(un?` · ${un} ${un===1?'item':'itens'}`:'');
   const bf=$('#btnfin');if(bf)bf.textContent=tot?'Finalizar venda · '+R(tot):'Finalizar venda';
 }
-function finish(){
+
+/* ----- venda em espera (fica só neste aparelho, por vendedor) ----- */
+const holdKey=()=>'pdv_hold_'+(ME&&ME.id);
+const holdGet=()=>LS.get(holdKey(),[])||[];
+function holdSave(auto){
+  if(!cart.length)return auto?0:alert('O carrinho está vazio.');
+  const h=holdGet(),nm=($('#c_n')&&$('#c_n').value.trim())||'';
+  h.push({id:uid(),at:now(),label:nm||'Venda '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),cart:JSON.parse(JSON.stringify(cart)),sd:{...saleDisc},
+    f:{t:$('#s_t').value,m:$('#s_m').value,e:$('#s_e').value,n:$('#s_n').value,d:$('#s_d').value,cn:$('#c_n').value,cc:$('#c_c').value,cp:$('#c_p').value},cli:selCli});
+  LS.set(holdKey(),h);cart=[];saleDisc={mode:'val',val:0};if($('#sd_v')){$('#sd_v').value=0;$('#sd_m').value='val'}
+  ['c_n','c_c','c_p'].forEach(k=>{if($('#'+k))$('#'+k).value=''});selCli=null;
+  cartView();if(!auto)pdvMsg('Venda colocada em espera. Atenda o próximo cliente.',true);return 1;
+}
+function holdList(){
+  const h=holdGet();
+  modal(`<h2>Vendas em espera</h2>${h.length?h.map(x=>`<div class="citem" style="grid-template-columns:minmax(0,1fr) auto auto"><div class="cn"><b>${esc(x.label)}</b><span class="sm">${x.cart.reduce((a,i)=>a+i.qty,0)} itens · ${new Date(x.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>
+   <button class="btn s" onclick="holdResume('${x.id}')">Retomar</button><button class="btn g s" onclick="holdDel('${x.id}')">Descartar</button></div>`).join(''):'<p class="sm">Nenhuma venda em espera.</p>'}
+  <p class="sm">As vendas em espera ficam guardadas neste aparelho. Os preços são conferidos de novo ao finalizar.</p>`);
+}
+function holdResume(id){
+  const h=holdGet(),x=h.find(v=>v.id===id);if(!x)return;
+  if(cart.length)holdSave(true);
+  const rest=holdGet().filter(v=>v.id!==id);LS.set(holdKey(),rest);
+  cart=x.cart;saleDisc=x.sd||{mode:'val',val:0};
+  const f=x.f||{};$('#s_t').value=f.t||'avista';$('#s_m').value=f.m||'Dinheiro';$('#s_e').value=f.e||0;$('#s_n').value=f.n||6;if(f.d)$('#s_d').value=f.d;
+  $('#c_n').value=f.cn||'';$('#c_c').value=f.cc||'';$('#c_p').value=f.cp||'';selCli=x.cli||null;
+  $('#sd_m').value=saleDisc.mode;$('#sd_v').value=saleDisc.val||0;closeM();cartView();
+}
+function holdDel(id){if(!confirm('Descartar esta venda em espera?'))return;LS.set(holdKey(),holdGet().filter(v=>v.id!==id));holdList();cartView()}
+
+/* ----- autorização do administrador (e-mail e senha dele, numa sessão à parte; nada fica gravado) ----- */
+function askAdmin(valor){
+  return new Promise(res=>{
+    window.__askRes=res;
+    modal(`<h2>Autorização do administrador</h2><p>Desconto de <b>${R(valor)}</b> para <b>${esc(ME.name)}</b>.</p>
+    <form onsubmit="askAdminGo(event,${valor})"><label for="ad_e">E-mail do administrador</label><input id="ad_e" type="email" autocomplete="off" required>
+    <label for="ad_p">Senha do administrador</label><input id="ad_p" type="password" autocomplete="off" required>
+    <div id="ad_2" style="display:none"><label for="ad_c">Código do autenticador (2 etapas)</label><input id="ad_c" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+    <p id="ad_m" class="bad" role="alert" style="min-height:1.3em"></p><div class="bar"><button class="btn" id="ad_b">Autorizar</button><button type="button" class="btn g" onclick="askAdminX()">Cancelar</button></div></form>`);
+    setTimeout(()=>$('#ad_e')&&$('#ad_e').focus(),50);
+  });
+}
+function askAdminX(){closeM();const r=window.__askRes;window.__askRes=null;r&&r(null)}
+let adC=null;
+async function askAdminGo(ev,valor){
+  ev.preventDefault();const m=$('#ad_m'),b=$('#ad_b');m.textContent='';b.disabled=true;
+  try{
+    if(!adC){adC=supabase.createClient(CFG.URL,CFG.KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'mm-pdv-auth'}});
+      const{error}=await adC.auth.signInWithPassword({email:$('#ad_e').value.trim(),password:$('#ad_p').value});if(error){adC=null;throw new Error('E-mail ou senha do administrador incorretos.')}}
+    const{data:a}=await adC.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(a&&a.nextLevel==='aal2'&&a.currentLevel!=='aal2'){
+      const code=$('#ad_c').value.trim();$('#ad_2').style.display='';
+      if(!code){b.disabled=false;m.textContent='Digite o código do autenticador do administrador.';return}
+      const{data:f}=await adC.auth.mfa.listFactors(),t=(f.totp||[]).find(x=>x.status==='verified');
+      const{error}=await adC.auth.mfa.challengeAndVerify({factorId:t.id,code});if(error)throw new Error('Código incorreto.');
+    }
+    const{data,error}=await adC.rpc('pdv_autorizar_desconto',{p_seller:ME.id,p_value:valor});
+    if(error)throw new Error(/Somente o administrador/.test(error.message)?'Este usuário não é administrador.':error.message);
+    try{await adC.auth.signOut()}catch(e){}adC=null;closeM();const r=window.__askRes;window.__askRes=null;r&&r(data);
+  }catch(e){try{if(adC){await adC.auth.signOut()}}catch(x){}adC=null;m.textContent=e.message||'Não foi possível autorizar.';b.disabled=false}
+}
+
+let finishing=false;
+async function finish(){
+  if(finishing)return;
   if(!cart.length)return alert('Adicione ao menos um produto.');
-  const t=s_t.value,tot=+total().toFixed(2),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1,nm=c_n.value.trim();
+  const t=s_t.value,cc=cartCalc(t),tot=cc.total,e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1,nm=c_n.value.trim(),cfg=ME.cfg||{};
   if(t==='crediario'){
     if(nm.length<2)return alert('Carnê exige o nome do cliente.');
     if(e<0||e>=tot)return alert('A entrada precisa ser menor que o total.');
     if(!(n>=1&&n<=maxInst()))return alert('Número de parcelas inválido. Máximo para estes itens: '+maxInst()+'.');
     if(!s_d.value)return alert('Informe o 1º vencimento.');
   }
+  if(cfg.exige_caixa&&ME.role!=='admin'&&!(CX&&CX.aberto))return alert('Abra o caixa (aba Caixa) antes de vender.');
   const low=cart.filter(i=>(+(P.find(p=>p.id===i.id)||{}).stock||0)<i.qty).map(i=>P.find(p=>p.id===i.id).name);
   if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
-  const sale={id:uid(),_by:ME.id,pay_type:t,method:s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),
-    customer:nm?{id:selCli||null,name:nm,cpf:c_c.value.trim(),phone:c_p.value.trim()}:null,items:cart.map(i=>({id:i.id,qty:i.qty}))};
-  const rec={...sale,seller:ME.name,total:tot,lines:cart.map(i=>{const p=P.find(x=>x.id===i.id);return{name:p.name,qty:i.qty,price:unit(p,t)}})};
-  Q.push(sale);saveQ();
-  cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
-  cart=[];window.lastRec=rec;
-  modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':s_m.value)}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
-  <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
-  sync();
+  finishing=true;
+  try{
+    const free=+cfg.desc_livre_pct||0;let authId=null;
+    if(ME.role!=='admin'&&cc.disc>0.004&&cc.gross>0&&cc.disc/cc.gross*100>free+0.0001){
+      if(navigator.onLine===false)return alert('Desconto acima de '+free+'% precisa da autorização do administrador e de internet. Reduza o desconto ou conecte-se.');
+      authId=await askAdmin(cc.disc);if(!authId)return;
+    }
+    const sale={id:uid(),_by:ME.id,pay_type:t,method:s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
+      customer:nm?{id:selCli||null,name:nm,cpf:c_c.value.trim(),phone:c_p.value.trim()}:null,items:cart.map(i=>({id:i.id,qty:i.qty,disc_val:+i.disc||0}))};
+    const rec={...sale,seller:ME.name,total:tot,disc:cc.disc,lines:cc.L.map(l=>({name:l.p.name,qty:l.q,price:l.un}))};
+    Q.push(sale);saveQ();
+    cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
+    cart=[];saleDisc={mode:'val',val:0};window.lastRec=rec;
+    modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':s_m.value)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
+    <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
+    sync();
+  }finally{finishing=false}
 }
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
 function closeM(){scanStop();$('#modal').classList.remove('open')}
@@ -442,8 +547,11 @@ function cupomPrint(){
   <h1>${esc(c.trade_name||c.legal_name||'MultMix')}</h1><div class="c">${esc([c.cnpj&&'CNPJ '+c.cnpj,a,c.phone].filter(Boolean).join(' · '))}</div><hr><div class="c"><b>CUPOM NÃO FISCAL</b><br>Apenas para controle</div><hr>
   <div>Venda ${esc(String(r.id).slice(0,8).toUpperCase())}<br>${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<br>Vendedor: ${esc(r.seller)}${r.customer?'<br>Cliente: '+esc(r.customer.name):''}</div><hr>
   <table>${r.lines.map(l=>`<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td>${l.qty} x ${R(l.price)}</td><td>${R(l.qty*l.price)}</td></tr>`).join('')}</table><hr>
-  <table><tr class="t"><td>TOTAL</td><td>${R(r.total)}</td></tr><tr><td>Pagamento</td><td>${esc(r.pay_type==='crediario'?'Carnê '+r.n_inst+'x':r.method)}</td></tr>${r.pay_type==='crediario'?`<tr><td>Entrada</td><td>${R(r.entry)}</td></tr>`:''}</table><hr><div class="c">Obrigado pela preferência!</div>`;
-  if(window.mmDesk){mmDesk.print(html).then(r=>{if(!r.ok)alert('Não imprimiu: '+(r.error||'verifique a impressora em PDV > Impressora do cupom'))});return}
+  ${r.disc>0.004?`<table><tr><td>Desconto</td><td>-${R(r.disc)}</td></tr></table>`:''}<table><tr class="t"><td>TOTAL</td><td>${R(r.total)}</td></tr><tr><td>Pagamento</td><td>${esc(r.pay_type==='crediario'?'Carnê '+r.n_inst+'x':r.method)}</td></tr>${r.pay_type==='crediario'?`<tr><td>Entrada</td><td>${R(r.entry)}</td></tr>`:''}</table><hr><div class="c">Obrigado pela preferência!</div>`;
+  printHtml(html);
+}
+function printHtml(html){
+  if(window.mmDesk){mmDesk.print(html).then(r=>{if(!r.ok)alert('Não imprimiu: '+(r.error||'verifique a impressora em MultMix > Impressora do cupom'))});return}
   const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
   fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão.')}setTimeout(()=>fr.remove(),60000)},300)};
 }
@@ -455,11 +563,98 @@ function vMin(){
    ${ME.commission_pct>0?`<div class="pr"><span>Minha taxa</span><b>${+ME.commission_pct}%</b></div>`:''}</div>
   <p class="sm">A comissão é calculada pelo servidor. Vendas feitas sem internet só entram aqui depois de enviadas.</p>
   ${pend.length?`<div class="box"><h3>Aguardando envio (${pend.length})</h3><p class="sm">Ficam guardadas neste aparelho e vão sozinhas quando houver internet.</p><button class="btn g s" onclick="sync()">Tentar enviar agora</button></div>`:''}
-  ${fl.length?`<div class="box"><h3 class="bad">Vendas recusadas pelo servidor (${fl.length})</h3>${fl.map(f=>`<p class="sm">${fmtD(f.s.created_at)} · ${esc(f.msg)} <button class="btn g s" onclick="failDel('${f.s.id}')">Descartar</button></p>`).join('')}<p class="sm">Fale com o administrador antes de descartar.</p></div>`:''}
-  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Itens</th><th style="text-align:right">Total</th></tr>
-  ${MY.length?MY.map(s=>`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtD(ld(s.created_at))}</td><td>${esc(s.customer||'—')}</td><td>${esc(s.pay_type==='crediario'?'Carnê':(s.method||'—'))}${s.canceled_at?' <span class="tag">cancelada</span>':''}</td><td>${(s.items||[]).reduce((a,i)=>a+ +i.qty,0)}</td><td style="text-align:right">${R(s.total)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:14px">Nenhuma venda enviada neste mês.</td></tr>'}</table></div>`;
+  ${fl.length?`<div class="box"><h3 class="bad">Vendas recusadas pelo servidor (${fl.length})</h3>${fl.map(f=>`<p class="sm">${fmtD(f.s.created_at)} · ${esc(f.msg)}${f.rep?' · administrador avisado':''} <button class="btn g s" onclick="failDel('${f.s.id}')">Descartar</button></p>`).join('')}<p class="sm">Fale com o administrador antes de descartar.</p></div>`:''}
+  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Itens</th><th style="text-align:right">Total</th><th></th></tr>
+  ${MY.length?MY.map(s=>`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtD(ld(s.created_at))}</td><td>${esc(s.customer||'—')}</td><td>${esc(s.pay_type==='crediario'?'Carnê':(s.method||'—'))}${s.canceled_at?' <span class="tag">cancelada</span>':''}</td><td>${(s.items||[]).reduce((a,i)=>a+ +i.qty,0)}</td><td style="text-align:right">${R(s.total)}${+s.discount>0?`<div class="sm">desconto ${R(s.discount)}</div>`:''}${+s.devolvido>0?`<div class="sm bad">devolvido ${R(s.devolvido)}</div>`:''}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="devOpen('${s.id}')">Devolver</button>`}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:14px">Nenhuma venda enviada neste mês.</td></tr>'}</table></div>`;
 }
 function failDel(id){if(!confirm('Descartar esta venda recusada? Ela não será registrada.'))return;const i=FAIL.findIndex(f=>f.s.id===id);if(i>=0)FAIL.splice(i,1);saveQ();render()}
+
+/* ----- caixa do vendedor (abrir, sangria, suprimento, fechar com conferência) ----- */
+let CX=LS.get('pdv_cx',null);
+async function loadCx(){const{data,error}=await sb.rpc('pdv_caixa_estado');if(!error&&data){CX=data;LS.set('pdv_cx',CX)}return !error}
+const mtxt=o=>Object.entries(o||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td style="text-align:right">${R(v)}</td></tr>`).join('')||'<tr><td colspan="2" class="sm">Nenhuma venda ainda.</td></tr>';
+async function vCx(){
+  $('#app').innerHTML='<p class="sm">Carregando o caixa…</p>';
+  if(navigator.onLine!==false)await loadCx();
+  paintCx();
+}
+function paintCx(){
+  const off=navigator.onLine===false,c=CX&&CX.aberto?CX:null;
+  if(!c){
+    $('#app').innerHTML=`<div class="box" style="max-width:520px"><h2>Caixa fechado</h2><p class="sm">Conte o dinheiro que está na gaveta e informe o valor inicial (troco). ${(ME.cfg||{}).exige_caixa?'<b>Para vender, o caixa precisa estar aberto.</b>':''}</p>
+    ${off?'<p class="bad">Sem internet: não dá para abrir o caixa agora.</p>':''}
+    <label for="cx_o">Valor inicial na gaveta (R$)</label><input id="cx_o" type="number" step="0.01" min="0" value="0" inputmode="decimal">
+    <div class="bar"><button class="btn" onclick="cxAbrir()" ${off?'disabled':''}>Abrir caixa</button></div></div>`;return;
+  }
+  const k=c.calc||{},rec=k.recebido||{},tot=Object.values(rec).reduce((a,b)=>a+ +b,0);
+  $('#app').innerHTML=`<div class="prices"><div class="pr"><span>Aberto desde</span><b>${new Date(c.aberto_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>
+   <div class="pr"><span>Valor inicial</span><b>${R(k.abertura)}</b></div><div class="pr"><span>Vendido neste caixa</span><b>${R(tot)}</b></div><div class="pr"><span>Retiradas (sangria)</span><b>${R(k.sangrias)}</b></div></div>
+  ${off?'<p class="bad">Sem internet: os números abaixo podem estar desatualizados e o caixa não pode ser fechado agora.</p>':''}
+  <div class="box"><h3>Recebido por forma de pagamento</h3><table>${mtxt(rec)}</table>
+   ${Object.keys(k.estornos||{}).length||Object.keys(k.devolucoes||{}).length?`<p class="sm">Devoluções e estornos já descontados: ${R(Object.values(k.estornos||{}).reduce((a,b)=>a+ +b,0)+Object.values(k.devolucoes||{}).reduce((a,b)=>a+ +b,0))}</p>`:''}
+   <p class="sm">Vendas feitas sem internet só aparecem aqui depois de enviadas.</p></div>
+  <div class="box"><h3>Retiradas e reforços</h3>${(c.movimentos||[]).length?`<table>${c.movimentos.map(m=>`<tr><td>${new Date(m.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${m.kind==='sangria'?'Sangria':'Suprimento'}</td><td>${esc(m.reason||'')}</td><td style="text-align:right">${m.kind==='sangria'?'−':'+'}${R(m.amount)}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum movimento.</p>'}
+   <div class="bar"><button class="btn g s" onclick="cxMov('sangria')" ${off?'disabled':''}>Sangria (retirar dinheiro)</button><button class="btn g s" onclick="cxMov('suprimento')" ${off?'disabled':''}>Suprimento (colocar troco)</button></div></div>
+  <div class="box"><h3>Fechar o caixa</h3><p class="sm">Conte o dinheiro da gaveta e digite o total. O sistema compara com o que deveria ter e registra a diferença para o administrador.</p>
+   <div class="f"><div><label for="cx_c">Dinheiro contado na gaveta (R$)</label><input id="cx_c" type="number" step="0.01" min="0" inputmode="decimal"></div><div class="w"><label for="cx_n">Observação (opcional)</label><input id="cx_n"></div></div>
+   <div class="bar"><button class="btn" onclick="cxFechar()" ${off?'disabled':''}>Fechar caixa</button></div></div>`;
+}
+async function cxAbrir(){
+  const v=+$('#cx_o').value;if(!(v>=0))return alert('Informe o valor inicial (pode ser zero).');
+  const{error}=await sb.rpc('pdv_caixa_abrir',{p_opening:v});if(error)return alert(error.message);
+  await loadCx();render();
+}
+function cxMov(kind){
+  modal(`<h2>${kind==='sangria'?'Sangria':'Suprimento'}</h2><p class="sm">${kind==='sangria'?'Retirada de dinheiro da gaveta (ex.: levar ao banco).':'Dinheiro colocado na gaveta (ex.: troco).'}</p>
+  <label for="mv_v">Valor (R$)</label><input id="mv_v" type="number" step="0.01" min="0.01" inputmode="decimal"><label for="mv_r">Motivo</label><input id="mv_r" placeholder="${kind==='sangria'?'Ex.: depósito no banco':'Ex.: troco'}">
+  <div class="bar"><button class="btn" onclick="cxMovGo('${kind}')">Registrar</button></div>`);
+}
+async function cxMovGo(kind){
+  const{error}=await sb.rpc('pdv_caixa_mov',{p_kind:kind,p_amount:+$('#mv_v').value,p_reason:$('#mv_r').value});
+  if(error)return alert(error.message);closeM();await loadCx();paintCx();
+}
+async function cxFechar(){
+  const v=$('#cx_c').value;if(v==='')return alert('Conte o dinheiro da gaveta e informe o valor.');
+  if(mine().length&&!confirm('Há '+mine().length+' venda(s) ainda não enviada(s). Elas não entram neste fechamento. Fechar assim mesmo?'))return;
+  if(!confirm('Fechar o caixa com R$ '+(+v).toFixed(2).replace('.',',')+' contados na gaveta?'))return;
+  const{data,error}=await sb.rpc('pdv_caixa_fechar',{p_counted:+v,p_note:$('#cx_n').value});if(error)return alert(error.message);
+  const d=+data.diferenca;window.lastFech={...data,seller:ME.name,at:now()};CX={aberto:false};LS.set('pdv_cx',CX);
+  modal(`<h2>Caixa fechado</h2><table><tr><td>Esperado na gaveta</td><td style="text-align:right">${R(data.esperado)}</td></tr><tr><td>Contado</td><td style="text-align:right">${R(data.contado)}</td></tr>
+  <tr><td><b>Diferença</b></td><td style="text-align:right"><b class="${Math.abs(d)<0.01?'ok':'bad'}">${Math.abs(d)<0.01?'Confere':(d<0?'Falta ':'Sobra ')+R(Math.abs(d))}</b></td></tr></table>
+  <p class="sm">${Math.abs(d)<0.01?'':'O administrador foi avisado da diferença.'}</p><div class="bar"><button class="btn" onclick="fechPrint()">Imprimir resumo</button><button class="btn g" onclick="closeM();render()">OK</button></div>`);
+}
+function fechPrint(){
+  const f=window.lastFech;if(!f)return;const c=f.calc||{},rec=c.recebido||{},co=CO||{};
+  printHtml(`<!doctype html><meta charset="utf-8"><title>Fechamento</title><style>@page{margin:3mm}body{font:12px/1.35 monospace;width:72mm;margin:0;color:#000}h1{font-size:14px;text-align:center;margin:0}.c{text-align:center}hr{border:0;border-top:1px dashed #000;margin:6px 0}table{width:100%;border-collapse:collapse}td:last-child{text-align:right}</style>
+  <h1>${esc(co.trade_name||co.legal_name||'MultMix')}</h1><div class="c"><b>FECHAMENTO DE CAIXA</b><br>${new Date(f.at).toLocaleString('pt-BR')}<br>Vendedor: ${esc(f.seller)}</div><hr>
+  <table><tr><td>Valor inicial</td><td>${R(c.abertura)}</td></tr>${Object.entries(rec).map(([k,v])=>`<tr><td>Vendas ${esc(k)}</td><td>${R(v)}</td></tr>`).join('')}
+  <tr><td>Suprimentos</td><td>${R(c.suprimentos)}</td></tr><tr><td>Sangrias</td><td>${R(c.sangrias)}</td></tr></table><hr>
+  <table><tr><td>Esperado (dinheiro)</td><td>${R(f.esperado)}</td></tr><tr><td>Contado</td><td>${R(f.contado)}</td></tr><tr><td><b>Diferença</b></td><td><b>${R(f.diferenca)}</b></td></tr></table><hr><div class="c">Assinatura: ____________________</div>`);
+}
+/* ----- troca e devolução ----- */
+function devOpen(id){
+  const s=MY.find(x=>x.id===id);if(!s)return;const cfg=ME.cfg||{},dias=+cfg.devolucao_dias||7;
+  if(s.pay_type==='crediario'&&ME.role!=='admin')return alert('Venda no carnê: procure o administrador para fazer a devolução.');
+  if(ME.role!=='admin'&&(Date.now()-new Date(s.created_at))/864e5>dias)return alert('Prazo de devolução vencido ('+dias+' dias). Procure o administrador.');
+  if(navigator.onLine===false)return alert('A devolução precisa de internet. Conecte-se e tente de novo.');
+  window.devSale=s;
+  modal(`<h2>Troca / devolução</h2><p class="sm">Venda de ${fmtD(ld(s.created_at))} · ${R(s.total)}${s.devolvido>0?' · já devolvido '+R(s.devolvido):''}</p>
+  ${s.fiscal_status==='emitida'?'<p class="bad">Atenção: já existe nota fiscal emitida. O administrador será avisado para tratar a nota.</p>':''}
+  <div id="dv_l">${(s.items||[]).map((i,k)=>`<div class="citem" style="grid-template-columns:minmax(0,1fr) 90px"><div class="cn"><b>${esc(i.name)}</b><span class="sm">${i.qty} × ${R(i.price)}</span></div><input type="number" min="0" max="${i.qty}" value="0" id="dv_${k}" inputmode="numeric" aria-label="Quantidade devolvida"></div>`).join('')}</div>
+  <div class="f"><div class="w"><label for="dv_r">Motivo</label><input id="dv_r" placeholder="Ex.: defeito, tamanho errado"></div>
+  <div><label for="dv_m">Devolver o valor em</label><select id="dv_m"><option>Dinheiro</option><option>Pix</option><option>Cartão</option><option value="Troca">Troca (sem devolver dinheiro)</option></select></div></div>
+  <p class="sm">Na troca, o produto volta ao estoque e você registra a nova venda normalmente.</p>
+  <div class="bar"><button class="btn" onclick="devSend()">Registrar</button></div>`);
+}
+async function devSend(){
+  const s=window.devSale,items=[];(s.items||[]).forEach((i,k)=>{const q=Math.round(+$('#dv_'+k).value||0);if(q>0)items.push({id:i.id,qty:Math.min(q,i.qty)})});
+  if(!items.length)return alert('Informe a quantidade de pelo menos um item.');
+  const m=$('#dv_m').value;
+  const{data,error}=await sb.rpc('pdv_devolucao',{p:{id:uid(),sale_id:s.id,items,reason:$('#dv_r').value,refund_method:m}});
+  if(error)return alert(error.message);
+  closeM();alert(m==='Troca'?'Troca registrada: o produto voltou ao estoque. Registre a nova venda.':'Devolução registrada: '+R(data.valor)+(data.venda_cancelada?' (venda cancelada)':'')+'.'+(data.fiscal_pendente?'\nO administrador foi avisado para tratar a nota fiscal.':''));
+  await sync();await loadMine();if(m==='Troca')go('venda');else render();
+}
 
 /* ----- início ----- */
 (async()=>{
