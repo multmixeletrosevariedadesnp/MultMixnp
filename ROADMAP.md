@@ -1,6 +1,6 @@
 # MultMix · Memória do projeto e o que falta aperfeiçoar
 
-Atualizado em 28/10/2026 · sistema 1.24.0 · catálogo 1.2.0 · API fiscal `cont-1` · SQL até `v25`.
+Atualizado em 28/10/2026 · sistema 1.25.0 · catálogo 1.2.0 · API fiscal `cont-1` · SQL até `v25`.
 Este arquivo é a "memória": leia primeiro ao retomar o trabalho. Não coloque senhas, tokens nem certificado aqui.
 
 ## Combinados com o dono (regras de trabalho)
@@ -62,7 +62,7 @@ regras IBS/CBS/IS (só cadastro; não altera o XML).
 - Lembrete mensal (dia 1º) para enviar o Pacote do contador.
 
 **D. Balcão**
-- Leitor de código de barras no PDV com atalhos de teclado; impressão térmica direta; indicador de vendas pendentes de envio (offline).
+- FEITO 1.25.0: atalhos (F2/F4/F6/F8), leitor USB global, 3*código, bipe e avisos. Falta: impressão térmica direta (ESC/POS ou impressão silenciosa, precisa testar na impressora real), desconto por item/venda, venda em espera (pausar e retomar), abertura/fechamento de caixa com sangria, teste do leitor USB real. O indicador de pendentes de envio já existe no topo ("offline · N pendente(s)").
 
 **E. Venda online**
 - Carrinho e pedido no catálogo com pagamento; aviso de situação do pedido ao cliente.
