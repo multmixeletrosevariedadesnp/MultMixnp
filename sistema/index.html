@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.20.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.21.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1207,12 +1207,12 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,rel:vRel,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -1449,6 +1449,9 @@ function prodForm(id){
    <div><label>CEST (opcional)</label><input id="f_cest" value="${v('cest')}"></div>
    <div class="w"><label>Código de barras (EAN)</label><div class="pwd"><input id="f_ean" inputmode="numeric" autocomplete="off" value="${v('ean')}" placeholder="Digite, use o leitor ou escaneie"><button type="button" class="btn g s" onclick="scanOpen(c=>{$('#f_ean').value=c})">Escanear</button></div></div>
    <div><label>CSOSN / CST</label><input id="f_csosn" value="${v('csosn')||'102'}"></div>
+   <div><label>CST IBS/CBS (3 dígitos, opcional)</label><input id="f_ibs_cst" maxlength="3" inputmode="numeric" value="${v('ibs_cst')}" placeholder="usa a regra se vazio"></div>
+   <div><label>cClassTrib (6 dígitos, opcional)</label><input id="f_ibs_cclass" maxlength="6" inputmode="numeric" value="${v('ibs_cclass')}"></div>
+   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f_is_aplica" style="width:auto" ${p.is_aplica?'checked':''}> Sujeito ao Imposto Seletivo (IS)</label></div>
    <div><label>No catálogo?</label><select id="f_active"><option value="true" ${p.active!==false?'selected':''}>Sim</option><option value="false" ${p.active===false?'selected':''}>Não</option></select></div></div>
    <button class="btn" onclick="saveProd('${p.id||''}')">Salvar produto</button>`);
   prodMarg();
@@ -1486,6 +1489,11 @@ function saveProd(id){
   { // só envia as colunas de promoção se houver promoção (evita erro caso o SQL v18 ainda não tenha sido rodado)
     const pp=+g('promo_pct')>0?Math.min(90,+g('promo_pct')):null,pf=g('promo_from')||null,pt=g('promo_to')||null,o=db.products.find(x=>x.id===id)||{};
     if(pp||pf||pt||'promo_pct' in o){row.promo_pct=pp;row.promo_from=pf;row.promo_to=pt}
+  }
+  { // IBS/CBS/IS: só envia as colunas se houver dado (evita erro caso o SQL v23 ainda não tenha sido rodado)
+    const ic=g('ibs_cst'),icc=g('ibs_cclass'),isa=$('#f_is_aplica').checked,o=db.products.find(x=>x.id===id)||{};
+    if(!rtcCstOk(ic)||!rtcCcOk(icc))return alert('CST IBS/CBS tem 3 dígitos e cClassTrib tem 6 dígitos (só números).');
+    if(ic||icc||isa||'ibs_cst' in o){row.ibs_cst=ic||null;row.ibs_cclass=icc||null;row.is_aplica=isa}
   }
   const ean=digits(g('ean'));
   if(ean){const dup=db.products.find(x=>x.ean===ean&&x.id!==row.id);if(dup&&!confirm('Este código de barras já está no produto "'+dup.name+'". Salvar mesmo assim?'))return;row.ean=ean}
@@ -1774,6 +1782,8 @@ function cliForm(id){
    <div><label>Telefone / WhatsApp</label><input id="k_phone" inputmode="tel" value="${v('phone')}"></div>
    <div><label>E-mail</label><input id="k_email" type="email" value="${v('email')}"></div>
    <div><label>Inscrição estadual (PJ)</label><input id="k_ie" value="${v('ie')}" placeholder="ou ISENTO"></div>
+   <div><label>Tipo do cliente (IBS/CBS)</label><select id="k_client_kind" onchange="$('#k_gov_w').style.display=this.value==='orgao_publico'?'':'none'"><option value="">Automático (${esc((RTC_KIND.find(x=>x[0]===cliKind(c))||[])[1]||'')})</option>${RTC_KIND.map(([k,l])=>`<option value="${k}" ${c.client_kind===k?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div id="k_gov_w" style="${c.client_kind==='orgao_publico'?'':'display:none'}"><label>Ente público</label><select id="k_gov_ente"><option value=""></option>${RTC_GOV.map(([k,l])=>`<option value="${k}" ${c.gov_ente===k?'selected':''}>${l}</option>`).join('')}</select></div>
    <div><label>CEP</label><input id="k_cep" inputmode="numeric" value="${v('cep')}" onblur="cepCli()"></div>
    <div class="w"><label>Rua / logradouro</label><input id="k_street" value="${v('street')}"></div>
    <div><label>Número</label><input id="k_number" value="${v('number')}"></div>
@@ -1878,6 +1888,7 @@ function saveCli(id){
   const row={...c,kind:g('kind'),trade_name:g('trade_name'),name:g('name'),person_type:g('person_type'),cpf:g('cpf'),phone:g('phone'),email:g('email'),ie:g('ie'),cep:g('cep'),street:g('street'),number:g('number'),
     complement:g('complement'),district:g('district'),city:g('city'),uf:g('uf').toUpperCase(),ibge:g('ibge'),address:g('address')};
   if(row.street&&!row.address)row.address=`${row.street}, ${row.number||'s/n'} - ${row.district}, ${row.city}/${row.uf}`;
+  { const ck=g('client_kind'),ge=ck==='orgao_publico'?g('gov_ente'):'',o=db.customers.find(x=>x.id===id)||{};if(ck||'client_kind' in o){row.client_kind=ck||null;row.gov_ente=ge||null} }
   put('customers',row);
   closeM();render();
 }
@@ -2620,12 +2631,14 @@ function fisEdit(id){
   modal(`<h2>Documento fiscal da venda</h2><div class="f">
   <div class="w"><label>Tipo de documento</label><select id="x_t"><option value="nfce" ${s.doc_type==='nfce'?'selected':''}>NFC-e (modelo 65) · consumidor final</option><option value="nfe" ${s.doc_type!=='nfce'?'selected':''}>NF-e (modelo 55) · cliente identificado</option></select></div>
   <div class="w"><label>Cliente</label><select id="x_c"><option value="">Balcão (sem cliente)</option>${[...db.customers].filter(c=>(c.kind||'cliente')==='cliente').sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}" ${c.id===s.customer_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+  <div class="w"><label>Destino da venda (IBS/CBS)</label><select id="x_d"><option value="">Automático (${esc((RTC_DEST.find(x=>x[0]===saleDest({...s,sale_dest:''}))||[])[1])})</option>${RTC_DEST.map(([k,l])=>`<option value="${k}" ${s.sale_dest===k?'selected':''}>${l}</option>`).join('')}</select></div>
   <div class="w"><label>Natureza da operação</label><input id="x_n" value="${esc(s.nat_op||'Venda de mercadoria')}"></div>
   <div class="w"><label>Frete</label><select id="x_f">${[['9','Sem frete'],['0','Por conta do emitente'],['1','Por conta do destinatário']].map(([k,l])=>`<option value="${k}" ${(s.freight||'9')===k?'selected':''}>${l}</option>`).join('')}</select></div></div>
   <button class="btn" onclick="fisEditSave('${id}')">Salvar</button>`);
 }
 function fisEditSave(id){
-  put('sales',{...db.sales.find(x=>x.id===id),doc_type:$('#x_t').value,customer_id:$('#x_c').value||null,nat_op:$('#x_n').value.trim()||'Venda de mercadoria',freight:$('#x_f').value});
+  { const o=db.sales.find(x=>x.id===id),d=$('#x_d').value,row={...o,doc_type:$('#x_t').value,customer_id:$('#x_c').value||null,nat_op:$('#x_n').value.trim()||'Venda de mercadoria',freight:$('#x_f').value};
+    if(d||'sale_dest' in o)row.sale_dest=d||null;put('sales',row) }
   closeM();vFis();
 }
 async function fisCall(body){
@@ -2863,6 +2876,69 @@ function relCsv(){
   const d=relBuild(),rows=[d.head,...d.rows,d.foot];
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='relatorio-'+REL.k+'.csv';a.click();
+}
+
+
+/* ========= Reforma Tributária: regras de IBS, CBS e IS (preparação, não altera o XML) ========= */
+const RTC_DEST=[['interna','Dentro do estado'],['interestadual','Para outro estado'],['exterior','Exterior']];
+const RTC_KIND=[['consumidor','Consumidor final (pessoa física)'],['contribuinte','Empresa contribuinte (com IE)'],['nao_contribuinte','Empresa não contribuinte / isenta'],['orgao_publico','Órgão público'],['exterior','Cliente do exterior']];
+const RTC_GOV=[['uniao','União'],['estado','Estado'],['df','Distrito Federal'],['municipio','Município']];
+const RTC_CST=[['000','Tributação integral'],['010','Alíquotas uniformes'],['011','Alíquota uniforme reduzida'],['200','Alíquota zero'],['210','Alíquota reduzida'],['220','Alíquota fixa'],['400','Isenção'],['410','Imunidade e não incidência'],['510','Diferimento'],['550','Suspensão'],['620','Tributação monofásica']];
+const RTC=()=>({ativo:false,aliq:{cbs:0.9,ibs:0.1},padrao:{cst:'',cc:''},regras:[],...(PRIV().rtc||{})});
+const rtcCstOk=v=>!v||/^\d{3}$/.test(v),rtcCcOk=v=>!v||/^\d{6}$/.test(v);
+function cliKind(c){ // tipo do cliente: o escolhido no cadastro, ou deduzido (PF = consumidor; PJ com IE = contribuinte; PJ sem IE = não contribuinte)
+  if(!c||!c.id)return'consumidor';if(c.client_kind)return c.client_kind;
+  const d=digits(c.cpf);if(d.length===14)return c.ie&&String(c.ie).toUpperCase()!=='ISENTO'?'contribuinte':'nao_contribuinte';return'consumidor';
+}
+function saleDest(s){
+  if(s&&s.sale_dest)return s.sale_dest;
+  const c=s&&db.customers.find(x=>x.id===s.customer_id),uf=((c&&c.uf)||'').toUpperCase(),mine=(CO().uf||'').toUpperCase();
+  if(!c||!uf||!mine||uf===mine)return'interna';return uf==='EX'?'exterior':'interestadual';
+}
+function rtcResolve(item,dest,kind){ // produto > regra (destino x tipo de cliente) > padrão
+  const pr=db.products.find(x=>x.id===item.id)||{},R0=RTC();
+  if(pr.ibs_cst||pr.ibs_cclass)return{cst:pr.ibs_cst||'',cc:pr.ibs_cclass||'',src:'Produto',is:!!pr.is_aplica};
+  const r=R0.regras.find(x=>x.dest===dest&&x.kind===kind&&(x.cst||x.cc));
+  if(r)return{cst:r.cst||'',cc:r.cc||'',src:'Regra',is:!!pr.is_aplica};
+  if(R0.padrao.cst||R0.padrao.cc)return{cst:R0.padrao.cst||'',cc:R0.padrao.cc||'',src:'Padrão',is:!!pr.is_aplica};
+  return{cst:'',cc:'',src:'Sem regra',is:!!pr.is_aplica};
+}
+let RT={dest:'interna',kind:'consumidor'};
+function vRtc(){
+  const R0=RTC(),dl=`<datalist id="rt_cst">${RTC_CST.map(([c,l])=>`<option value="${c}">${c} · ${l}</option>`).join('')}</datalist>`;
+  const rg=(d,k)=>R0.regras.find(x=>x.dest===d&&x.kind===k)||{};
+  const prods=db.products.filter(p=>p.active!==false);
+  const sim=prods.map(p=>({p,r:rtcResolve({id:p.id},RT.dest,RT.kind)}));
+  const faltam=sim.filter(x=>!x.r.cst||!x.r.cc).length;
+  $('#app').innerHTML=`${dl}<div class="box" style="max-width:none"><h2>IBS, CBS e IS (Reforma Tributária)</h2>
+  <p class="sm">Aqui você deixa pronto o que a nota vai precisar: o <b>CST</b> (3 dígitos) e o <b>cClassTrib</b> (6 dígitos) de cada situação, conforme o <b>destino da venda</b> e o <b>tipo do cliente</b>. Esta tela <b>apenas guarda as regras</b>: a nota que você emite hoje não muda.</p>
+  <div class="pr" style="margin:8px 0"><span>Situação para a MultMix</span><b class="sm" style="font-weight:600">O destaque de IBS/CBS na NF-e é obrigatório desde 03/08/2026 só para Lucro Real e Presumido. Para o Simples Nacional a SEFAZ ainda vai publicar as regras (a cobrança começa em 2027). Confirme tudo com o contador antes de usar.</b></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="rt_on" style="width:auto" ${R0.ativo?'checked':''}> Já estou usando estas regras (marca os produtos e vendas sem CST/cClassTrib nas conferências)</label>
+  <div class="f" style="margin-top:8px"><div><label>CBS de teste 2026 (%)</label><input id="rt_cbs" type="number" step="0.01" value="${R0.aliq.cbs}"></div><div><label>IBS de teste 2026 (%)</label><input id="rt_ibs" type="number" step="0.01" value="${R0.aliq.ibs}"></div>
+  <div><label>CST padrão</label><input id="rt_pcst" list="rt_cst" maxlength="3" inputmode="numeric" value="${esc(R0.padrao.cst)}" placeholder="3 dígitos"></div><div><label>cClassTrib padrão</label><input id="rt_pcc" maxlength="6" inputmode="numeric" value="${esc(R0.padrao.cc)}" placeholder="6 dígitos"></div></div>
+  <p class="sm">O padrão vale quando nenhuma regra abaixo se aplica. As alíquotas de teste são só para estimativas (em 2026 não há recolhimento para quem cumpre as obrigações acessórias).</p>
+  <h3>Regras por destino e tipo de cliente</h3>
+  <div style="overflow:auto"><table><tr><th>Destino da venda</th><th>Tipo do cliente</th><th>CST</th><th>cClassTrib</th></tr>
+  ${RTC_DEST.map(([d,dn])=>RTC_KIND.map(([k,kn],i)=>`<tr><td>${i?'':esc(dn)}</td><td>${esc(kn)}</td><td><input id="rt_${d}_${k}_c" list="rt_cst" maxlength="3" inputmode="numeric" style="width:80px" value="${esc(rg(d,k).cst||'')}"></td><td><input id="rt_${d}_${k}_cc" maxlength="6" inputmode="numeric" style="width:110px" value="${esc(rg(d,k).cc||'')}"></td></tr>`).join('')).join('')}</table></div>
+  <div class="bar"><button class="btn" onclick="rtcSave()">Salvar regras</button></div>
+  <p class="sm">As tabelas oficiais de CST e cClassTrib estão no Portal Nacional da NF-e (Documentos &gt; Diversos &gt; Informe Técnico 2025.002 RTC). As sugestões de CST são só um apoio: confirme na tabela. Um produto pode ter CST e cClassTrib próprios (no cadastro do produto), que valem mais que as regras. Imposto Seletivo (IS) é marcado por produto.</p>
+  <h3>Conferência por cenário</h3>
+  <div class="bar"><select style="max-width:230px" onchange="RT.dest=this.value;vRtc()">${RTC_DEST.map(([d,n])=>`<option value="${d}" ${RT.dest===d?'selected':''}>${n}</option>`).join('')}</select>
+  <select style="max-width:300px" onchange="RT.kind=this.value;vRtc()">${RTC_KIND.map(([d,n])=>`<option value="${d}" ${RT.kind===d?'selected':''}>${n}</option>`).join('')}</select></div>
+  <p class="sm">${faltam?`<b class="bad">${faltam} de ${sim.length} produtos sem CST/cClassTrib neste cenário.</b>`:`<b class="ok">Todos os ${sim.length} produtos têm CST e cClassTrib neste cenário.</b>`}</p>
+  <div style="overflow:auto;max-height:340px"><table><tr><th>Produto</th><th>Origem</th><th>CST</th><th>cClassTrib</th><th>IS</th></tr>${sim.map(({p,r})=>`<tr><td>${esc(p.name)}</td><td>${r.src}</td><td class="${r.cst?'':'bad'}">${esc(r.cst||'—')}</td><td class="${r.cc?'':'bad'}">${esc(r.cc||'—')}</td><td>${r.is?'Sim':''}</td></tr>`).join('')}</table></div></div>`;
+}
+function rtcSave(){
+  const R0=RTC(),g=id=>$('#'+id).value.trim(),regras=[];
+  const pc=g('rt_pcst'),pcc=g('rt_pcc');
+  if(!rtcCstOk(pc)||!rtcCcOk(pcc))return alert('CST tem 3 dígitos e cClassTrib tem 6 dígitos (só números).');
+  for(const[d]of RTC_DEST)for(const[k,kn]of RTC_KIND){
+    const c=g(`rt_${d}_${k}_c`),cc=g(`rt_${d}_${k}_cc`);if(!c&&!cc)continue;
+    if(!rtcCstOk(c)||!rtcCcOk(cc))return alert('Confira "'+kn+'" ('+d+'): CST com 3 dígitos e cClassTrib com 6 dígitos.');
+    regras.push({dest:d,kind:k,cst:c,cc});
+  }
+  const rtc={ativo:$('#rt_on').checked,aliq:{cbs:+g('rt_cbs')||0,ibs:+g('rt_ibs')||0},padrao:{cst:pc,cc:pcc},regras};
+  master(()=>{put('company_private',{id:1,...PRIV(),rtc});alert('Regras salvas. A emissão da nota continua como está.');vRtc()});
 }
 
 /* ========= Início ========= */

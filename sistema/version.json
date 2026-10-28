@@ -1,5 +1,5 @@
 {
- "version": "1.20.1",
+ "version": "1.21.0",
  "date": "2026-10-27",
- "notes": "CNPJ: logradouro completado por segunda fonte e pelo CEP quando a Receita não traz."
+ "notes": "Regras IBS, CBS e IS: CST e cClassTrib por destino da venda e tipo do cliente (preparação, não altera a nota)."
 }
