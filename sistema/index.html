@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.24.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.25.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -109,7 +109,7 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 /* PDV: produtos à esquerda, carrinho à direita (no celular, um abaixo do outro) */
 .pdv{display:grid;gap:14px;align-items:start}
 @media(min-width:900px){.pdv{grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr)}.pdvr{position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto}.pbar{display:none!important}}
-.pdv .box{max-width:none}.pdv h2{margin:0 0 12px}
+.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.pdv .box{max-width:none}.pdv h2{margin:0 0 12px}
 .psr{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.pq{flex:1 1 220px}.pqq{width:78px}.psr .btn{height:42px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:12px}
 .pgh{grid-column:1/-1;margin:4px 2px}
@@ -1577,7 +1577,8 @@ function vPdv(){
    <div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
     <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
     <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
-   <div id="p_res" class="pgrid"></div></section>
+   <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div>
+   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · digite <b>3*código</b> para 3 unidades · o leitor USB funciona de qualquer lugar da tela</p></section>
   <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
@@ -1668,13 +1669,40 @@ async function startScan(got){
     msg(e&&e.name==='NotAllowedError'?'Permita o uso da câmera no navegador para escanear.':e&&e.name==='NotFoundError'?'Nenhuma câmera encontrada neste aparelho.':'Não foi possível abrir a câmera. Digite o código no campo.');
   }
 }
-function pdvScanned(code){
-  const d=digits(code),p=db.products.find(x=>x.ean===d&&x.active!==false);
-  if(!p)return'Código '+d+' não cadastrado. Cadastre o código de barras no produto.';
-  addProd(p.id);return'Adicionado: '+p.name;
+let _au=null;
+function pdvBeep(ok){try{_au=_au||new(window.AudioContext||window.webkitAudioContext)();const o=_au.createOscillator(),g=_au.createGain();o.frequency.value=ok?1000:220;o.type=ok?'sine':'square';g.gain.value=.08;o.connect(g);g.connect(_au.destination);o.start();o.stop(_au.currentTime+(ok?.07:.25))}catch(e){}}
+function pdvMsg(t,ok){const e=$('#p_msg');if(e){e.textContent=t;e.className='sm pmsg '+(ok?'ok':'bad')}pdvBeep(ok)}
+function pdvCode(raw){ // aceita "código" ou "3*código"; devolve mensagem
+  let v=String(raw||'').trim(),q=1;const m=v.match(/^(\d{1,3})\s*[*xX]\s*(.+)$/);if(m){q=+m[1];v=m[2].trim()}
+  const d=digits(v),ex=d.length>=6&&db.products.find(p=>p.ean===d&&p.active!==false);
+  if(!ex){const l=pdvListFor(v);if(l.length===1&&v.length>=2){return pdvAdd(l[0],q)}
+    if(d.length>=6){pdvMsg('Código '+d+' não cadastrado. Cadastre o código de barras no produto.',false);return'Código '+d+' não cadastrado. Cadastre o código de barras no produto.'}
+    pdvMsg(l.length?'Vários produtos encontrados. Toque no que deseja ou digite mais letras.':'Nenhum produto encontrado.',false);return null}
+  return pdvAdd(ex,q);
 }
-function pdvEnter(){const v=$('#p_q').value.trim(),d=digits(v);const ex=d.length>=6&&db.products.find(p=>p.ean===d&&p.active!==false);const l=pdvList();
-  const p=ex||(l.length===1?l[0]:null);if(p){addProd(p.id);$('#p_q').value='';pdvSearch();$('#p_q').focus()}else if(l.length>1)alert('Vários produtos encontrados. Toque no que deseja ou digite mais letras.')}
+function pdvAdd(p,q){
+  const sq=$('#s_q');if(sq)sq.value=q;addProd(p.id);
+  const st=+p.stock||0,i=cart.find(x=>x.id===p.id),over=i&&i.qty>st;
+  const t='Adicionado: '+(q>1?q+' × ':'')+p.name+(over?' · atenção: estoque '+st:'');pdvMsg(t,!over);return t;
+}
+function pdvListFor(v){const k=norm(v);return db.products.filter(p=>p.active!==false&&k.trim()&&norm([p.name,p.category,p.supplier_code].join(' ')).includes(k))}
+function pdvScanned(code){return pdvCode(code)||('Código '+digits(code)+' não cadastrado.')}
+function pdvEnter(){const r=pdvCode($('#p_q').value);if(r){$('#p_q').value='';pdvSearch()}$('#p_q').focus()}
+/* atalhos do PDV + leitor USB (o leitor "digita" o código e aperta Enter, mesmo sem o campo de busca em foco) */
+let _kb='',_kt=0;
+document.addEventListener('keydown',e=>{
+  if(view!=='pdv'||!$('#p_q')||$('#modal').classList.contains('open'))return;
+  const k=e.key,tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(k==='F2'){e.preventDefault();$('#p_q').focus();$('#p_q').select()}
+  else if(k==='F4'){e.preventDefault();finish()}
+  else if(k==='F6'){e.preventDefault();$('#s_q').focus();$('#s_q').select()}
+  else if(k==='F8'){e.preventDefault();if(cart.length&&confirm('Limpar o carrinho?')){cart=[];cartView()}}
+  else if(!/INPUT|SELECT|TEXTAREA/.test(tag)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    const n=Date.now();if(n-_kt>120)_kb='';_kt=n;
+    if(k==='Enter'){if(_kb.length>=6){e.preventDefault();pdvCode(_kb)}_kb=''}
+    else if(k.length===1&&/[0-9*xX]/.test(k))_kb+=k;else _kb='';
+  }
+});
 function cartQty(ix,d){const i=cart[ix];if(!i)return;i.qty+=d;if(i.qty<1)cart.splice(ix,1);cartView()}
 function cartView(){
   pdvSearch();
