@@ -1,6 +1,6 @@
 # MultMix · Memória do projeto e o que falta aperfeiçoar
 
-Atualizado em 28/10/2026 · sistema 1.25.0 · catálogo 1.2.0 · API fiscal `cont-1` · SQL até `v25`.
+Atualizado em 28/10/2026 · sistema 1.26.1 · catálogo 1.3.0 · PDV 1.0.1 · desktop 1.0.0 · API fiscal `cont-1` · SQL até `v26`.
 Este arquivo é a "memória": leia primeiro ao retomar o trabalho. Não coloque senhas, tokens nem certificado aqui.
 
 ## Combinados com o dono (regras de trabalho)
@@ -17,6 +17,18 @@ Este arquivo é a "memória": leia primeiro ao retomar o trabalho. Não coloque 
 - Banco: Supabase `meswiziqgcjwxslbgmeu` (SQL em `supabase*.sql`, na ordem; função `supabase/functions/fiscal/index.ts`).
 - API fiscal: Render `fiscalmultmix` (PHP 8.3, sped-nfe 5.2.9, sped-da 1.1.6). `/health` mostra `emissor_versao`.
 - Ordem ao publicar mudanças fiscais: **API → função → SQL → sistema**.
+
+## PDV do vendedor (decisões de 28/10/2026)
+- App separado `pdv/`; vendedor só vende. Proteção NO BANCO (v26): vendedor não lê custo, clientes, vendas dos outros nem muda preço/estoque; a venda entra por `pdv_sell`, que calcula preço, vendedor e comissão no servidor.
+- Quem liga/desliga o carnê de cada vendedor é SEMPRE o administrador (Usuários → "Vendedor pode vender no carnê").
+- O vendedor NÃO usa mais o `sistema/` (aparece aviso). Admin pode usar o PDV também.
+- Testado: SQL v1–v26 num Postgres 16 local (com simulação do Supabase) e o app com Supabase simulado. NÃO testado: Supabase real, leitor USB/câmera/impressora reais, vários aparelhos ao mesmo tempo.
+- Falta/melhorar: desconto autorizado por senha do admin; troca/devolução; fechamento de caixa por vendedor; meta de vendas; notificação de venda recusada ao administrador; impressão térmica direta; busca de cliente offline; vincular vendedor a ponto de venda/loja; esconder produtos sem estoque por opção; limite de itens/valor sem aprovação.
+- Risco conhecido: venda feita offline usa o preço do SERVIDOR no momento do envio (pode diferir do que o cliente viu se o administrador mudou o preço no intervalo).
+
+## Programa de computador (desktop/)
+- NÃO testado no Windows (o ambiente de desenvolvimento não baixa Electron). Conferir: instalador gera pelo GitHub Actions; atalhos criados; abre sem internet depois da 1ª vez; impressão direta na térmica real (58/80 mm, margens, corte); aviso do Windows SmartScreen (sem assinatura de código paga).
+- Melhorar: assinatura digital do instalador; atualização automática do próprio programa; escolher largura do papel (58/80); abrir cupom com gaveta de dinheiro (ESC/POS); impressão por comandos ESC/POS para térmicas sem driver; instalar para vários computadores de uma vez.
 
 ## O que já existe (resumo)
 PDV, produtos (custo, margem, promoção, vídeo/site), clientes (busca por CNPJ com IE), carnê, cobrança, contas a pagar, caixa, comissões,
