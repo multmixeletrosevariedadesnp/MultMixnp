@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.22.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.23.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1211,7 +1211,7 @@ function render(){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
     if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
-    if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button>`;
+    if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
@@ -1234,15 +1234,76 @@ function vLogin(){
   <button class="btn" id="lb" style="width:100%;margin-top:16px">Entrar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em"></p></form></div>`;
   setTimeout(()=>$('#em')&&$('#em').focus(),50);
 }
+async function mfaNeeded(){try{const{data}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();return !!(data&&data.nextLevel==='aal2'&&data.currentLevel!=='aal2')}catch(e){return false}}
+function vMfa(){
+  $('#app').innerHTML=`<div class="login"><form class="lbox" onsubmit="mfaLogin(event)"><img src="${esc(logoUrl())}" alt="MultMix" class="llogo">
+  <h2>Verificação em 2 etapas</h2><p class="sm">Digite o código de 6 dígitos do aplicativo autenticador (Google Authenticator, Microsoft Authenticator, Authy…).</p>
+  <input id="mf" inputmode="numeric" autocomplete="one-time-code" maxlength="6" style="text-align:center;font-size:22px;letter-spacing:6px" required>
+  <button class="btn" id="mb" style="width:100%;margin-top:16px">Confirmar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em"></p>
+  <p style="text-align:center"><button type="button" class="btn g s" onclick="logout()">Voltar</button></p></form></div>`;
+  setTimeout(()=>$('#mf')&&$('#mf').focus(),50);
+}
+async function mfaLogin(e){
+  e.preventDefault();const b=$('#mb');b.disabled=true;
+  try{
+    const{data:f,error:e1}=await sb.auth.mfa.listFactors();if(e1)throw e1;
+    const fa=(f.totp||[]).find(x=>x.status==='verified');if(!fa)throw new Error('Nenhum autenticador cadastrado.');
+    const{error}=await sb.auth.mfa.challengeAndVerify({factorId:fa.id,code:$('#mf').value.trim()});
+    if(error)throw error;
+    const{data}=await sb.auth.getSession();session=data.session;await afterLogin();
+  }catch(er){b.disabled=false;$('#err').textContent=/invalid|expired/i.test(er.message||'')?'Código incorreto ou vencido. Tente o próximo código.':(er.message||'Não foi possível confirmar.')}
+}
 async function login(e){
   if(e)e.preventDefault();
   const b=$('#lb');b.disabled=true;b.textContent='Entrando...';$('#err').textContent='';
   const{data,error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
   b.disabled=false;b.textContent='Entrar';
   if(error)return $('#err').textContent='E-mail ou senha incorretos.';
-  session=data.session;await loadRole();
-  if(!role){await sb.auth.signOut();session=null;return $('#err').textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'}
+  session=data.session;
+  if(await mfaNeeded())return vMfa();
+  await afterLogin();
+}
+async function afterLogin(){
+  await loadRole();
+  if(!role){await sb.auth.signOut();session=null;view='login';render();return setTimeout(()=>{const er=$('#err');if(er)er.textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'},50)}
   view=ADM()?'prod':'pdv';render();sync();
+}
+/* ----- cadastro do autenticador (Verificação em 2 etapas) ----- */
+async function mfaOpen(){
+  modal('<h2>Verificação em 2 etapas</h2><p class="sm">Carregando…</p>');
+  try{
+    const{data,error}=await sb.auth.mfa.listFactors();if(error)throw error;
+    const ok=(data.totp||[]).find(x=>x.status==='verified');
+    modal(ok?`<h2>Verificação em 2 etapas</h2><p class="ok"><b>Ativada.</b> Ao entrar, além da senha, o sistema pede o código do aplicativo autenticador.</p>
+      <p class="sm">Para desativar, digite um código atual do aplicativo.</p><input id="mf_c" inputmode="numeric" maxlength="6" style="max-width:160px"><div class="bar"><button class="btn g" onclick="mfaOff('${ok.id}')">Desativar</button></div>`
+     :`<h2>Verificação em 2 etapas</h2><p class="sm">Protege a sua conta mesmo que alguém descubra a senha. Você vai precisar de um aplicativo autenticador no celular (Google Authenticator, Microsoft Authenticator, Authy…).</p><div class="bar"><button class="btn" onclick="mfaEnroll()">Ativar agora</button></div>`);
+  }catch(e){modal('<h2>Verificação em 2 etapas</h2><p class="bad">'+esc(e.message||e)+'</p><p class="sm">Se falar que o recurso está desabilitado, habilite o TOTP em Authentication no painel do Supabase.</p>')}
+}
+async function mfaEnroll(){
+  try{
+    const{data:f}=await sb.auth.mfa.listFactors();
+    for(const x of (f.all||[]))if(x.status!=='verified')await sb.auth.mfa.unenroll({factorId:x.id}); // limpa tentativas antigas
+    const{data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'MultMix '+new Date().toISOString().slice(0,10)});if(error)throw error;
+    window.MFA_ID=data.id;
+    modal(`<h2>Ativar verificação em 2 etapas</h2><p class="sm"><b>1.</b> No aplicativo autenticador, adicione uma conta lendo o QR Code (ou digite a chave).</p>
+      <div style="text-align:center"><img src="${esc(data.totp.qr_code)}" alt="QR Code" style="width:200px;height:200px;background:#fff;border-radius:8px;padding:6px"></div>
+      <p class="sm" style="word-break:break-all">Chave manual: <b>${esc(data.totp.secret)}</b></p>
+      <p class="sm"><b>2.</b> Digite o código de 6 dígitos que aparece no aplicativo:</p><input id="mf_c" inputmode="numeric" maxlength="6" style="max-width:160px" autocomplete="one-time-code">
+      <div class="bar"><button class="btn" onclick="mfaConfirm()">Confirmar e ativar</button></div><p class="sm">Guarde a chave manual em local seguro: se perder o celular, é ela que permite cadastrar de novo.</p>`);
+  }catch(e){alert('Não foi possível iniciar: '+(e.message||e))}
+}
+async function mfaConfirm(){
+  try{
+    const{error}=await sb.auth.mfa.challengeAndVerify({factorId:window.MFA_ID,code:$('#mf_c').value.trim()});if(error)throw error;
+    auditClient('mfa_ativado','Verificação em 2 etapas ativada');closeM();alert('Verificação em 2 etapas ativada.');
+  }catch(e){alert('Código incorreto ou vencido. Confira o horário do celular e tente o próximo código.')}
+}
+async function mfaOff(id){
+  try{
+    const c=$('#mf_c').value.trim();const{error:e1}=await sb.auth.mfa.challengeAndVerify({factorId:id,code:c});if(e1)throw e1;
+    const{error}=await sb.auth.mfa.unenroll({factorId:id});if(error)throw error;
+    auditClient('mfa_desativado','Verificação em 2 etapas desativada');closeM();alert('Verificação em 2 etapas desativada.');
+  }catch(e){alert('Não foi possível desativar: '+(e.message||'código incorreto.'))}
 }
 async function logout(){await sb.auth.signOut();session=null;role=null;view='login';render()}
 
@@ -3006,11 +3067,11 @@ async function restoreGo(){
 }
 
 /* ========= Auditoria ========= */
-const AUD_N={produto_alterado:'Produto alterado',produto_excluido:'Produto excluído',venda_cancelada:'Venda cancelada',venda_excluida:'Venda excluída',venda_valor:'Valor da venda',nota_situacao:'Situação da nota',nota_emitida:'Nota emitida',nota_cancelada:'Nota cancelada',nota_inutilizada:'Numeração inutilizada',
+const AUD_N={mfa_ativado:'2 etapas ativada',mfa_desativado:'2 etapas desativada',produto_alterado:'Produto alterado',produto_excluido:'Produto excluído',venda_cancelada:'Venda cancelada',venda_excluida:'Venda excluída',venda_valor:'Valor da venda',nota_situacao:'Situação da nota',nota_emitida:'Nota emitida',nota_cancelada:'Nota cancelada',nota_inutilizada:'Numeração inutilizada',
   parcela_paga:'Parcela recebida',parcela_estornada:'Recebimento estornado',parcela_valor:'Valor da parcela',parcela_excluida:'Parcela excluída',conta_paga:'Conta paga',conta_estornada:'Pagamento estornado',conta_valor:'Valor da conta',conta_cancelada:'Conta cancelada',conta_excluida:'Conta excluída',
   cliente_excluido:'Cadastro excluído',cliente_ativo:'Cliente ativo/inativo',empresa_alterada:'Dados da empresa',usuario_criado:'Usuário criado',usuario_excluido:'Usuário excluído',usuario_perfil:'Perfil de usuário',usuario_ativo:'Usuário ativo/inativo',usuario_comissao:'Comissão do usuário',backup_gerado:'Backup gerado',backup_restaurado:'Backup restaurado'};
 const AUD_G={preco:['produto_alterado','produto_excluido'],venda:['venda_cancelada','venda_excluida','venda_valor','nota_situacao','nota_emitida','nota_cancelada','nota_inutilizada'],dinheiro:['parcela_paga','parcela_estornada','parcela_valor','parcela_excluida','conta_paga','conta_estornada','conta_valor','conta_cancelada','conta_excluida'],
-  gestao:['cliente_excluido','cliente_ativo','empresa_alterada','usuario_criado','usuario_excluido','usuario_perfil','usuario_ativo','usuario_comissao'],backup:['backup_gerado','backup_restaurado']};
+  gestao:['mfa_ativado','mfa_desativado','cliente_excluido','cliente_ativo','empresa_alterada','usuario_criado','usuario_excluido','usuario_perfil','usuario_ativo','usuario_comissao'],backup:['backup_gerado','backup_restaurado']};
 let AUD={from:'',to:'',q:'',g:'',rows:null,err:''};
 async function vAud(){
   if(!AUD.from){const n=ld(now());AUD.from=ld(new Date(Date.now()-6*864e5).toISOString());AUD.to=n}
@@ -3048,7 +3109,7 @@ function audCsv(){const d=audData(),csv=[d.head,...d.rows].map(r=>r.map(v=>`"${S
 
 /* ========= Início ========= */
 (async()=>{
-  if(sb){const{data}=await sb.auth.getSession();session=data.session;if(session)await loadRole()}
+  if(sb){const{data}=await sb.auth.getSession();session=data.session;if(session){if(await mfaNeeded()){view='login';render();vMfa();return}await loadRole()}}
   view=!sb?'prod':role?(ADM()?'prod':'pdv'):'login';
   render();sync();
 })();

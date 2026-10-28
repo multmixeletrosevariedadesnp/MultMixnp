@@ -1,5 +1,5 @@
 {
- "version": "1.22.0",
+ "version": "1.23.0",
  "date": "2026-10-27",
- "notes": "Auditoria (quem mudou o quê) e restaurar backup."
+ "notes": "Verificação em 2 etapas (opcional) no login."
 }
