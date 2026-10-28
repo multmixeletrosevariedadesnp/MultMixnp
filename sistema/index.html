@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.26.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.27.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -257,7 +257,7 @@ async function doSync(){
     save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){setSync('offline · '+db.outbox.length+' pendente(s)')}
   render();
-  try{notifCheck()}catch(e){}
+  try{loadPev().then(()=>notifCheck());certCheck()}catch(e){}
 }
 const setSync=t=>$('#sync').textContent=t;
 addEventListener('online',sync);
@@ -1205,7 +1205,7 @@ const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</
 function render(){
   try{applyTema(CO())}catch(e){}
   if(sb&&!role&&view!=='login')view='login';
-  if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag'].includes(view)&&!ADM())view='pdv';
+  if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal'].includes(view)&&!ADM())view='pdv';
   document.body.className=isAdmin()?'in':'out';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
@@ -1213,12 +1213,12 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
+    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'cart')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
     if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`;
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;
-  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -2182,6 +2182,8 @@ function notifs(){
   });
   if(ADM()){const n=dfePend();if(n)out.push({id:'n'+ld(now())+':'+n,kind:'nota',days:0,title:`${n} nota${n>1?'s':''} de compra recebida${n>1?'s':''}`,sub:'Notas emitidas contra o CNPJ da loja, aguardando entrada no estoque',amount:0})}
   if(ADM()){const lo=lowStock();if(lo.length)out.push({id:'e'+ld(now()),kind:'estoque',days:0,title:`${lo.length} produto${lo.length>1?'s':''} com estoque baixo`,sub:lo.slice(0,3).map(x=>x.name+' ('+(+x.stock||0)+')').join(', ')+(lo.length>3?'…':''),amount:0})}
+  if(ADM()&&CERT&&((CERT.ok&&CERT.dias<=30)||CERT.ok===false&&CERT.erro)){out.push(CERT.ok?{id:'cert'+ld(now()),kind:'cert',days:CERT.vencido?-1:CERT.dias,title:CERT.vencido?'Certificado digital VENCIDO':'Certificado digital vence em '+CERT.dias+' dia'+(CERT.dias===1?'':'s'),sub:'Válido até '+fmtD(CERT.ate)+'. Renove com a certificadora e troque no Render (CERT_PFX_BASE64 e CERT_PASSWORD).',amount:0}:{id:'cert'+ld(now()),kind:'cert',days:-1,title:'Não foi possível ler o certificado digital',sub:CERT.erro,amount:0})}
+  if(ADM())pevNew().slice(0,10).forEach(e=>out.push({id:'ev'+e.id,kind:'pdv',days:0,title:(EVN[e.kind]||'Aviso do PDV')+' · '+(e.seller_name||''),sub:e.detail||'',amount:0}));
   if(ADM()){const bk=bkLast(),dd=bk?-dleft(bk):99;if(dd>=7)out.push({id:'bk'+ld(now()).slice(0,7),kind:'backup',days:-dd,title:'Fazer backup dos dados',sub:bk?`último backup há ${dd} dias`:'nenhum backup feito neste aparelho',amount:0})}
   return out.sort((a,b)=>a.days-b.days||a.title.localeCompare(b.title,'pt-BR'));
 }
@@ -2204,17 +2206,17 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const ce=nw.some(n=>n.kind==='cert'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado digital':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
-    try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+' · '+R(n.amount)).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
+    try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+(n.amount?' · '+R(n.amount):'')).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
   }
   if(!$('#modal').classList.contains('open'))render(); // atualiza as contagens do menu
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${['backup','estoque','nota'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota'].includes(n.kind));
+    <span class="pv">${['backup','estoque','nota','cert','pdv'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='cert'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
@@ -2684,7 +2686,8 @@ async function fisStatus(force){
     else if(d.sefaz_ok)h=`<b class="ok">SEFAZ em operação</b> <span class="tag">${d.ambiente===2?'homologação':'produção'}</span>`;
     else h=`<b class="bad">SEFAZ fora do ar</b><div class="sm">${esc(d.motivo||d.erro||'')} As vendas continuam normais. Tente emitir mais tarde; as notas ficam na lista abaixo. Se a SEFAZ ficar muito tempo fora, fale com o contador sobre contingência (SVC/EPEC).</div>`;
   }catch(e){h=`<b class="bad">Não foi possível verificar</b><div class="sm">${esc(e.message)}</div>`}
-  FST={t:Date.now(),h};paint(h);
+  if(force)await certCheck(true);
+  h+=certLine();FST={t:Date.now(),h};paint(h);
 }
 async function fisEmitAll(){
   const ids=db.sales.filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
@@ -3021,6 +3024,92 @@ function relCsv(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='relatorio-'+REL.k+'.csv';a.click();
 }
 
+
+/* ========= Balcão (PDV): caixas dos vendedores, avisos, devoluções, descontos e configurações (administrador) ========= */
+let BAL={tab:'cx'},PEV=[];
+const BALT=[['cx','Caixas'],['av','Avisos'],['dv','Devoluções'],['ds','Descontos'],['cf','Configurações']];
+const EVN={venda_recusada:'Venda recusada',devolucao:'Devolução / troca',caixa_diferenca:'Diferença no caixa'};
+const pevNew=()=>PEV.filter(e=>!e.seen_at);
+async function loadPev(){
+  if(!sb||!ADM()||navigator.onLine===false)return;
+  try{const{data,error}=await sb.from('pdv_events').select('*').order('created_at',{ascending:false}).limit(100);if(!error)PEV=data||[]}catch(e){}
+}
+const v27msg='<p class="bad">Não foi possível ler os dados. Rode o <b>supabase-v27.sql</b> no Supabase (depois do v26) e tente de novo.</p>';
+function vBal(){
+  const nNew=pevNew().length;
+  $('#app').innerHTML=`<div class="bar">${BALT.map(([k,l])=>`<button class="btn ${BAL.tab===k?'':'g'} s" onclick="BAL.tab='${k}';vBal()">${l}${k==='av'&&nNew?` (${nNew})`:''}</button>`).join('')}</div><div id="balv"><p class="sm">Carregando…</p></div>`;
+  ({cx:balCx,av:balAv,dv:balDv,ds:balDs,cf:balCf}[BAL.tab]||balCx)();
+}
+const balBox=h=>{const e=$('#balv');if(e)e.innerHTML=h};
+async function balCx(){
+  const{data,error}=await sb.from('cash_sessions').select('*').order('opened_at',{ascending:false}).limit(60);
+  if(error)return balBox(v27msg);
+  balBox(`<p class="sm">Cada linha é um caixa aberto por um vendedor. A diferença é o dinheiro contado menos o esperado.</p><div style="overflow:auto"><table><tr><th>Vendedor</th><th>Abertura</th><th>Fechamento</th><th>Inicial</th><th>Esperado</th><th>Contado</th><th>Diferença</th><th></th></tr>
+  ${(data||[]).map(s=>`<tr><td>${esc(s.seller_name||'')}</td><td>${new Date(s.opened_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+   <td>${s.closed_at?new Date(s.closed_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'<span class="tag">aberto</span>'}</td><td>${R(s.opening)}</td><td>${s.closed_at?R(s.expected):'—'}</td><td>${s.closed_at?R(s.counted):'—'}</td>
+   <td>${s.closed_at?`<b class="${Math.abs(+s.diff)<0.01?'ok':'bad'}">${Math.abs(+s.diff)<0.01?'confere':(+s.diff<0?'falta ':'sobra ')+R(Math.abs(+s.diff))}</b>`:'—'}</td><td><button class="btn g s" onclick="balCxDet('${s.id}')">Detalhes</button></td></tr>`).join('')||'<tr><td colspan="8">Nenhum caixa aberto ainda.</td></tr>'}</table></div>`);
+  window.BALCX=data||[];
+}
+async function balCxDet(id){
+  const s=(window.BALCX||[]).find(x=>x.id===id);if(!s)return;
+  const{data:mv}=await sb.from('cash_moves').select('*').eq('session_id',id).order('created_at');
+  const k=s.summary||{},rec=k.recebido||{};
+  modal(`<h2>Caixa de ${esc(s.seller_name||'')}</h2><p class="sm">${new Date(s.opened_at).toLocaleString('pt-BR')}${s.closed_at?' até '+new Date(s.closed_at).toLocaleString('pt-BR'):' (ainda aberto)'}</p>
+  <table><tr><td>Valor inicial</td><td style="text-align:right">${R(s.opening)}</td></tr>${Object.entries(rec).map(([m,v])=>`<tr><td>Vendas em ${esc(m)}</td><td style="text-align:right">${R(v)}</td></tr>`).join('')}
+  ${Object.entries(k.estornos||{}).map(([m,v])=>`<tr><td>Estorno (${esc(m)})</td><td style="text-align:right">−${R(v)}</td></tr>`).join('')}${Object.entries(k.devolucoes||{}).map(([m,v])=>`<tr><td>Devolução (${esc(m)})</td><td style="text-align:right">−${R(v)}</td></tr>`).join('')}
+  ${s.closed_at?`<tr><td><b>Dinheiro esperado</b></td><td style="text-align:right"><b>${R(s.expected)}</b></td></tr><tr><td>Contado</td><td style="text-align:right">${R(s.counted)}</td></tr><tr><td><b>Diferença</b></td><td style="text-align:right"><b>${R(s.diff)}</b></td></tr>`:''}</table>
+  ${s.note?`<p class="sm">Observação: ${esc(s.note)}</p>`:''}
+  <h3>Sangrias e suprimentos</h3>${(mv||[]).length?`<table>${mv.map(m=>`<tr><td>${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${m.kind==='sangria'?'Sangria':'Suprimento'}</td><td>${esc(m.reason||'')}</td><td style="text-align:right">${m.kind==='sangria'?'−':'+'}${R(m.amount)}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum.</p>'}`);
+}
+async function balAv(){
+  await loadPev();
+  balBox(`<div class="bar"><button class="btn g s" onclick="pevSeen()">Marcar todos como vistos</button></div>
+  ${PEV.length?`<div style="overflow:auto"><table><tr><th>Quando</th><th>Tipo</th><th>Vendedor</th><th>Detalhe</th><th></th></tr>${PEV.map(e=>`<tr${e.seen_at?' style="opacity:.6"':''}><td>${new Date(e.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+   <td>${esc(EVN[e.kind]||e.kind)}${e.seen_at?'':' <span class="tag">novo</span>'}</td><td>${esc(e.seller_name||'')}</td><td>${esc(e.detail||'')}${e.kind==='venda_recusada'&&e.payload?`<div class="sm">${(e.payload.items||[]).length} item(ns) · ${esc(e.payload.pay_type||'')}${e.payload.customer?' · '+esc(e.payload.customer):''} — a venda NÃO foi registrada; peça ao vendedor para refazer.</div>`:''}</td>
+   <td>${e.seen_at?'':`<button class="btn g s" onclick="pevSeen('${e.id}')">Visto</button>`}</td></tr>`).join('')}</table></div>`:'<p>Nenhum aviso.</p>'}`);
+}
+async function pevSeen(id){
+  let q=sb.from('pdv_events').update({seen_at:now(),seen_by:me&&me.id}).is('seen_at',null);if(id)q=q.eq('id',id);
+  const{error}=await q;if(error)return alert(error.message);await loadPev();render();
+}
+async function balDv(){
+  const{data,error}=await sb.from('sale_returns').select('*').order('created_at',{ascending:false}).limit(100);
+  if(error)return balBox(v27msg);
+  balBox(`<div style="overflow:auto"><table><tr><th>Quando</th><th>Vendedor</th><th>Itens</th><th>Valor</th><th>Forma</th><th>Motivo</th><th></th></tr>
+  ${(data||[]).map(r=>`<tr><td>${new Date(r.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${esc(r.seller_name||'')}</td><td>${(r.items||[]).map(i=>esc(i.qty+'× '+i.name)).join(', ')}</td><td>${R(r.amount)}</td><td>${esc(r.refund_method||'')}</td><td>${esc(r.reason||'')}</td>
+   <td>${r.fiscal_pendente?'<span class="tag" style="background:var(--bad);color:#fff">tratar nota fiscal</span>':''}</td></tr>`).join('')||'<tr><td colspan="7">Nenhuma devolução parcial registrada. Devoluções totais de vendas sem nota aparecem como vendas canceladas.</td></tr>'}</table></div>
+  <p class="sm">Devolução total de venda sem nota fiscal cancela a venda (aparece em Caixa/Fiscal como cancelada). Se a nota já foi emitida, cancele a nota ou emita a devolução em Fiscal, conforme orientação do contador.</p>`);
+}
+function balDs(){
+  const L=db.sales.filter(s=>+s.discount>0).sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,200),pn=id=>(PROF.find(u=>u.id===id)||{}).name||'';
+  balBox(`<p class="sm">Vendas com desconto. "Autorizado por" aparece quando o desconto passou do limite livre e o administrador liberou com a senha dele.</p><div style="overflow:auto"><table><tr><th>Data</th><th>Vendedor</th><th>Valor de tabela</th><th>Desconto</th><th>%</th><th>Total</th><th>Autorizado por</th></tr>
+  ${L.map(s=>{const g=+s.total+ +s.discount;return`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtD(ld(s.created_at))}</td><td>${esc(s.seller_name||'—')}</td><td>${R(g)}</td><td>${R(s.discount)}</td><td>${pc1(+s.discount/g*100)}</td><td>${R(s.total)}</td><td>${s.discount_auth_by?esc(pn(s.discount_auth_by)||'administrador'):'<span class="sm">limite livre</span>'}</td></tr>`}).join('')||'<tr><td colspan="7">Nenhuma venda com desconto.</td></tr>'}</table></div>`);
+}
+async function balCf(){
+  const{data,error}=await sb.from('app_settings').select('*').eq('key','pdv').maybeSingle();
+  if(error)return balBox(v27msg);
+  const c={exige_caixa:false,desc_livre_pct:0,devolucao_dias:7,...((data||{}).value||{})};
+  balBox(`<div class="box" style="max-width:640px"><h3>Regras do PDV dos vendedores</h3><div class="f">
+  <div><label>Exigir caixa aberto para vender</label><select id="cf_ex"><option value="false" ${c.exige_caixa?'':'selected'}>Não</option><option value="true" ${c.exige_caixa?'selected':''}>Sim</option></select></div>
+  <div><label>Desconto livre até (%)</label><input id="cf_ds" type="number" min="0" max="100" step="0.5" value="${+c.desc_livre_pct}"></div>
+  <div><label>Prazo para devolução (dias)</label><input id="cf_dv" type="number" min="0" max="365" value="${+c.devolucao_dias}"></div></div>
+  <p class="sm">Desconto acima do limite livre só sai com a senha do administrador (cada autorização vale para uma venda, por 20 minutos). Use 0 para exigir autorização em qualquer desconto. Devoluções de vendas no carnê ou fora do prazo são só com o administrador.</p>
+  <button class="btn" onclick="balCfSave()">Salvar</button></div>`);
+}
+function balCfSave(){
+  const v={exige_caixa:$('#cf_ex').value==='true',desc_livre_pct:Math.max(0,Math.min(100,+$('#cf_ds').value||0)),devolucao_dias:Math.max(0,Math.min(365,Math.round(+$('#cf_dv').value||0)))};
+  master(async()=>{const{error}=await sb.from('app_settings').upsert({key:'pdv',value:v,updated_at:now()});if(error)return alert(error.message);alert('Regras salvas. Os PDVs pegam as novas regras na próxima sincronização.')});
+}
+/* validade do certificado digital (lida na API fiscal; avisa 30 dias antes) */
+let CERT=null;try{CERT=JSON.parse(localStorage.mm_cert||'null')}catch(e){}
+async function certCheck(force){
+  if(!sb||!ADM()||navigator.onLine===false)return;
+  if(!force&&CERT&&Date.now()-CERT.t<12*3600e3)return;
+  try{const d=await fisCall({action:'cert'});
+    if(d&&d.api){CERT={t:Date.now(),ok:!!d.cert_ok,dias:d.dias,ate:d.valido_ate,vencido:!!d.vencido,titular:d.titular||'',erro:d.erro||''};try{localStorage.mm_cert=JSON.stringify(CERT)}catch(e){}}
+  }catch(e){}
+}
+const certLine=()=>CERT?(CERT.ok?`<div class="sm ${CERT.dias<=30?'bad':''}">Certificado digital: ${CERT.vencido?'<b>VENCIDO</b> em ':'válido até '}${fmtD(CERT.ate)}${CERT.vencido?'':' ('+CERT.dias+' dia'+(CERT.dias===1?'':'s')+')'}</div>`:`<div class="sm bad">Certificado digital: ${esc(CERT.erro||'não foi possível ler')}</div>`):'';
 
 /* ========= Reforma Tributária: regras de IBS, CBS e IS (preparação, não altera o XML) ========= */
 const RTC_DEST=[['interna','Dentro do estado'],['interestadual','Para outro estado'],['exterior','Exterior']];
