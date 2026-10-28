@@ -1,6 +1,6 @@
 # MultMix · Memória do projeto e o que falta aperfeiçoar
 
-Atualizado em 28/10/2026 · sistema 1.26.1 · catálogo 1.3.0 · PDV 1.0.1 · desktop 1.0.0 · API fiscal `cont-1` · SQL até `v26`.
+Atualizado em 28/10/2026 · sistema 1.27.0 · catálogo 1.3.1 · PDV 1.1.0 · desktop 1.0.1 · API fiscal `cont-2` · SQL até `v27`.
 Este arquivo é a "memória": leia primeiro ao retomar o trabalho. Não coloque senhas, tokens nem certificado aqui.
 
 ## Combinados com o dono (regras de trabalho)
@@ -23,7 +23,9 @@ Este arquivo é a "memória": leia primeiro ao retomar o trabalho. Não coloque 
 - Quem liga/desliga o carnê de cada vendedor é SEMPRE o administrador (Usuários → "Vendedor pode vender no carnê").
 - O vendedor NÃO usa mais o `sistema/` (aparece aviso). Admin pode usar o PDV também.
 - Testado: SQL v1–v26 num Postgres 16 local (com simulação do Supabase) e o app com Supabase simulado. NÃO testado: Supabase real, leitor USB/câmera/impressora reais, vários aparelhos ao mesmo tempo.
-- Falta/melhorar: desconto autorizado por senha do admin; troca/devolução; fechamento de caixa por vendedor; meta de vendas; notificação de venda recusada ao administrador; impressão térmica direta; busca de cliente offline; vincular vendedor a ponto de venda/loja; esconder produtos sem estoque por opção; limite de itens/valor sem aprovação.
+- Feito em 28/10 (v27, PDV 1.1.0, sistema 1.27.0): caixa por vendedor com sangria/conferência; desconto autorizado por senha do admin (item ou venda); venda em espera; troca/devolução repondo estoque; aviso de venda recusada; alerta de certificado. Testado só com Postgres local e Supabase simulado; falta testar no Supabase real, com 2 etapas do admin e no balcão.
+- Limites conhecidos: autorizar desconto, abrir/fechar caixa e devolver exigem internet; devolução de venda com nota emitida só é sinalizada ao admin (nota de devolução/cancelamento é manual); "troca" devolve R$ 0 e repõe estoque.
+- Falta/melhorar: meta de vendas; busca de cliente offline; vincular vendedor a ponto de venda/loja; esconder produtos sem estoque por opção; limite de itens/valor sem aprovação.
 - Risco conhecido: venda feita offline usa o preço do SERVIDOR no momento do envio (pode diferir do que o cliente viu se o administrador mudou o preço no intervalo).
 
 ## Programa de computador (desktop/)
@@ -46,7 +48,7 @@ regras IBS/CBS/IS (só cadastro; não altera o XML).
 
 ## Antes de emitir em produção (checklist)
 - [ ] Cancelar/ignorar as notas de homologação e zerar `fiscal_series` (numeração) e `fiscal_inut`.
-- [ ] `TP_AMB=1`, CSC e CSC_ID reais no Render; certificado A1 válido (alerta de vencimento ainda NÃO existe).
+- [ ] `TP_AMB=1`, CSC e CSC_ID reais no Render; certificado A1 válido (alerta de vencimento existe desde `cont-2`, mas só foi testado com certificado de teste).
 - [ ] Testar 1 nota real de valor baixo e 1 cancelamento dentro do prazo.
 - [ ] Render sem dormir (plano pago) quando houver balcão.
 - [ ] Contador validou CFOP/CSOSN/PIS-COFINS.
