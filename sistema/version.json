@@ -1,5 +1,5 @@
 {
- "version": "1.26.0",
+ "version": "1.26.1",
  "date": "2026-10-28",
- "notes": "Vendedores passam a usar o app PDV; carnê liberado por vendedor."
+ "notes": "Cupom imprime direto quando aberto no programa de computador."
 }
