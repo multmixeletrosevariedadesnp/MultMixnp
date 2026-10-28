@@ -1,0 +1,24 @@
+MULTMIX PARA COMPUTADOR (WINDOWS)
+=================================
+
+Duas formas. Use a A; se der problema, a B funciona sem gerar nada.
+
+A) INSTALADOR COMPLETO (MultMix-Instalador.exe)
+   - Pergunta o que instalar: Sistema, PDV e/ou Catalogo, e cria um atalho de cada na area de trabalho.
+   - Cada programa abre em janela propria, funciona sem internet (depois da 1a abertura com internet) e
+     imprime o cupom DIRETO na impressora escolhida (menu MultMix > Impressora do cupom).
+   - Como gerar o .exe (uma vez, sem instalar nada no seu PC):
+       1. Envie para o GitHub as pastas "desktop" e ".github" (junto com o resto do projeto).
+       2. No GitHub: aba Actions > "Instalador MultMix (Windows)" > Run workflow.
+       3. Quando terminar (uns 5 a 10 min), abra a execucao e baixe "MultMix-Instalador" em Artifacts (vem num .zip).
+       4. Dentro do zip esta o MultMix-Instalador.exe. Copie para os computadores e de dois cliques.
+   - O Windows pode mostrar "Windows protegeu o computador" (programa sem assinatura paga):
+     clique em "Mais informacoes" > "Executar assim mesmo".
+   - Os programas abrem do endereco publicado no GitHub Pages, entao as atualizacoes chegam sozinhas (sem reinstalar).
+
+B) INSTALADOR SIMPLES (Instalar-MultMix-simples.bat)
+   - De dois cliques, responda S/N para PDV, Sistema e Catalogo. Cria atalhos que abrem o Chrome/Edge como aplicativo.
+   - O cupom sai direto na IMPRESSORA PADRAO do Windows: deixe a termica como padrao.
+
+Impressora termica: instale o driver do fabricante no Windows e use papel de 58 ou 80 mm.
+No instalador completo, escolha a impressora em MultMix > Impressora do cupom e clique "Imprimir teste".

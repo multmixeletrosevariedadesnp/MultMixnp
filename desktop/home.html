@@ -1,0 +1,31 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>MultMix</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f1f3f7;color:#101828}header{background:#00468f;color:#fff;padding:18px 22px}header h1{margin:0;font-size:22px}header p{margin:4px 0 0;opacity:.85;font-size:13px}
+main{padding:18px 22px}.card{background:#fff;border:1px solid #e4e7ec;border-radius:12px;padding:14px 16px;margin:10px 0;display:flex;gap:12px;align-items:center}.card b{font-size:16px}.card p{margin:2px 0 0;color:#667085;font-size:13px}.card div{flex:1}
+label.card{cursor:pointer}label.card:hover{border-color:#00468f}input[type=checkbox]{width:20px;height:20px}
+button{font:inherit;padding:10px 18px;border:0;border-radius:9px;background:#00468f;color:#fff;cursor:pointer;font-weight:600}button.g{background:#667085}button:disabled{opacity:.5;cursor:default}.bar{display:flex;gap:10px;margin-top:14px}#m{color:#b42318;min-height:1.4em}
+</style>
+<header><h1>MultMix</h1><p id="sub"></p></header><main id="v"></main>
+<script>
+let cfg;const $=s=>document.querySelector(s);
+const setup=new URLSearchParams(location.search).get('setup')==='1';
+async function init(){cfg=await mmDesk.config();setup?vSetup():vHome()}
+function vSetup(){
+  $('#sub').textContent='Escolha o que você quer neste computador. Um atalho será criado na área de trabalho para cada um.';
+  $('#v').innerHTML=Object.entries(cfg.catalog).map(([k,a])=>`<label class="card"><input type="checkbox" value="${k}" ${cfg.apps.includes(k)||(!cfg.setup&&k==='pdv')?'checked':''}><div><b>${a.nome}</b><p>${a.desc}</p></div></label>`).join('')
+   +`<p id="m"></p><div class="bar"><button onclick="save()">Instalar atalhos e continuar</button>${cfg.setup?'<button class="g" onclick="location.search=\'\'">Cancelar</button>':''}</div>
+   <p style="color:#667085;font-size:13px">Na primeira abertura de cada programa o computador precisa de internet para baixá-lo. Depois ele abre sem internet e envia o que foi feito quando a conexão voltar.</p>`;
+}
+async function save(){
+  const l=[...document.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);
+  if(!l.length){$('#m').textContent='Escolha pelo menos um programa.';return}
+  await mmDesk.setApps(l);cfg=await mmDesk.config();
+  if(l.length===1){await mmDesk.open(l[0]);window.close()}else{history.replaceState(null,'',location.pathname);vHome()}
+}
+function vHome(){
+  $('#sub').textContent='Programas instalados neste computador';
+  $('#v').innerHTML=cfg.apps.map(k=>`<div class="card"><div><b>${cfg.catalog[k].nome}</b><p>${cfg.catalog[k].desc}</p></div><button onclick="mmDesk.open('${k}')">Abrir</button></div>`).join('')
+   +`<div class="bar"><button class="g" onclick="location.search='?setup=1'">Escolher o que instalar</button></div>`;
+}
+init();
+</script></html>

@@ -1,0 +1,13 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Impressora do cupom</title>
+<style>body{font-family:Segoe UI,Arial,sans-serif;margin:18px;color:#101828}h2{margin:0 0 6px}label{display:block;padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;margin:6px 0;cursor:pointer}label:hover{border-color:#00468f}button{font:inherit;padding:9px 16px;border:0;border-radius:8px;background:#00468f;color:#fff;cursor:pointer;margin-right:8px}button.g{background:#667085}p{color:#475467;font-size:13px}</style>
+<h2>Impressora do cupom</h2><p>Escolha a impressora térmica. O cupom sai direto, sem janela de impressão.</p>
+<div id="l">Procurando impressoras…</div><p id="m"></p><button onclick="save()">Salvar</button><button class="g" onclick="test()">Imprimir teste</button>
+<script>
+let cur='';
+(async()=>{const [ps,c]=await Promise.all([mmDesk.printers(),mmDesk.getPrinter()]);cur=c;
+ const sel=c||(ps.find(p=>p.isDefault)||{}).name||'';
+ document.getElementById('l').innerHTML=ps.length?ps.map(p=>`<label><input type="radio" name="p" value="${p.name.replace(/"/g,'&quot;')}" ${p.name===sel?'checked':''}> ${p.display}${p.isDefault?' <small>(padrão do Windows)</small>':''}</label>`).join(''):'<p>Nenhuma impressora encontrada. Instale o driver da impressora no Windows.</p>'})();
+const pick=()=>{const r=document.querySelector('input[name=p]:checked');return r?r.value:''};
+async function save(){await mmDesk.setPrinter(pick());document.getElementById('m').textContent='Salvo.'}
+async function test(){await mmDesk.setPrinter(pick());const r=await mmDesk.testPrint();document.getElementById('m').textContent=r.ok?'Teste enviado para a impressora.':'Não imprimiu: '+r.error}
+</script></html>
