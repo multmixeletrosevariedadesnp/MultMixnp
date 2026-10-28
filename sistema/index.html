@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.19.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.19.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2630,7 +2630,7 @@ function csvFis(){
 /* ========= Cupom NÃO FISCAL (80 mm) ========= */
 const CUP_DEF={paper:80,size:'n',logo:1,razao:1,cnpj:1,ie:1,end:1,fone:1,seller:1,cpf:1,cfone:1,cend:1,cli:1,unit:1,inst:1,nf:1,aviso:1,msg:'Obrigado pela preferência!',wa:1};
 const CUP_L=[['logo','Logo da loja'],['razao','Razão social'],['cnpj','CNPJ'],['ie','Inscrição estadual (IE)'],['end','Endereço da loja'],['fone','Telefone da loja'],['wa','WhatsApp no rodapé'],['seller','Vendedor'],
-  ['cli','Dados do cliente (bloco inteiro)'],['cpf','CPF/CNPJ do cliente'],['cfone','Telefone do cliente'],['cend','Endereço do cliente'],['unit','Quantidade x preço unitário'],['inst','Parcelas do carnê'],['nf','Número da nota fiscal (se emitida)'],['aviso','Aviso "não é documento fiscal" no rodapé']];
+  ['cli','Dados do cliente (bloco inteiro)'],['cpf','CPF/CNPJ do cliente'],['cfone','Telefone do cliente'],['cend','Endereço do cliente'],['unit','Quantidade x preço unitário'],['inst','Parcelas do carnê'],['nf','Número da nota fiscal (se emitida)'],['aviso','Aviso "CUPOM NÃO FISCAL" no rodapé']];
 const CUP_PRE={completo:{},simples:{razao:0,ie:0,fone:0,wa:0,cpf:0,cfone:0,cend:0,nf:0},minimo:{logo:0,razao:0,cnpj:0,ie:0,end:0,fone:0,wa:0,seller:0,cli:0,unit:0,nf:0,inst:0}};
 function CUPG(){let o={};try{o=JSON.parse(localStorage.getItem('mm_cupom')||'{}')}catch(e){}return{...CUP_DEF,...o}}
 function cupomHtml(sid,cfg){
@@ -2657,7 +2657,7 @@ function cupomHtml(sid,cfg){
   ${cfg.razao&&co.legal_name&&co.trade_name&&co.legal_name!==co.trade_name?`<div class="sm">${esc(co.legal_name)}</div>`:''}
   ${(cfg.cnpj&&co.cnpj)||(cfg.ie&&co.ie)?`<div class="sm">${cfg.cnpj&&co.cnpj?'CNPJ '+esc(docf(co.cnpj)):''}${cfg.cnpj&&co.cnpj&&cfg.ie&&co.ie?' · ':''}${cfg.ie&&co.ie?'IE '+esc(co.ie):''}</div>`:''}
   ${cfg.end&&ender(co)?`<div class="sm">${esc(ender(co))}</div>`:''}${cfg.fone&&co.phone?`<div class="sm">Fone ${esc(co.phone)}</div>`:''}</div>
-  <div class="nf">CUPOM NÃO FISCAL<br><span class="sm">SEM VALOR FISCAL · CONTROLE INTERNO</span></div>
+  <div class="hr"></div>
   ${L('Venda',esc(String(s.id).slice(0,8).toUpperCase()))}${L('Data',dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}${cfg.seller&&s.seller_name?L('Vendedor',esc(s.seller_name)):''}
   <div class="hr"></div>${cliOn?`<div class="b">CLIENTE</div>
   ${c?`<div>${esc(c.name)}</div>${cfg.cpf&&c.cpf?`<div>CPF/CNPJ: ${esc(docf(c.cpf))}</div>`:''}${cfg.cfone&&c.phone?`<div>Fone: ${esc(c.phone)}</div>`:''}${cfg.cend&&ender(c)?`<div class="sm">${esc(ender(c))}</div>`:''}`:'<div>Consumidor (balcão)</div>'}
@@ -2667,7 +2667,7 @@ function cupomHtml(sid,cfg){
   ${sub!==tot?L('Subtotal',R(sub)):''}${L('<b class="big">TOTAL</b>','<b class="big">'+R(tot)+'</b>')}${L('Pagamento',esc(pay))}
   ${s.pay_type==='crediario'?`${+s.entry>0?L('Entrada',R(s.entry)):''}${L('Restante',R(tot-(+s.entry||0)))}${cfg.inst?`<div class="hr"></div><div class="b">PARCELAS (${ins.length}x)</div>${ins.map(i=>L(String(i.number).padStart(2,'0')+'/'+ins.length+'  '+fmtD(i.due_date),R(i.amount))).join('')}`:''}`:''}
   ${cfg.nf&&s.fiscal_status==='emitida'&&s.fiscal_number?`<div class="hr"></div><div class="sm c">Nota fiscal emitida: nº ${esc(s.fiscal_number)}${s.fiscal_series?' série '+esc(s.fiscal_series):''}</div>`:''}
-  ${cfg.aviso?`<div class="hr"></div><div class="c sm">Este cupom não é documento fiscal.<br>A nota fiscal é emitida separadamente.<br>Guarde para conferência e garantia.</div>`:'<div class="hr"></div>'}
+  ${cfg.aviso?`<div class="nf">CUPOM NÃO FISCAL<br><span class="sm">SEM VALOR FISCAL · CONTROLE INTERNO<br>A nota fiscal é emitida separadamente.</span></div>`:'<div class="hr"></div>'}
   ${msg?`<div class="c b" style="margin-top:6px">${esc(msg)}</div>`:''}${cfg.wa&&(co.whatsapp||co.phone)?`<div class="c sm">WhatsApp ${esc(co.whatsapp||co.phone)}</div>`:''}
   <div class="c sm" style="margin-top:4px">&nbsp;</div></body></html>`;
 }
