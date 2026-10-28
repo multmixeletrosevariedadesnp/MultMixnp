@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.17.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.18.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1640,7 +1640,7 @@ function finish(){
     }
   }
   if(fromOrder){const o=db.orders.find(x=>x.id===fromOrder);if(o)put('orders',{...o,status:'convertido'});fromOrder=null}
-  cart=[];alert('Venda registrada.');view=t==='crediario'?'car':'pdv';render();
+  cart=[];const printIt=confirm('Venda registrada.\n\nImprimir o cupom não fiscal (controle) agora?');view=t==='crediario'?'car':'pdv';render();if(printIt)cupom(sale.id);
 }
 
 /* ========= Clientes ========= */
@@ -1785,7 +1785,7 @@ function cliForm(id){
    ${id?`<button class="btn g" onclick="toggleCli('${id}')">${c.active===false?'Reativar':'Inativar'} cliente</button>`:''}
    ${c.phone?` <a class="btn g" target="_blank" rel="noopener" href="https://wa.me/55${digits(c.phone)}">WhatsApp</a>`:''}
    ${hist.length?`<h3>Compras</h3><table>${hist.map(s=>`<tr><td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td>
-   <td>${s.pay_type==='crediario'?`<button class="btn g s" onclick="carne('${s.id}')">Ver carnê</button>`:''}</td></tr>`).join('')}</table>`:''}`);
+   <td>${s.pay_type==='crediario'?`<button class="btn g s" onclick="carne('${s.id}')">Ver carnê</button> `:''}<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button></td></tr>`).join('')}</table>`:''}`);
 }
 async function cepCli(){
   const c=digits($('#k_cep').value);if(c.length!==8)return;
@@ -1878,7 +1878,7 @@ function vCar(){
   $('#app').innerHTML=sales.length?`<table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
   ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=!s.canceled_at&&ins.some(i=>!i.paid_at&&!i.canceled_at&&i.due_date<now().slice(0,10));
   return`<tr><td>${esc(c.name)} ${s.canceled_at?'<span class="tag">cancelada</span>':late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.filter(i=>i.paid_at||!i.canceled_at).length}</td>
-  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
+  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
 }
 /* ========= Carnê com multa e juros ========= */
 const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
@@ -2478,7 +2478,7 @@ function vCx(){
   <div class="pr"><span>Vendido no mês (${mes.split('-').reverse().join('/')})</span><b>${R(vm)}</b></div>
   <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
   <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
-  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="cancelSale('${s.id}')">Cancelar</button>`}</td></tr>`).join('')}</table>`:''}
+  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td><button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> ${s.canceled_at?'':`<button class="btn g s" onclick="cancelSale('${s.id}')">Cancelar</button>`}</td></tr>`).join('')}</table>`:''}
   ${devs.length?`<p class="sm">Devoluções de hoje: ${devs.map(s=>R(s.refund_amount)+' ('+esc(s.refund_method||'—')+')').join(' · ')}</p>`:''}`;
 }
 
@@ -2515,7 +2515,7 @@ function vFis(){
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':s.fiscal_status==='cancelada'?'<span class="bad">Nota cancelada</span>':em?`<span class="ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
-  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>`;
+  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>`;
   fisStatus();
 }
 let FST=null;
@@ -2622,6 +2622,44 @@ function csvFis(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();
 }
 
+
+
+/* ========= Cupom NÃO FISCAL (80 mm) ========= */
+function cupomHtml(sid){
+  const s=db.sales.find(x=>x.id===sid);if(!s)return '';
+  const co=CO(),c=db.customers.find(x=>x.id===s.customer_id)||null,logo=new URL(logoIcon(),location.href).href;
+  const ins=db.installments.filter(i=>i.sale_id===sid&&!i.canceled_at).sort((a,b)=>a.number-b.number);
+  const ender=x=>x?(x.street?`${x.street}${x.number?', '+x.number:''}${x.complement?' '+x.complement:''}${x.district?' - '+x.district:''}${x.city?', '+x.city:''}${x.uf?'/'+x.uf:''}${x.cep?' CEP '+x.cep:''}`:(x.address||'')):'';
+  const docf=v=>{const d=digits(v);return d.length===11?d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):d.length===14?fmtCnpj(d):v||''};
+  const dt=new Date(s.created_at),sub=(s.items||[]).reduce((a,i)=>a+i.qty*i.price,0),tot=+s.total||0;
+  const pay=s.pay_type==='crediario'?'Carnê':(s.method||'—'),L=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
+  const css=`@page{size:80mm auto;margin:3mm}*{box-sizing:border-box}body{width:74mm;margin:0 auto;font:11.5px/1.3 'Courier New',monospace;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .c{text-align:center}.b{font-weight:bold}.r{display:flex;justify-content:space-between;gap:6px}.hr{border-top:1px dashed #000;margin:5px 0}.big{font-size:14px}
+  .nf{border:2px solid #000;padding:3px;text-align:center;font-weight:bold;margin:5px 0}.it{margin:2px 0}.sm{font-size:10px}img{max-width:34mm;max-height:20mm;display:block;margin:0 auto 3px}`;
+  return`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Cupom ${esc(String(s.id).slice(0,8))}</title><style>${css}</style></head><body>
+  <div class="c"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div class="b big">${esc(co.trade_name||co.legal_name||'MultMix')}</div>
+  ${co.legal_name&&co.trade_name&&co.legal_name!==co.trade_name?`<div class="sm">${esc(co.legal_name)}</div>`:''}
+  ${co.cnpj?`<div class="sm">CNPJ ${esc(docf(co.cnpj))}${co.ie?' · IE '+esc(co.ie):''}</div>`:''}
+  <div class="sm">${esc(ender(co))}</div>${co.phone?`<div class="sm">Fone ${esc(co.phone)}</div>`:''}</div>
+  <div class="nf">CUPOM NÃO FISCAL<br><span class="sm">SEM VALOR FISCAL · CONTROLE INTERNO</span></div>
+  ${L('Venda',esc(String(s.id).slice(0,8).toUpperCase()))}${L('Data',dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}${s.seller_name?L('Vendedor',esc(s.seller_name)):''}
+  <div class="hr"></div><div class="b">CLIENTE</div>
+  ${c?`<div>${esc(c.name)}</div>${c.cpf?`<div>CPF/CNPJ: ${esc(docf(c.cpf))}</div>`:''}${c.phone?`<div>Fone: ${esc(c.phone)}</div>`:''}${ender(c)?`<div class="sm">${esc(ender(c))}</div>`:''}`:'<div>Consumidor (balcão)</div>'}
+  <div class="hr"></div><div class="b">ITENS</div>
+  ${(s.items||[]).map((i,n)=>`<div class="it"><div>${String(n+1).padStart(2,'0')} ${esc(i.name)}</div>${L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN')+' x '+R(i.price),'<b>'+R(i.qty*i.price)+'</b>')}</div>`).join('')}
+  <div class="hr"></div>
+  ${sub!==tot?L('Subtotal',R(sub)):''}${L('<b class="big">TOTAL</b>','<b class="big">'+R(tot)+'</b>')}${L('Pagamento',esc(pay))}
+  ${s.pay_type==='crediario'?`${+s.entry>0?L('Entrada',R(s.entry)):''}${L('Restante',R(tot-(+s.entry||0)))}<div class="hr"></div><div class="b">PARCELAS (${ins.length}x)</div>${ins.map(i=>L(String(i.number).padStart(2,'0')+'/'+ins.length+'  '+fmtD(i.due_date),R(i.amount))).join('')}`:''}
+  ${s.fiscal_status==='emitida'&&s.fiscal_number?`<div class="hr"></div><div class="sm c">Nota fiscal emitida: nº ${esc(s.fiscal_number)}${s.fiscal_series?' série '+esc(s.fiscal_series):''}</div>`:''}
+  <div class="hr"></div><div class="c sm">Este cupom não é documento fiscal.<br>A nota fiscal é emitida separadamente.<br>Guarde para conferência e garantia.</div>
+  <div class="c b" style="margin-top:6px">Obrigado pela preferência!</div>${co.whatsapp||co.phone?`<div class="c sm">WhatsApp ${esc(co.whatsapp||co.phone)}</div>`:''}
+  <div class="c sm" style="margin-top:4px">&nbsp;</div></body></html>`;
+}
+function cupom(sid){
+  const html=cupomHtml(sid);if(!html)return alert('Venda não encontrada.');
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},300)};
+}
 
 /* ========= Relatórios (PDF) ========= */
 let REL={abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
