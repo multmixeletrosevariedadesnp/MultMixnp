@@ -1,5 +1,5 @@
 {
- "version": "1.23.0",
- "date": "2026-10-27",
- "notes": "Verificação em 2 etapas (opcional) no login."
+ "version": "1.24.0",
+ "date": "2026-10-28",
+ "notes": "Relatórios novos: fluxo de caixa previsto, DRE simples, lucro por produto e sugestão de compra."
 }

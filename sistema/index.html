@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.23.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.24.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2814,8 +2814,8 @@ function cupomPrint(html){
 function cupom(sid){const html=cupomHtml(sid);if(!html)return alert('Venda não encontrada.');cupomPrint(html)}
 
 /* ========= Relatórios (PDF) ========= */
-let REL={abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
-const RELN={vendas:'Vendas por período',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
+let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
+const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
 function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
@@ -2827,6 +2827,51 @@ function relBuild(){
       rows:L.map(s=>[fmtD(ld(s.created_at)),cn(s.customer_id),s.seller_name||'—',s.pay_type==='crediario'?'Carnê':(s.method||'—'),(s.items||[]).reduce((a,i)=>a+ +i.qty,0),R(s.total)]),
       foot:['','','','','Total',R(tot)],
       sum:[['Vendas',L.length],['Total vendido',R(tot)],['Ticket médio',R(L.length?tot/L.length:0)],...Object.entries(by).map(([m,v])=>['Em '+m,R(v)]),...(nc?[['Vendas canceladas',nc]]:[])]};
+  }
+  if(k==='fluxo'){
+    const t0=ld(now()),N=Math.ceil((+REL.fx||30)/7),B=Array.from({length:N+1},()=>({e:0,s:0,ne:0,ns:0})),bi=d=>{const n=dleft(d);return n<0?0:Math.floor(n/7)+1};
+    db.installments.forEach(i=>{if(i.paid_at||i.canceled_at)return;const sl=db.sales.find(x=>x.id===i.sale_id);if(!sl||sl.canceled_at)return;const b=bi(i.due_date);if(b<=N){B[b].e+=+i.amount;B[b].ne++}});
+    (db.payables||[]).forEach(p=>{if(p.paid_at||p.canceled_at)return;const b=bi(p.due_date);if(b<=N){B[b].s+=+p.amount;B[b].ns++}});
+    const ad=(n)=>{const d=new Date(t0+'T12:00:00');d.setDate(d.getDate()+n);return fmtD(ld(d.toISOString()))};let ac=0;
+    const rows=B.map((o,i)=>{const sd=o.e-o.s;ac+=sd;return{lab:i===0?'Já vencidos (em aberto)':ad((i-1)*7)+' a '+ad((i-1)*7+6),e:o.e,s:o.s,sd,ac,n:o.ne+' / '+o.ns}}).filter((r,i)=>i>0||r.e||r.s);
+    const te=sum(rows,r=>r.e),ts=sum(rows,r=>r.s);
+    return{title:RELN[k],sub:'Próximos '+REL.fx+' dias a partir de '+fmtD(t0)+' · só entram carnês e contas a pagar já lançados (vendas à vista futuras não são previstas)',
+      head:['Período','Entradas (carnês)','Saídas (contas)','Saldo do período','Saldo acumulado','Parcelas / contas'],al:'lrrrrl',
+      rows:rows.map(r=>[r.lab,R(r.e),R(r.s),R(r.sd),R(r.ac),r.n]),foot:['Total',R(te),R(ts),R(te-ts),'',''],
+      sum:[['A receber',R(te)],['A pagar',R(ts)],['Saldo previsto',R(te-ts)],['Já vencido a receber',R(rows[0]&&rows[0].lab[0]==='J'?rows[0].e:0)],['Já vencido a pagar',R(rows[0]&&rows[0].lab[0]==='J'?rows[0].s:0)]]};
+  }
+  if(k==='lucro'||k==='dre'){
+    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)),M={};let sc=0,rec=0,cmv=0;
+    L.forEach(s=>{rec+=+s.total||0;(s.items||[]).forEach(i=>{const pr=db.products.find(x=>x.id===i.id)||{},q=+i.qty||0,f=q*(+i.price||0),c=+pr.cost>0?q*pr.cost:0,o=M[i.id]=M[i.id]||{n:i.name,q:0,f:0,c:0,sc:0};o.q+=q;o.f+=f;o.c+=c;if(!(+pr.cost>0)){o.sc=1;sc++}else cmv+=c})});
+    if(k==='lucro'){
+      const A=Object.values(M).map(o=>({...o,l:o.f-o.c,m:o.f&&!o.sc?(o.f-o.c)/o.f*100:null})).sort((a,b)=>(b.sc?-1e12:b.l)-(a.sc?-1e12:a.l)),ok=A.filter(o=>!o.sc);
+      const tf=sum(ok,o=>o.f),tl=sum(ok,o=>o.l);
+      return{title:RELN[k],sub:'Período: '+per+' · lucro = venda − custo cadastrado; produtos sem custo ficam no fim e fora dos totais',
+        head:['Produto','Qtd','Faturamento','Custo','Lucro','Margem'],al:'lrrrrr',
+        rows:A.map(o=>[o.n,Math.round(o.q),R(o.f),o.sc?'sem custo':R(o.c),o.sc?'—':R(o.l),o.m==null?'—':pc1(o.m)]),foot:['Total (com custo)',Math.round(sum(ok,o=>o.q)),R(tf),R(sum(ok,o=>o.c)),R(tl),tf?pc1(tl/tf*100):'—'],
+        sum:[['Produtos vendidos',A.length],['Lucro (com custo)',R(tl)],['Margem média',tf?pc1(tl/tf*100):'—'],['Sem custo cadastrado',A.length-ok.length],...(ok[0]?[['Maior lucro',ok[0].n]]:[])]};
+    }
+    const meses=[];for(let d=new Date(f.slice(0,7)+'-01T12:00:00');ld(d.toISOString())<=t&&meses.length<24;d.setMonth(d.getMonth()+1))meses.push(ld(d.toISOString()).slice(0,7));
+    let com=0;try{meses.forEach(m=>com+=sum(comRows(m,'todos'),r=>r.comm))}catch(e){}
+    const D=(db.payables||[]).filter(p=>!p.canceled_at&&p.paid_at&&inP(p.paid_at)),comp=D.filter(p=>p.source==='xml'),desp=D.filter(p=>p.source!=='xml'),pa=p=>+(p.paid_amount||p.amount)||0,by={};
+    desp.forEach(p=>{const n=p.supplier||p.note||'Outras despesas';by[n]=(by[n]||0)+pa(p)});
+    const td=sum(desp,pa),lb=rec-cmv,res=lb-td-com,pr=v=>rec?pc1(v/rec*100):'—';
+    const rows=[['Receita de vendas (no período)',R(rec),'100,0%'],['(−) Custo das mercadorias vendidas',R(cmv),pr(cmv)],['= Lucro bruto',R(lb),pr(lb)],
+      ...Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([n,v])=>['(−) '+n,R(v),pr(v)]),...(com?[['(−) Comissões',R(com),pr(com)]]:[]),['= Resultado do período',R(res),pr(res)]];
+    return{title:RELN[k],sub:'Período: '+per+' · regime de competência nas vendas, despesas pelo que foi pago · não é demonstração contábil: confira com o contador'+(sc?' · ATENÇÃO: '+sc+' item(ns) vendido(s) sem custo cadastrado, então o lucro aparece maior que o real':''),
+      head:['Item','Valor','% da receita'],al:'lrr',rows,foot:['Resultado',R(res),pr(res)],
+      sum:[['Receita',R(rec)],['Lucro bruto',R(lb)],['Despesas pagas',R(td+com)],['Resultado',R(res)],...(sc?[['Itens vendidos sem custo',sc+' (custo zerado)']]:[]),...(comp.length?[['Compras de mercadoria pagas (fora do cálculo)',R(sum(comp,pa))]]:[])]};
+  }
+  if(k==='compras'){
+    const d0=Math.max(1,Math.round((new Date(t)-new Date(f))/864e5)+1),sold={};
+    db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)).forEach(s=>(s.items||[]).forEach(i=>sold[i.id]=(sold[i.id]||0)+(+i.qty||0)));
+    const cob=+REL.cob||30,mn=stockMin();
+    const A=db.products.filter(p=>p.active!==false&&p.active!==0).map(p=>{const st=+p.stock||0,q=sold[p.id]||0,r=q/d0,dias=r>0?st/r:null,need=Math.max(Math.ceil(r*cob-st),st<mn?mn-st:0,0);return{p,st,q,dias,need,cost:need*(+p.cost||0)}})
+      .filter(o=>o.need>0).sort((a,b)=>(a.dias==null?1e9:a.dias)-(b.dias==null?1e9:b.dias));
+    return{title:RELN[k],sub:'Vendas de '+per+' (média por dia) · cobrir '+cob+' dias de venda · mínimo '+mn+' un.',
+      head:['Produto','Estoque','Vendidos','Dura (dias)','Comprar','Custo estimado'],al:'lrrrrr',
+      rows:A.map(o=>[o.p.name,o.st,o.q,o.dias==null?'sem giro':Math.round(o.dias),o.need,o.p.cost?R(o.cost):'sem custo']),foot:['Total','','','',sum(A,o=>o.need),R(sum(A,o=>o.cost))],
+      sum:[['Produtos a repor',A.length],['Unidades',sum(A,o=>o.need)],['Custo estimado',R(sum(A,o=>o.cost))],['Acabam em até 7 dias',A.filter(o=>o.dias!=null&&o.dias<=7).length]]};
   }
   if(k==='abc'){
     const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)),M={},cli=REL.abcFor==='cli',by=cli&&REL.abcBy==='lucro'?'fat':REL.abcBy;
@@ -2905,11 +2950,13 @@ function relHtml(d,forPdf){
 }
 function vRel(){
   if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
-  const k=REL.k,needP=['vendas','caixa','com','abc'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
+  const k=REL.k,needP=['vendas','caixa','com','abc','dre','lucro','compras'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
   const d=relBuild();
   $('#app').innerHTML=`<div class="bar"><select style="max-width:230px" onchange="REL.k=this.value;vRel()">${Object.entries(RELN).map(([v,l])=>`<option value="${v}" ${k===v?'selected':''}>${l}</option>`).join('')}</select>
   ${needP?`<input type="date" style="max-width:170px" value="${REL.from}" onchange="REL.from=this.value||REL.from;vRel()"><input type="date" style="max-width:170px" value="${REL.to}" onchange="REL.to=this.value||REL.to;vRel()">`:''}
   ${k==='abc'?`<select style="max-width:150px" onchange="REL.abcFor=this.value;vRel()"><option value="prod" ${REL.abcFor==='prod'?'selected':''}>Produtos</option><option value="cli" ${REL.abcFor==='cli'?'selected':''}>Clientes</option></select><select style="max-width:170px" onchange="REL.abcBy=this.value;vRel()"><option value="fat" ${REL.abcBy==='fat'?'selected':''}>Por faturamento</option><option value="qtd" ${REL.abcBy==='qtd'?'selected':''}>Por quantidade</option>${REL.abcFor==='prod'?`<option value="lucro" ${REL.abcBy==='lucro'?'selected':''}>Por lucro</option>`:''}</select>`:''}
+  ${k==='fluxo'?`<select style="max-width:170px" onchange="REL.fx=+this.value;vRel()">${[30,60,90].map(n=>`<option value="${n}" ${REL.fx===n?'selected':''}>Próximos ${n} dias</option>`).join('')}</select>`:''}
+  ${k==='compras'?`<select style="max-width:200px" onchange="REL.cob=+this.value;vRel()">${[15,30,45,60].map(n=>`<option value="${n}" ${REL.cob===n?'selected':''}>Cobrir ${n} dias</option>`).join('')}</select>`:''}
   ${k==='estoque'?`<label class="sm"><input type="checkbox" style="width:auto" ${REL.low?'checked':''} onchange="REL.low=this.checked;vRel()"> Só estoque baixo</label>`:''}
   ${k==='receber'?`<select style="max-width:200px" onchange="REL.cr=this.value;vRel()"><option value="atraso" ${REL.cr==='atraso'?'selected':''}>Só em atraso</option><option value="todas" ${REL.cr==='todas'?'selected':''}>Todas em aberto</option></select>`:''}
   ${k==='pagar'?`<select style="max-width:200px" onchange="REL.pg=this.value;vRel()"><option value="abertas" ${REL.pg==='abertas'?'selected':''}>Em aberto</option><option value="pagas" ${REL.pg==='pagas'?'selected':''}>Pagas no período</option></select>`:''}
