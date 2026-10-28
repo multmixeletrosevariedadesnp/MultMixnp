@@ -1,5 +1,5 @@
 {
- "version": "1.18.0",
+ "version": "1.19.0",
  "date": "2026-10-27",
- "notes": "Cupom não fiscal 80 mm para controle da venda, com dados da empresa, cliente, itens e parcelas."
+ "notes": "Cupom não fiscal configurável: escolher campos (IE, endereço, cliente, parcelas), papel 58 ou 80 mm e tamanho da letra."
 }
