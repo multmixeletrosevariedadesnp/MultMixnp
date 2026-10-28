@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.0.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.0.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}
@@ -443,6 +443,7 @@ function cupomPrint(){
   <div>Venda ${esc(String(r.id).slice(0,8).toUpperCase())}<br>${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<br>Vendedor: ${esc(r.seller)}${r.customer?'<br>Cliente: '+esc(r.customer.name):''}</div><hr>
   <table>${r.lines.map(l=>`<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td>${l.qty} x ${R(l.price)}</td><td>${R(l.qty*l.price)}</td></tr>`).join('')}</table><hr>
   <table><tr class="t"><td>TOTAL</td><td>${R(r.total)}</td></tr><tr><td>Pagamento</td><td>${esc(r.pay_type==='crediario'?'Carnê '+r.n_inst+'x':r.method)}</td></tr>${r.pay_type==='crediario'?`<tr><td>Entrada</td><td>${R(r.entry)}</td></tr>`:''}</table><hr><div class="c">Obrigado pela preferência!</div>`;
+  if(window.mmDesk){mmDesk.print(html).then(r=>{if(!r.ok)alert('Não imprimiu: '+(r.error||'verifique a impressora em PDV > Impressora do cupom'))});return}
   const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
   fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão.')}setTimeout(()=>fr.remove(),60000)},300)};
 }

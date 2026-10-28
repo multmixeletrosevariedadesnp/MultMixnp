@@ -1,5 +1,5 @@
 {
- "version": "1.0.0",
+ "version": "1.0.1",
  "date": "2026-10-28",
- "notes": "Primeira versão do PDV do vendedor."
+ "notes": "Cupom imprime direto quando aberto no programa de computador."
 }
