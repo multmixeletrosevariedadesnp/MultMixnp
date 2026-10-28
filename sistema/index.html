@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.19.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.20.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1514,7 +1514,7 @@ function vPdv(){
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
    <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
-   <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c')"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
+   <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c');pdvCnpj()"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
    <div id="cs" class="cs" aria-live="polite"></div>
    <button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></section>
   </div>
@@ -1627,7 +1627,7 @@ function finish(){
   let cid=null;
   if(c_n.value.trim()){
     let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
-    Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});window.preAddr='';put('customers',c);cid=c.id;
+    Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});const pc=window.preCli;if(pc&&digits(pc.cpf)===digits(c_c.value)){Object.entries(pc).forEach(([k,v])=>{if(v&&k!=='name'&&k!=='phone'&&!c[k])c[k]=v});if(!c.address&&c.street)c.address=`${c.street}, ${c.number||'s/n'} - ${c.district||''}, ${c.city||''}/${c.uf||''}`;if(pc.name&&!c.trade_name)c.trade_name=pc.trade_name||''}window.preCli=null;window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
@@ -1783,7 +1783,7 @@ function cliForm(id){
    <div><label>UF</label><input id="k_uf" maxlength="2" value="${v('uf')}"></div>
    <div><label>Código IBGE</label><input id="k_ibge" inputmode="numeric" value="${v('ibge')}"></div>
    <div class="w"><label>Endereço em texto livre (vem do pedido do catálogo)</label><input id="k_address" value="${v('address')}"></div></div>
-   <p class="sm">Ao digitar um CNPJ válido, razão social, endereço, telefone e e-mail vêm da Receita Federal. Complete a inscrição estadual. NF-e (modelo 55) exige CPF ou CNPJ e endereço completo; NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
+   <p class="sm">Ao digitar um CNPJ válido, razão social, fantasia, endereço (com código IBGE), telefone, e-mail e, quando encontrada, a inscrição estadual vêm da Receita Federal e do cadastro público. Confira os dados. NF-e (modelo 55) exige CPF ou CNPJ e endereço completo; NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
    <button class="btn" onclick="saveCli('${id||''}')">Salvar cliente</button>
    ${id?`<button class="btn g" onclick="toggleCli('${id}')">${c.active===false?'Reativar':'Inativar'} cliente</button>`:''}
    ${c.phone?` <a class="btn g" target="_blank" rel="noopener" href="https://wa.me/55${digits(c.phone)}">WhatsApp</a>`:''}
@@ -1819,20 +1819,48 @@ function cpfIn(el){
     else{st.className='sm bad';st.textContent='CNPJ inválido. Confira os números.'}
   }
 }
+async function fetchT(u,ms){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms||9000);try{return await fetch(u,{signal:ac.signal})}finally{clearTimeout(t)}}
+/* cnpj.ws (API pública) devolve inscrição estadual; converte para o mesmo formato da BrasilAPI */
+function cnpjwsToJ(w){const e=w.estabelecimento||{};return{razao_social:w.razao_social,nome_fantasia:e.nome_fantasia,descricao_tipo_de_logradouro:e.tipo_logradouro,logradouro:e.logradouro,numero:e.numero,complemento:e.complemento,
+  bairro:e.bairro,cep:e.cep,municipio:(e.cidade||{}).nome,uf:(e.estado||{}).sigla,codigo_municipio_ibge:(e.cidade||{}).ibge_id,ddd_telefone_1:(e.ddd1||'')+(e.telefone1||''),ddd_telefone_2:(e.ddd2||'')+(e.telefone2||''),email:e.email,
+  descricao_situacao_cadastral:e.situacao_cadastral,data_inicio_atividade:e.data_inicio_atividade,porte:(w.porte||{}).descricao,cnae_fiscal:(e.atividade_principal||{}).subclasse||(e.atividade_principal||{}).id,cnae_fiscal_descricao:(e.atividade_principal||{}).descricao,
+  natureza_juridica:(w.natureza_juridica||{}).descricao,opcao_pelo_simples:w.simples?w.simples.simples==='Sim':null,_ies:e.inscricoes_estaduais||[]}}
+async function cnpjFetch(d){
+  let j=null,w=null;
+  for(const u of ['https://brasilapi.com.br/api/cnpj/v1/'+d,'https://minhareceita.org/'+d]){
+    try{const res=await fetchT(u);if(res.ok){j=await res.json();break}}catch(e){}
+  }
+  // inscrição estadual (e fonte reserva): cnpj.ws
+  try{const res=await fetchT('https://publica.cnpj.ws/cnpj/'+d,9000);if(res.ok)w=cnpjwsToJ(await res.json())}catch(e){}
+  if(!j&&!w)return null;
+  const base=j||w;
+  if(j&&w){['ddd_telefone_1','email','nome_fantasia'].forEach(k=>{if(!base[k]&&w[k])base[k]=w[k]});if(!base.ddd_telefone_1&&base.ddd_telefone_2)base.ddd_telefone_1=base.ddd_telefone_2}
+  const ies=(w&&w._ies)||[],uf=base.uf,ie=ies.find(x=>x.ativo&&(x.estado||{}).sigla===uf)||ies.find(x=>(x.estado||{}).sigla===uf);
+  base._ie=ie?String(ie.inscricao_estadual||''):'';base._ieAtivo=ie?ie.ativo!==false:null;
+  if(!base.porte&&w)base.porte=w.porte;
+  return base;
+}
+function cnpjInfo(j){
+  const dtf=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'',L=[];
+  if(j.data_inicio_atividade)L.push('Aberta em '+dtf(j.data_inicio_atividade));
+  if(j.porte)L.push('Porte: '+j.porte);
+  if(j.cnae_fiscal_descricao)L.push('Atividade: '+j.cnae_fiscal_descricao+(j.cnae_fiscal?' ('+j.cnae_fiscal+')':''));
+  if(j.natureza_juridica)L.push('Natureza: '+j.natureza_juridica);
+  if(j.opcao_pelo_simples!=null)L.push('Simples Nacional: '+(j.opcao_pelo_simples?'sim':'não'));
+  return L;
+}
 async function cnpjLookup(force){
   const d=digits($('#k_cpf').value),st=$('#k_st');
   if(d.length!==14||!okCnpj(d)){st.className='sm bad';st.textContent='Digite um CNPJ válido para buscar.';return}
   st.className='sm';st.textContent='Buscando dados na Receita Federal...';
-  let j=null;
-  for(const u of ['https://brasilapi.com.br/api/cnpj/v1/'+d,'https://minhareceita.org/'+d]){
-    try{const res=await fetch(u);if(res.ok){j=await res.json();break}}catch(e){}
-  }
-  if(!j){st.className='sm bad';st.textContent='Não consegui consultar agora (sem internet ou CNPJ não encontrado). Preencha manualmente.';return}
-  const F=cnpjFields(j);$('#k_person_type').value='PJ';
+  const j=await cnpjFetch(d);
+  if(!j){st.className='sm bad';st.textContent='Não consegui consultar agora (sem internet, serviço fora do ar ou CNPJ não encontrado). Preencha manualmente.';return}
+  const F=cnpjFields(j);if(j._ie)F.ie=j._ie;$('#k_person_type').value='PJ';
   Object.entries(F).forEach(([k,v])=>{const e=$('#k_'+k);if(e&&v&&(force||!e.value.trim()))e.value=v});
-  const sit=j.descricao_situacao_cadastral||'';
+  const sit=j.descricao_situacao_cadastral||'',inf=cnpjInfo(j);
   st.className='sm '+(sit&&sit.toUpperCase()!=='ATIVA'?'bad':'ok');
-  st.textContent='Dados preenchidos pela Receita Federal'+(sit?'. Situação cadastral: '+sit:'')+'. Confira e informe a inscrição estadual.';
+  st.innerHTML='Dados preenchidos pela Receita Federal'+(sit?'. Situação cadastral: <b>'+esc(sit)+'</b>':'')+'.'+(j._ie?' Inscrição estadual encontrada'+(j._ieAtivo===false?' (<b class="bad">não ativa</b>)':'')+': confira.':' Inscrição estadual não encontrada: informe manualmente ou ISENTO.')+
+    (inf.length?'<div class="sm" style="color:var(--mut);margin-top:4px">'+inf.map(esc).join(' · ')+'</div>':'');
 }
 function okCpf(v){
   const c=digits(v);if(c.length!==11||/^(\d)\1+$/.test(c))return false;
@@ -1868,6 +1896,19 @@ function cliSug(field){
   const l=cliMatch(q).slice(0,6);
   box.innerHTML=l.length?l.map(c=>{const o=owed(c.id);return`<button type="button" onclick="pickCli('${c.id}')"><span>${esc(c.name)}${c.trade_name?` <small>${esc(c.trade_name)}</small>`:''}</span><small>${esc(c.cpf||c.phone||'')}${o.length?' · <b class="bad">'+o.length+' parc. em aberto</b>':''}</small></button>`}).join('')
     :'<p class="sm">Nenhum cliente salvo com esse dado. Ele será cadastrado ao finalizar a venda.</p>';
+}
+let pdvCnpjT=null;
+function pdvCnpj(){ // CNPJ digitado na venda: se ainda não é cliente, busca os dados na Receita
+  const d=digits(c_c.value);window.preCli=null;clearTimeout(pdvCnpjT);
+  if(d.length!==14||!okCnpj(d)||db.customers.some(x=>digits(x.cpf)===d))return;
+  pdvCnpjT=setTimeout(async()=>{
+    const box=$('#cs');box.innerHTML='<p class="sm">Buscando dados do CNPJ na Receita Federal…</p>';
+    const j=await cnpjFetch(d);if(digits(c_c.value)!==d)return;
+    if(!j){box.innerHTML='<p class="sm bad">Não consegui consultar o CNPJ agora. Digite o nome manualmente.</p>';return}
+    const F=cnpjFields(j);if(j._ie)F.ie=j._ie;F.person_type='PJ';F.cpf=fmtDoc(d);window.preCli=F;
+    if(!c_n.value.trim())c_n.value=F.name;if(!c_p.value.trim())c_p.value=F.phone||'';
+    box.innerHTML=`<p class="sm ok">Dados da Receita: <b>${esc(F.name)}</b>${j.descricao_situacao_cadastral&&j.descricao_situacao_cadastral!=='ATIVA'?' · <b class="bad">'+esc(j.descricao_situacao_cadastral)+'</b>':''}${F.street?' · '+esc(F.street)+', '+esc(F.number||'s/n')+' - '+esc(F.city||'')+'/'+esc(F.uf||''):''}. Serão salvos no cadastro ao finalizar a venda.</p>`;
+  },350);
 }
 function pickCli(id){
   const c=db.customers.find(x=>x.id===id);if(!c)return;
