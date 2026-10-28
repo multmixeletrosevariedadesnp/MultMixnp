@@ -1,5 +1,5 @@
 {
- "version": "1.21.0",
+ "version": "1.22.0",
  "date": "2026-10-27",
- "notes": "Regras IBS, CBS e IS: CST e cClassTrib por destino da venda e tipo do cliente (preparação, não altera a nota)."
+ "notes": "Auditoria (quem mudou o quê) e restaurar backup."
 }
