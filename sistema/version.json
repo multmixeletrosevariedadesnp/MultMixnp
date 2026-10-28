@@ -1,5 +1,5 @@
 {
- "version": "1.20.0",
+ "version": "1.20.1",
  "date": "2026-10-27",
- "notes": "Busca de CNPJ completa: IE, fantasia, endereço, IBGE, telefone, e-mail, situação e atividade, também na tela de venda."
+ "notes": "CNPJ: logradouro completado por segunda fonte e pelo CEP quando a Receita não traz."
 }

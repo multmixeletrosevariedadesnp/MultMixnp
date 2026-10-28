@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.20.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.20.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1834,7 +1834,7 @@ async function cnpjFetch(d){
   try{const res=await fetchT('https://publica.cnpj.ws/cnpj/'+d,9000);if(res.ok)w=cnpjwsToJ(await res.json())}catch(e){}
   if(!j&&!w)return null;
   const base=j||w;
-  if(j&&w){['ddd_telefone_1','email','nome_fantasia'].forEach(k=>{if(!base[k]&&w[k])base[k]=w[k]});if(!base.ddd_telefone_1&&base.ddd_telefone_2)base.ddd_telefone_1=base.ddd_telefone_2}
+  if(j&&w){['ddd_telefone_1','email','nome_fantasia','logradouro','descricao_tipo_de_logradouro','numero','complemento','bairro','cep','municipio','uf','codigo_municipio_ibge'].forEach(k=>{if(!String(base[k]??'').trim()&&w[k])base[k]=w[k]});if(!base.ddd_telefone_1&&base.ddd_telefone_2)base.ddd_telefone_1=base.ddd_telefone_2}
   const ies=(w&&w._ies)||[],uf=base.uf,ie=ies.find(x=>x.ativo&&(x.estado||{}).sigla===uf)||ies.find(x=>(x.estado||{}).sigla===uf);
   base._ie=ie?String(ie.inscricao_estadual||''):'';base._ieAtivo=ie?ie.ativo!==false:null;
   if(!base.porte&&w)base.porte=w.porte;
@@ -1857,6 +1857,7 @@ async function cnpjLookup(force){
   if(!j){st.className='sm bad';st.textContent='Não consegui consultar agora (sem internet, serviço fora do ar ou CNPJ não encontrado). Preencha manualmente.';return}
   const F=cnpjFields(j);if(j._ie)F.ie=j._ie;$('#k_person_type').value='PJ';
   Object.entries(F).forEach(([k,v])=>{const e=$('#k_'+k);if(e&&v&&(force||!e.value.trim()))e.value=v});
+  if(!$('#k_street').value.trim()&&digits($('#k_cep').value).length===8)await cepCli(); // sem logradouro na Receita: completa pelo CEP
   const sit=j.descricao_situacao_cadastral||'',inf=cnpjInfo(j);
   st.className='sm '+(sit&&sit.toUpperCase()!=='ATIVA'?'bad':'ok');
   st.innerHTML='Dados preenchidos pela Receita Federal'+(sit?'. Situação cadastral: <b>'+esc(sit)+'</b>':'')+'.'+(j._ie?' Inscrição estadual encontrada'+(j._ieAtivo===false?' (<b class="bad">não ativa</b>)':'')+': confira.':' Inscrição estadual não encontrada: informe manualmente ou ISENTO.')+
@@ -1906,6 +1907,7 @@ function pdvCnpj(){ // CNPJ digitado na venda: se ainda não é cliente, busca o
     const j=await cnpjFetch(d);if(digits(c_c.value)!==d)return;
     if(!j){box.innerHTML='<p class="sm bad">Não consegui consultar o CNPJ agora. Digite o nome manualmente.</p>';return}
     const F=cnpjFields(j);if(j._ie)F.ie=j._ie;F.person_type='PJ';F.cpf=fmtDoc(d);window.preCli=F;
+    if(!F.street&&digits(F.cep).length===8){try{const v=await(await fetchT('https://viacep.com.br/ws/'+digits(F.cep)+'/json/')).json();if(!v.erro){F.street=v.logradouro||'';F.district=F.district||v.bairro||'';F.city=F.city||v.localidade||'';F.uf=F.uf||v.uf||'';F.ibge=F.ibge||v.ibge||''}}catch(e){}}
     if(!c_n.value.trim())c_n.value=F.name;if(!c_p.value.trim())c_p.value=F.phone||'';
     box.innerHTML=`<p class="sm ok">Dados da Receita: <b>${esc(F.name)}</b>${j.descricao_situacao_cadastral&&j.descricao_situacao_cadastral!=='ATIVA'?' · <b class="bad">'+esc(j.descricao_situacao_cadastral)+'</b>':''}${F.street?' · '+esc(F.street)+', '+esc(F.number||'s/n')+' - '+esc(F.city||'')+'/'+esc(F.uf||''):''}. Serão salvos no cadastro ao finalizar a venda.</p>`;
   },350);
