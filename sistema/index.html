@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.34.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.35.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -262,7 +262,7 @@ const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1N
 /* Sem URL/KEY o sistema roda em modo demonstração (só neste navegador). */
 
 const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
-const T=['products','customers','sales','installments','orders','company','company_private','payables'];
+const T=['products','customers','sales','installments','orders','company','company_private','payables','parcel_payments'];
 const $=s=>document.querySelector(s);
 /* ===== Tema sazonal (Black Friday, Natal...) — mesmo bloco no sistema e no catálogo ===== */
 const TEMAS={
@@ -331,7 +331,7 @@ if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:
   ['Liquidificador 900W','Cozinha',169,179,199,['Potência: 900W','Copo: 2,2 L','Lâminas: aço inox','Voltagem: 127V'],'Potente e fácil de limpar.'],
   ['Ventilador de Mesa 40cm','Variedades',119,129,139,['Hélices: 6','Velocidades: 3','Potência: 80W'],'Silencioso, ideal para o calor.']
  ].forEach(p=>db.products.push({id:uid(),name:p[0],category:p[1],price_cash:p[2],price_card:p[3],price_credit:p[4],max_inst:10,stock:10,active:true,specs:p[5].map(s=>{const[k,...v]=s.split(':');return{k,v:v.join(':').trim()}}),photos:[],description:p[6],ncm:'',cfop:'5102',unit:'UN'}));}
-db.orders=db.orders||[];db.payables=db.payables||[];db.company=db.company||[];db.company_private=db.company_private||[];
+db.orders=db.orders||[];db.payables=db.payables||[];db.parcel_payments=db.parcel_payments||[];db.company=db.company||[];db.company_private=db.company_private||[];
 const save=()=>localStorage.mm=JSON.stringify(db);
 let session=null;
 let role=null;
@@ -357,9 +357,9 @@ async function doSync(){
         const{error}=await sb.from(t).upsert(rows);if(error)throw error;db.outbox.splice(0,n);save();}
     }
     for(const t of role?T:['company']){
-      if(t==='payables'&&role!=='admin')continue; // contas a pagar: só administrador
+      if((t==='payables'||t==='parcel_payments')&&role!=='admin')continue; // contas a pagar e recebimentos: só administrador
       const{data,error}=await sb.from(t).select('*');
-      if(error){if(t==='payables')continue;throw error} // se a tabela ainda não existir, não trava o resto
+      if(error){if(t==='payables'||t==='parcel_payments')continue;throw error} // se a tabela ainda não existir, não trava o resto
       if(!db.outbox.length)db[t]=data;
     }
     save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
@@ -461,7 +461,7 @@ function comRows(m,sel){
       if(base>0)out.push({s,date:ld(s.created_at),cust:cn(s.customer_id),kind:rec?'Entrada':'Venda',base,pct});
     }
     if(rec)db.installments.filter(i=>i.sale_id===s.id&&i.paid_at&&ld(i.paid_at).slice(0,7)===m)
-      .forEach(i=>out.push({s,date:ld(i.paid_at),cust:cn(s.customer_id),kind:'Parcela '+i.number,base:+i.amount,pct}));
+      .forEach(i=>out.push({s,date:ld(i.paid_at),cust:cn(s.customer_id),kind:'Parcela '+i.number,base:+(origAmt(i)-(+i.rebate||0)).toFixed(2),pct}));
   });
   out.forEach(r=>{r.sid=r.s.seller_id||'';r.sname=r.s.seller_name||'Sem vendedor';r.comm=+(r.base*r.pct/100).toFixed(2)});
   return out.sort((a,b)=>a.date.localeCompare(b.date));
@@ -809,7 +809,7 @@ async function carnePdf(id,onlyOpen){
       num,issued:`${nw.toLocaleDateString('pt-BR')} ${nw.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`,
       items:(s.items||[]).map(i=>({qty:i.qty,name:i.name,unit:+i.price,total:+i.price*i.qty})),
       total:+s.total,entry:+s.entry||0,financed:+s.total-(+s.entry||0),parcelsAll:all,
-      parcels:ins.map(i=>({n:i.number,of:all,due:fmtD(i.due_date),amount:+i.amount,paid:i.paid_at?{date:fmtD(ld(i.paid_at)),method:i.method||''}:null})),
+      parcels:ins.map(i=>({n:i.number,of:all,due:fmtD(i.due_date),amount:origAmt(i),paid:i.paid_at?{date:fmtD(ld(i.paid_at)),method:i.method||''}:null})),
       multa:CFG.MULTA,juro:CFG.JURO_MES,logo,pix};
     const bytes=await buildCarnePdf(d).bytes({title:`Carne ${num} - ${d.cust.name}`,author:d.co.name});
     const blob=new Blob([bytes],{type:'application/pdf'}),url=URL.createObjectURL(blob);
@@ -2108,7 +2108,7 @@ function cliList(){
   $('#cl').innerHTML=l.length?`<table><tr><th>Nome</th><th>CPF / CNPJ</th><th>Telefone</th><th>Cidade</th><th>Em aberto</th><th></th></tr>${l.map(c=>{const o=owed(c.id),late=o.some(i=>i.due_date<today),forn=c.kind==='fornecedor';
   return`<tr><td>${esc(c.name)} ${forn?'<span class="tag">fornecedor</span>':''}${c.person_type==='PJ'?' <span class="tag">PJ</span>':''}${c.active===false?' <span class="tag">inativo</span>':''}${c.trade_name?`<div class="sm">${esc(c.trade_name)}</div>`:''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td><td>${esc(c.city||'')}${c.uf?'/'+esc(c.uf):''}</td>
   <td>${forn?'—':o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
-  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:(window.__syncing&&!db.customers.length?skel(6):empty('Nenhum cadastro encontrado',cq.trim()?'Tente outro termo de busca.':'Cadastre o primeiro cliente ou importe uma planilha.',`<button class="btn" onclick="cliForm()">Novo cadastro</button>`));
+  <td style="white-space:nowrap"><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button>${o.length?` <button class="btn g s" onclick="extratoOpen('${c.id}')">Extrato</button>`:''}</td></tr>`}).join('')}</table>`:(window.__syncing&&!db.customers.length?skel(6):empty('Nenhum cadastro encontrado',cq.trim()?'Tente outro termo de busca.':'Cadastre o primeiro cliente ou importe uma planilha.',`<button class="btn" onclick="cliForm()">Novo cadastro</button>`));
 }
 /* ========= Importar clientes e fornecedores (csv / xlsx) ========= */
 const CALI={name:['nome razao social','razao social','nome completo','nome','cliente','fornecedor','empresa'],trade_name:['nome fantasia','fantasia'],
@@ -2461,7 +2461,7 @@ const days=d=>Math.floor((new Date(ld(now()))-new Date(d))/864e5);
 function due(i){
   const dl=i.paid_at?0:days(i.due_date);
   if(dl<=0)return{v:+i.amount,fee:0,dl:0};
-  const fee=+(i.amount*CFG.MULTA/100+i.amount*(CFG.JURO_MES/100)/30*dl).toFixed(2);
+  const calc=+(i.amount*CFG.MULTA/100+i.amount*(CFG.JURO_MES/100)/30*dl).toFixed(2),fee=Math.max(0,+(calc-(+i.fee_settled||0)).toFixed(2));
   return{v:+(i.amount+fee).toFixed(2),fee,dl};
 }
 const METHODS='<option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option>';
@@ -2469,15 +2469,22 @@ function carne(id){
   const s=db.sales.find(x=>x.id===id),c=db.customers.find(x=>x.id===s.customer_id)||{};
   const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
   modal(`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${esc(logoIcon())}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"><p class="sm" style="margin:0">${esc(coLine())}</p></div><h2>Carnê · ${esc(c.name)}</h2>${s.canceled_at?`<p class="bad"><b>Venda cancelada em ${ld(s.canceled_at).split('-').reverse().join('/')}</b>${s.cancel_reason?' · '+esc(s.cancel_reason):''}${+s.refund_amount?` · devolvido ${R(s.refund_amount)}`:''}</p>`:''}<p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
-  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);if(i.canceled_at&&!i.paid_at)return`<tr><td>${i.number}/${ins.length}</td><td>${i.due_date.split('-').reverse().join('/')}</td><td>${R(i.amount)}</td><td>—</td><td><span class="sm">Cancelada</span></td></tr>`;return`<tr><td>${i.number}/${ins.length}</td>
-  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(i.amount)}</td>
-  <td>${i.paid_at?R(i.paid_amount||i.amount):`<b>${R(d.v)}</b>`}</td>
+  <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);if(i.canceled_at&&!i.paid_at)return`<tr><td>${i.number}/${ins.length}</td><td>${i.due_date.split('-').reverse().join('/')}</td><td>${R(origAmt(i))}</td><td>—</td><td><span class="sm">Cancelada</span></td></tr>`;return`<tr><td>${i.number}/${ins.length}</td>
+  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
+  <td>${i.paid_at?`${R(i.paid_amount||i.amount)}${+i.rebate?`<div class="sm">abatido ${R(i.rebate)}</div>`:''}`:`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button>`}`}</td></tr>`}).join('')}</table></div>
-  <div class="row noprint">${s.canceled_at?'':`<button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+  ${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+}
+function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e estorno
+  const rids=[...new Set(db.parcel_payments.filter(p=>p.sale_id===sid).sort((a,b)=>String(b.paid_at).localeCompare(String(a.paid_at))).map(p=>p.receipt_id))];
+  if(!rids.length)return'';
+  return`<h3>Pagamentos recebidos</h3><div class="tw"><table><tr><th>Data</th><th>Parcelas</th><th>Recebido</th><th></th></tr>${rids.map(rid=>{const D=reciboDados(rid);if(!D)return'';
+  return`<tr><td>${dBR(D.t0)}${D.canc?' <span class="tag bad">estornado</span>':''}</td><td>${D.rows.map(r=>r.n+'/'+r.of).join(', ')}</td><td>${R(D.tot)}${D.dsc?`<div class="sm">abatimento ${R(D.dsc)}${D.motivo?' · '+esc(D.motivo):''}</div>`:''}<div class="sm">${esc(D.meio||'')}</div></td>
+  <td style="white-space:nowrap"><button class="btn g s" onclick="reciboPos('${rid}','${sid}')">Recibo</button>${D.canc?'':` <button class="btn g s" onclick="reciboEstorna('${rid}','${sid}')">Estornar</button>`}</td></tr>`}).join('')}</table></div>`;
 }
 function cancelSale(id){
   const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at)return;
-  const got=(s.pay_type==='crediario'?+s.entry:+s.total)+db.installments.filter(i=>i.sale_id===id&&i.paid_at).reduce((a,i)=>a+(+i.paid_amount||+i.amount),0);
+  const got=(s.pay_type==='crediario'?+s.entry:+s.total)+db.installments.filter(i=>i.sale_id===id).reduce((a,i)=>a+(+i.paid_total||(i.paid_at?(+i.paid_amount||+i.amount):0)),0);
   master(()=>{
     modal(`<h2>Cancelar venda</h2><p class="sm">${R(s.total)} · ${(s.items||[]).map(i=>i.qty+'× '+esc(i.name)).join(', ')}</p>
     <p>O estoque dos itens volta, as parcelas em aberto são canceladas e a comissão desta venda deixa de contar.${s.fiscal_status==='emitida'?'<br><b class="bad">Esta venda já tem nota emitida: cancele a nota na SEFAZ também.</b>':''}</p>
@@ -2523,7 +2530,7 @@ function pixAtual(iid,sid,charge){
   const co=CO(),pv=PRIV(),c=db.customers.find(x=>x.id===s.customer_id)||{};
   if(!(pv.pix_key&&pixOk(pv.pix_key_type,pv.pix_key)))return alert('Cadastre a chave Pix da empresa na aba Empresa para gerar o Pix.');
   if(!co.city)return alert('Preencha a cidade da empresa na aba Empresa. Ela é obrigatória no código Pix.');
-  const d=due(i),multa=d.dl>0?+(i.amount*CFG.MULTA/100).toFixed(2):0,juros=+(d.fee-multa).toFixed(2);
+  const d=due(i),multa=d.dl>0?+(i.amount*CFG.MULTA/100).toFixed(2):0,juros=Math.max(0,+(d.fee-multa).toFixed(2));
   const ch=charge==null?d.fee:Math.max(0,Math.min(d.fee,+charge)),valor=+(+i.amount+ch).toFixed(2),desc=+(d.fee-ch).toFixed(2);
   PIXW[i.id]=desc>0?{day:ld(now()),total:valor}:undefined;if(!PIXW[i.id])delete PIXW[i.id];
   const total=db.installments.filter(x=>x.sale_id===sid&&!x.canceled_at).length,num=sid.replace(/-/g,'').slice(0,8).toUpperCase();
@@ -2554,13 +2561,204 @@ function pixAtual(iid,sid,charge){
   <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo do Mercado Pago e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
   <button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button>`);
 }
-function payAsk(iid,sid){
-  const i=db.installments.find(x=>x.id===iid),d=due(i);
-  modal(`<h2>Receber parcela ${i.number}</h2><p>Valor ${R(i.amount)}${d.fee?` + multa e juros ${R(d.fee)} (${d.dl} dias)`:''}</p>
-  <div class="f"><div><label>Valor recebido</label><input id="pv" type="number" step="0.01" value="${pxToday(i,d)}"></div><div><label>Meio</label><select id="pm">${METHODS}</select></div></div>
-  <button class="btn" onclick="pay('${iid}','${sid}')">Confirmar recebimento</button>`);
+/* ========= Recebimentos do crediário: pagamento parcial, abatimento, recibo, vários de uma vez e extrato ========= */
+const r2=x=>Math.round(((+x||0)+Number.EPSILON)*100)/100;
+const origAmt=i=>+(i.orig_amount??i.amount)||0;
+const waTel=p=>{const d=digits(p);return d?(d.length<=11?'55'+d:d):''};
+const dBR=iso=>{const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+const docBR=v=>{const d=digits(v);return d.length===11?d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):d.length===14?d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):(v||'')};
+function recebs(){ // dinheiro recebido de parcelas (recebimentos do livro + parcelas antigas pagas sem registro)
+  const ok=db.parcel_payments.filter(p=>!p.canceled_at),has=new Set(ok.map(p=>p.installment_id));
+  const L=ok.filter(p=>+p.amount>0).map(p=>({at:p.paid_at,method:p.method,amount:+p.amount,iid:p.installment_id}));
+  db.installments.filter(i=>i.paid_at&&!has.has(i.id)).forEach(i=>L.push({at:i.paid_at,method:i.method,amount:+i.paid_amount||+i.amount,iid:i.id}));
+  return L;
 }
-function pay(iid,sid){const i=db.installments.find(x=>x.id===iid);put('installments',{...i,paid_at:now(),paid_amount:+pv.value,method:pm.value});if(view==='cob'){closeM();vCob()}else{carne(sid);vCar()}}
+function parcSim(i,o){ // simula um recebimento: o abatimento tira primeiro multa/juros, depois a parcela; o dinheiro paga primeiro multa/juros
+  const d=due(i),a=r2(i.amount),f=r2(d.fee),D=Math.max(0,Math.min(r2(o.desc),r2(a+f)));
+  const dF=Math.min(D,f),dP=r2(D-dF),fLeft=r2(f-dF),pLeft=r2(a-dP),totalDue=r2(fLeft+pLeft);
+  const p=Math.max(0,Math.min(r2(o.valor),totalDue)),pF=Math.min(p,fLeft),pP=r2(p-pF),rest=Math.max(0,r2(pLeft-pP));
+  return{D,dF,dP,fee:f,total:r2(a+f),totalDue,p,pF,pP,rest,quit:rest<=0.004};
+}
+function parcAplica(i,o){
+  const m=parcSim(i,o),sale=db.sales.find(x=>x.id===i.sale_id)||{};
+  const row={...i,orig_amount:i.orig_amount??i.amount,amount:m.quit?0:m.rest,rebate:r2((+i.rebate||0)+m.dP),paid_total:r2((+i.paid_total||0)+m.p),fee_settled:r2((+i.fee_settled||0)+m.pF+m.dF)};
+  if(m.quit){row.paid_at=now();row.paid_amount=row.paid_total;row.method=o.meio}
+  put('installments',row,true);
+  const pp={id:uid(),receipt_id:o.rid,installment_id:i.id,sale_id:i.sale_id,customer_id:sale.customer_id||null,amount:m.p,fee:m.pF,principal:m.pP,discount:m.D,discount_fee:m.dF,rest:m.quit?0:m.rest,quit:m.quit,
+    method:o.meio||'',note:o.nota||'',reason:o.motivo||'',user_id:(me&&me.id)||null,user_name:(me&&me.name)||'',paid_at:now(),canceled_at:null};
+  put('parcel_payments',pp,true);
+  return{pp,m};
+}
+/* --- receber uma parcela (total, parcial ou com abatimento) --- */
+function payAsk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid);if(!i||i.paid_at||i.canceled_at)return alert('Esta parcela não está em aberto.');
+  const d=due(i);
+  modal(`<h2>Receber parcela ${i.number}</h2><p class="sm">Vencimento ${fmtD(i.due_date)}${d.dl>0?` · <b class="bad">${d.dl} dias de atraso</b>`:''}${+i.paid_total?` · já recebido ${R(i.paid_total)}`:''}</p>
+  <div class="prices"><div class="pr"><span>Em aberto da parcela</span><b>${R(i.amount)}</b></div>${d.fee?`<div class="pr"><span class="bad">Multa e juros</span><b>${R(d.fee)}</b></div>`:''}<div class="pr"><span>Total hoje</span><b>${R(d.v)}</b></div></div>
+  <div class="f"><div><label>Valor recebido</label><input id="pv" type="number" step="0.01" min="0" value="${pxToday(i,d)}" oninput="payPrev()"></div>
+  <div><label>Abatimento (desconto)</label><input id="pd" type="number" step="0.01" min="0" value="0" oninput="payPrev()"></div>
+  <div><label>Meio</label><select id="pm">${METHODS}</select></div>
+  <div class="w"><label>Motivo do abatimento (obrigatório se houver)</label><input id="pj" placeholder="Ex.: quitou adiantado"></div>
+  <div class="w"><label>Observação (opcional)</label><input id="pn"></div></div>
+  <p id="pp" class="sm" role="status"></p>
+  <button class="btn" onclick="payOk('${iid}','${sid}')">Confirmar recebimento</button>`);
+  payPrev(iid);window.__payI=iid;
+}
+function payPrev(iid){
+  iid=iid||window.__payI;const i=db.installments.find(x=>x.id===iid);if(!i||!$('#pv'))return;
+  const m=parcSim(i,{valor:$('#pv').value,desc:$('#pd').value});
+  $('#pp').innerHTML=`Recebe <b>${R(m.p)}</b>${m.D?` · abate <b>${R(m.D)}</b>`:''} · ${m.quit?'<b class="ok">parcela quitada</b>':`<b>fica em aberto ${R(m.rest)}</b>`}${r2($('#pv').value)>m.totalDue+0.004?` · <span class="bad">o valor passa do devido (${R(m.totalDue)})</span>`:''}`;
+}
+function payOk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid);if(!i||i.paid_at||i.canceled_at)return alert('Esta parcela não está em aberto.');
+  const v=r2($('#pv').value),dsc=r2($('#pd').value),m=parcSim(i,{valor:v,desc:dsc});
+  if(v<0||dsc<0)return alert('Os valores não podem ser negativos.');
+  if(v>m.totalDue+0.004)return alert('O valor recebido passa do devido ('+R(m.totalDue)+'). Corrija o valor.');
+  if(!(m.p+m.D>0))return alert('Informe o valor recebido ou o abatimento.');
+  if(m.D>0&&!$('#pj').value.trim())return alert('Informe o motivo do abatimento.');
+  if(m.D>0&&!confirm('Dar abatimento de '+R(m.D)+' nesta parcela? Fica registrado com o motivo.'))return;
+  const rid=uid();parcAplica(i,{valor:v,desc:dsc,meio:$('#pm').value,nota:$('#pn').value.trim(),motivo:$('#pj').value.trim(),rid});
+  save();sync();reciboPos(rid,sid);
+}
+/* --- receber várias parcelas de um cliente de uma vez (quitação) --- */
+function quitaOpen(cid){
+  const c=db.customers.find(x=>x.id===cid)||{};
+  const L=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===cid&&!s.canceled_at)).sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.number-b.number);
+  if(!L.length)return alert('Este cliente não tem parcelas em aberto.');
+  window.__qL=L.map(i=>i.id);window.__qDirty=false;
+  modal(`<h2>Receber várias parcelas · ${esc(c.name||'')}</h2><p class="sm">Marque as parcelas. O abatimento e o dinheiro são aplicados da parcela mais antiga para a mais nova. Se o valor for menor que o total, as mais antigas quitam primeiro e a última pode ficar com saldo.</p>
+  <div class="tw"><table><tr><th></th><th>Venc.</th><th>Parcela</th><th>Em aberto</th><th>Multa/juros</th><th>Total</th></tr>
+  ${L.map(i=>{const d=due(i),s=db.sales.find(x=>x.id===i.sale_id)||{},n=db.installments.filter(x=>x.sale_id===i.sale_id&&!x.canceled_at).length;
+  return`<tr><td><input type="checkbox" style="width:auto" class="qk" value="${i.id}" checked onchange="quitaCalc(true)" aria-label="Incluir parcela"></td><td class="${d.dl>0?'bad':''}">${fmtD(i.due_date)}</td><td>${i.number}/${n}${s.legacy?' <span class="tag">saldo anterior</span>':''}${s.legacy&&s.legacy_note?`<div class="sm">${esc(s.legacy_note)}</div>`:''}</td><td>${R(i.amount)}</td><td>${d.fee?R(d.fee):'—'}</td><td><b>${R(d.v)}</b></td></tr>`}).join('')}</table></div>
+  <div class="f"><div><label>Abatimento total (R$)</label><input id="qd" type="number" step="0.01" min="0" value="0" oninput="quitaCalc(true)"></div>
+  <div><label>Valor recebido (R$)</label><input id="qv" type="number" step="0.01" min="0" oninput="window.__qDirty=true;quitaCalc()"></div>
+  <div><label>Meio</label><select id="qm">${METHODS}</select></div>
+  <div class="w"><label>Motivo do abatimento (obrigatório se houver)</label><input id="qj" placeholder="Ex.: quitação de todo o carnê"></div>
+  <div class="w"><label>Observação (opcional)</label><input id="qn"></div></div>
+  <p id="qp" class="sm" role="status"></p><button class="btn" onclick="quitaOk('${cid}')">Confirmar recebimento</button>`);
+  quitaCalc(true);
+}
+const quitaSel=()=>[...document.querySelectorAll('.qk:checked')].map(x=>db.installments.find(i=>i.id===x.value)).filter(Boolean);
+function quitaCalc(reset){
+  const sel=quitaSel(),tot=r2(sel.reduce((a,i)=>a+due(i).v,0)),D=Math.min(r2($('#qd').value),tot);
+  if(reset&&!window.__qDirty)$('#qv').value=r2(tot-D).toFixed(2);
+  const V=r2($('#qv').value),falta=r2(tot-D-V);
+  $('#qp').innerHTML=`${sel.length} parcela(s) · total hoje <b>${R(tot)}</b>${D?` · abatimento <b>${R(D)}</b>`:''} · recebe <b>${R(V)}</b> · ${falta<=0.004?'<b class="ok">quita tudo</b>':`<b>fica em aberto ${R(falta)}</b>`}${falta<-0.004?' · <span class="bad">o valor passa do devido</span>':''}`;
+}
+function quitaOk(cid){
+  const sel=quitaSel().sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.number-b.number);if(!sel.length)return alert('Marque ao menos uma parcela.');
+  const tot=r2(sel.reduce((a,i)=>a+due(i).v,0)),D=r2($('#qd').value),V=r2($('#qv').value);
+  if(D<0||V<0)return alert('Os valores não podem ser negativos.');
+  if(D>tot+0.004)return alert('O abatimento passa do total.');
+  if(V>r2(tot-D)+0.004)return alert('O valor recebido passa do devido ('+R(r2(tot-D))+').');
+  if(!(V+D>0))return alert('Informe o valor recebido ou o abatimento.');
+  if(D>0&&!$('#qj').value.trim())return alert('Informe o motivo do abatimento.');
+  if(!confirm(`Registrar ${R(V)} recebidos${D?` e ${R(D)} de abatimento`:''} em ${sel.length} parcela(s)?`))return;
+  const rid=uid(),meio=$('#qm').value,nota=$('#qn').value.trim(),motivo=$('#qj').value.trim();let Dl=D,Vl=V;
+  sel.forEach(i=>{const d=due(i),di=Math.min(Dl,d.v),pi=Math.min(Vl,r2(d.v-di));Dl=r2(Dl-di);Vl=r2(Vl-pi);if(di+pi>0.004)parcAplica(i,{valor:pi,desc:di,meio,nota,motivo,rid})});
+  save();sync();reciboPos(rid,null);
+}
+/* --- recibo --- */
+function reciboDados(rid){
+  const L=db.parcel_payments.filter(p=>p.receipt_id===rid);if(!L.length)return null;
+  const iOf=p=>db.installments.find(x=>x.id===p.installment_id)||{};
+  L.sort((a,b)=>(iOf(a).due_date||'').localeCompare(iOf(b).due_date||'')||(iOf(a).number||0)-(iOf(b).number||0));
+  const c=db.customers.find(x=>x.id===L[0].customer_id)||{},rows=L.map(p=>{const i=iOf(p),s=db.sales.find(x=>x.id===p.sale_id)||{},of=db.installments.filter(x=>x.sale_id===p.sale_id&&!x.canceled_at).length;
+    return{n:i.number,of,due:i.due_date,pago:+p.amount,fee:+p.fee,disc:+p.discount,rest:+p.rest||0,quit:!!p.quit,meio:p.method,legacy:!!s.legacy,obs:s.legacy_note||''}});
+  const ab=owed(c.id||'x'),sum=k=>L.reduce((a,p)=>a+(+p[k]||0),0);
+  return{rid,L,c,rows,t0:L[0].paid_at,tot:sum('amount'),dsc:sum('discount'),fee:sum('fee'),meio:[...new Set(L.map(p=>p.method).filter(Boolean))].join(' + '),nota:L.find(p=>p.note)?.note||'',motivo:L.find(p=>p.reason)?.reason||'',
+    user:L[0].user_name||'',canc:L.every(p=>p.canceled_at),saldo:r2(ab.reduce((a,i)=>a+(+i.amount||0),0)),saldoN:ab.length};
+}
+function reciboHtml(rid,fmt){
+  const D=reciboDados(rid);if(!D)return'';const co=CO(),logo=new URL(logoIcon(),location.href).href,num=String(rid).slice(0,8).toUpperCase();
+  const ender=x=>x?(x.street?`${x.street}${x.number?', '+x.number:''}${x.district?' - '+x.district:''}${x.city?', '+x.city:''}${x.uf?'/'+x.uf:''}`:(x.address||'')):'';
+  if(fmt==='t'){
+    const g=CUPG(),narrow=+g.paper===58,fs=g.size==='g'?13:g.size==='p'?10.5:11.5,W=narrow?'48mm':'74mm',L=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
+    return`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Recibo ${num}</title><style>@page{size:${narrow?58:80}mm auto;margin:3mm}*{box-sizing:border-box}body{width:${W};margin:0 auto;font:${fs}px/1.3 'Courier New',monospace;color:#000}.c{text-align:center}.b{font-weight:bold}.r{display:flex;justify-content:space-between;gap:6px}.hr{border-top:1px dashed #000;margin:5px 0}.sm{font-size:${fs-1.5}px}img{max-width:34mm;max-height:20mm;display:block;margin:0 auto 3px}</style></head><body>
+    <div class="c"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div class="b" style="font-size:${fs+2.5}px">${esc(co.trade_name||co.legal_name||'MultMix')}</div>${co.cnpj?`<div class="sm">CNPJ ${esc(docBR(co.cnpj))}</div>`:''}${ender(co)?`<div class="sm">${esc(ender(co))}</div>`:''}${co.phone?`<div class="sm">Fone ${esc(co.phone)}</div>`:''}</div>
+    <div class="hr"></div><div class="c b">RECIBO DE PAGAMENTO</div>${D.canc?'<div class="c b">*** ESTORNADO ***</div>':''}${L('Nº',num)}${L('Data',dBR(D.t0))}
+    <div class="hr"></div><div class="b">CLIENTE</div><div>${esc(D.c.name||'')}</div>${D.c.cpf?`<div>CPF/CNPJ: ${esc(docBR(D.c.cpf))}</div>`:''}
+    <div class="hr"></div>${D.rows.map(r=>`<div>Parcela ${String(r.n).padStart(2,'0')}/${r.of} · venc. ${fmtD(r.due)}</div>${L('&nbsp;&nbsp;Recebido',R(r.pago))}${r.fee?L('&nbsp;&nbsp;(multa/juros)',R(r.fee)):''}${r.disc?L('&nbsp;&nbsp;Abatimento',R(r.disc)):''}<div>&nbsp;&nbsp;${r.quit?'<b>QUITADA</b>':'Resta '+R(r.rest)}</div>`).join('')}
+    <div class="hr"></div>${L('<b>TOTAL RECEBIDO</b>','<b>'+R(D.tot)+'</b>')}${D.dsc?L('Abatimento',R(D.dsc)):''}${L('Meio',esc(D.meio||'—'))}${D.nota?`<div class="sm">${esc(D.nota)}</div>`:''}
+    <div class="hr"></div>${L('Saldo em aberto',R(D.saldo))}<div class="sm">${D.saldoN} parcela(s) em aberto</div>${D.user?`<div class="sm">Recebido por ${esc(D.user)}</div>`:''}
+    <div class="hr"></div><div class="c sm">Recibo sem valor fiscal.<br>Obrigado!</div><div class="c sm">&nbsp;</div></body></html>`;
+  }
+  return`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Recibo ${num}</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font:14px/1.45 Arial,Helvetica,sans-serif;color:#111;margin:0}
+  .h{display:flex;gap:14px;align-items:center;border-bottom:3px solid #00468f;padding-bottom:10px}.h img{width:64px;height:64px;object-fit:contain}.h b{font-size:18px}.t{font-size:22px;font-weight:800;margin:16px 0 4px;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border-bottom:1px solid #ddd;padding:7px 8px;text-align:left}th{background:#f1f5fa;font-size:12px;text-transform:uppercase}td.n,th.n{text-align:right}.tot{font-size:18px;font-weight:800}.m{color:#555;font-size:12px}.st{display:inline-block;border:2px solid #b3261e;color:#b3261e;padding:2px 10px;font-weight:800;transform:rotate(-4deg)}.sg{margin-top:46px;display:flex;gap:40px}.sg div{flex:1;border-top:1px solid #111;padding-top:4px;text-align:center;font-size:12px}</style></head><body>
+  <div class="h"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div><b>${esc(co.trade_name||co.legal_name||'MultMix')}</b><div class="m">${co.cnpj?'CNPJ '+esc(docBR(co.cnpj))+' · ':''}${esc(ender(co))}${co.phone?' · Fone '+esc(co.phone):''}</div></div></div>
+  <div class="t">RECIBO DE PAGAMENTO ${D.canc?'<span class="st">ESTORNADO</span>':''}</div><div class="m">Nº ${num} · ${dBR(D.t0)}</div>
+  <p>Recebemos de <b>${esc(D.c.name||'')}</b>${D.c.cpf?` (CPF/CNPJ ${esc(docBR(D.c.cpf))})`:''} a quantia de <b>${R(D.tot)}</b>${D.meio?`, pago em <b>${esc(D.meio)}</b>`:''}, referente às parcelas abaixo.</p>
+  <table><tr><th>Parcela</th><th>Vencimento</th><th class="n">Recebido</th><th class="n">Multa/juros</th><th class="n">Abatimento</th><th>Situação</th></tr>
+  ${D.rows.map(r=>`<tr><td>${r.n}/${r.of}${r.legacy?' <span class="m">(saldo anterior'+(r.obs?': '+esc(r.obs):'')+')</span>':''}</td><td>${fmtD(r.due)}</td><td class="n">${R(r.pago)}</td><td class="n">${r.fee?R(r.fee):'—'}</td><td class="n">${r.disc?R(r.disc):'—'}</td><td>${r.quit?'<b>Quitada</b>':'Resta '+R(r.rest)}</td></tr>`).join('')}</table>
+  <div class="tot">Total recebido: ${R(D.tot)}</div>${D.dsc?`<div>Abatimento concedido: <b>${R(D.dsc)}</b>${D.motivo?' · '+esc(D.motivo):''}</div>`:''}${D.nota?`<div class="m">Obs.: ${esc(D.nota)}</div>`:''}
+  <p style="margin-top:14px">Saldo em aberto do cliente: <b>${R(D.saldo)}</b> (${D.saldoN} parcela(s)).</p>
+  <div class="sg"><div>${esc(D.user||'Recebido por')}</div><div>${esc(D.c.name||'Cliente')}</div></div><p class="m" style="margin-top:18px">Este recibo comprova o pagamento acima e não tem valor fiscal.</p></body></html>`;
+}
+function reciboTxt(rid){
+  const D=reciboDados(rid);if(!D)return'';const co=CO(),num=String(rid).slice(0,8).toUpperCase();
+  return`*${co.trade_name||co.legal_name||'MultMix'}* - Recibo nº ${num}\n${dBR(D.t0)}\n\nRecebemos de ${D.c.name||'cliente'} *${R(D.tot)}*${D.meio?' ('+D.meio+')':''}.\n`+
+   D.rows.map(r=>`- Parcela ${r.n}/${r.of} (venc. ${fmtD(r.due)}): ${r.quit?'quitada':'resta '+R(r.rest)}`).join('\n')+(D.dsc?`\nAbatimento concedido: ${R(D.dsc)}`:'')+`\n\nSaldo em aberto: ${R(D.saldo)} (${D.saldoN} parcela(s)).\nObrigado!`;
+}
+function printFrame(html){
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},300)};
+}
+const reciboPrint=(rid,fmt)=>fmt==='t'?cupomPrint(reciboHtml(rid,'t')):printFrame(reciboHtml(rid,'a'));
+function reciboWa(rid){const D=reciboDados(rid);if(!D)return;window.open('https://wa.me/'+waTel(D.c.phone)+'?text='+encodeURIComponent(reciboTxt(rid)),'_blank','noopener')}
+function reciboPos(rid,sid){ // depois de receber: oferece o recibo
+  const D=reciboDados(rid);if(!D)return closeM();
+  window.__recBack=sid;
+  modal(`<h2>Pagamento registrado ✔</h2><p><b>${esc(D.c.name||'')}</b> · recebido <b>${R(D.tot)}</b>${D.meio?' · '+esc(D.meio):''}${D.dsc?` · abatimento ${R(D.dsc)}`:''}</p>
+  <p class="sm">${D.rows.map(r=>`Parcela ${r.n}/${r.of}: ${r.quit?'<b class="ok">quitada</b>':'resta '+R(r.rest)}`).join('<br>')}</p>
+  <p class="sm">Saldo em aberto do cliente: <b>${R(D.saldo)}</b> (${D.saldoN} parcela(s)).</p>
+  <div class="row"><button class="btn" onclick="reciboPrint('${rid}','t')">Imprimir recibo (cupom)</button><button class="btn g" onclick="reciboPrint('${rid}','a')">Recibo A4 / PDF</button><button class="btn g" onclick="reciboWa('${rid}')">Enviar por WhatsApp</button></div>
+  <div class="bar"><button class="btn g" onclick="reciboFim()">Fechar</button></div>`);
+}
+function reciboFim(){const s=window.__recBack;closeM();if(view==='cob')vCob();else if(s){carne(s);if(view==='car')vCar()}else render()}
+function reciboEstorna(rid,sid){
+  const L=db.parcel_payments.filter(p=>p.receipt_id===rid&&!p.canceled_at);if(!L.length)return;
+  master(()=>{
+    if(!confirm(`Estornar este recebimento de ${R(L.reduce((a,p)=>a+(+p.amount||0),0))}? As parcelas voltam ao estado anterior e o valor sai do caixa. O recibo fica marcado como estornado.`))return;
+    const t=now();
+    L.forEach(p=>{const i=db.installments.find(x=>x.id===p.installment_id);
+      if(i){const dP=r2((+p.discount||0)-(+p.discount_fee||0)),am=r2((+i.amount||0)+(+p.principal||0)+dP);
+        const row={...i,amount:am,rebate:r2(Math.max(0,(+i.rebate||0)-dP)),paid_total:r2(Math.max(0,(+i.paid_total||0)-(+p.amount||0))),fee_settled:r2(Math.max(0,(+i.fee_settled||0)-(+p.fee||0)-(+p.discount_fee||0)))};
+        if(am>0.004){row.paid_at=null;row.paid_amount=null;row.method=null}
+        put('installments',row,true)}
+      put('parcel_payments',{...p,canceled_at:t,canceled_by:(me&&me.name)||''},true)});
+    save();sync();alert('Recebimento estornado.');if(sid)carne(sid);if(view==='cob')vCob();else if(view==='car')vCar();else if(!sid)closeM();
+  });
+}
+/* --- extrato do cliente --- */
+function extratoDados(cid){
+  const c=db.customers.find(x=>x.id===cid)||{},ab=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===cid&&!s.canceled_at)).sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.number-b.number);
+  const rows=ab.map(i=>{const d=due(i),s=db.sales.find(x=>x.id===i.sale_id)||{};return{n:i.number,of:db.installments.filter(x=>x.sale_id===i.sale_id&&!x.canceled_at).length,due:i.due_date,dl:d.dl,aberto:+i.amount,fee:d.fee,total:d.v,obs:s.legacy?('saldo anterior'+(s.legacy_note?': '+s.legacy_note:'')):'',pago:+i.paid_total||0}});
+  const pg=db.parcel_payments.filter(p=>p.customer_id===cid&&!p.canceled_at&&(+p.amount>0||+p.discount>0)).sort((a,b)=>String(b.paid_at).localeCompare(String(a.paid_at))),rc=[];
+  pg.forEach(p=>{let r=rc.find(x=>x.rid===p.receipt_id);if(!r){r={rid:p.receipt_id,at:p.paid_at,amount:0,disc:0,meio:p.method};rc.push(r)}r.amount+=+p.amount;r.disc+=+p.discount});
+  return{c,rows,tot:r2(rows.reduce((a,r)=>a+r.total,0)),aberto:r2(rows.reduce((a,r)=>a+r.aberto,0)),atraso:r2(rows.filter(r=>r.dl>0).reduce((a,r)=>a+r.total,0)),rc:rc.slice(0,15)};
+}
+function extratoHtml(cid){
+  const D=extratoDados(cid),co=CO(),logo=new URL(logoIcon(),location.href).href;
+  return`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Extrato ${esc(D.c.name||'')}</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font:13px/1.45 Arial,Helvetica,sans-serif;color:#111;margin:0}.h{display:flex;gap:14px;align-items:center;border-bottom:3px solid #00468f;padding-bottom:10px}.h img{width:56px;height:56px;object-fit:contain}.h b{font-size:17px}
+  table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border-bottom:1px solid #ddd;padding:6px 7px;text-align:left}th{background:#f1f5fa;font-size:11px;text-transform:uppercase}.n{text-align:right}.late{color:#b3261e;font-weight:700}.m{color:#555;font-size:11.5px}.box{display:flex;gap:12px;margin:10px 0}.box div{flex:1;border:1px solid #ccd6e4;border-radius:8px;padding:8px 10px}.box b{display:block;font-size:17px}</style></head><body>
+  <div class="h"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div><b>${esc(co.trade_name||co.legal_name||'MultMix')}</b><div class="m">${co.cnpj?'CNPJ '+esc(docBR(co.cnpj))+' · ':''}${co.phone?'Fone '+esc(co.phone):''}</div></div></div>
+  <h2 style="margin:14px 0 2px">Extrato do cliente</h2><div><b>${esc(D.c.name||'')}</b>${D.c.cpf?' · '+esc(docBR(D.c.cpf)):''}${D.c.phone?' · '+esc(D.c.phone):''}</div><div class="m">Emitido em ${dBR(now())}</div>
+  <div class="box"><div>Em aberto (parcelas)<b>${R(D.aberto)}</b></div><div>Em atraso (com multa e juros)<b>${R(D.atraso)}</b></div><div>Total hoje<b>${R(D.tot)}</b></div></div>
+  ${D.rows.length?`<table><tr><th>Parcela</th><th>Vencimento</th><th class="n">Em aberto</th><th class="n">Multa/juros</th><th class="n">Total hoje</th></tr>${D.rows.map(r=>`<tr><td>${r.n}/${r.of}${r.obs?`<div class="m">${esc(r.obs)}</div>`:''}${r.pago?`<div class="m">já pago ${R(r.pago)}</div>`:''}</td><td class="${r.dl>0?'late':''}">${fmtD(r.due)}${r.dl>0?`<div class="m late">${r.dl} dias de atraso</div>`:''}</td><td class="n">${R(r.aberto)}</td><td class="n">${r.fee?R(r.fee):'—'}</td><td class="n"><b>${R(r.total)}</b></td></tr>`).join('')}</table>`:'<p><b>Nenhuma parcela em aberto.</b></p>'}
+  ${D.rc.length?`<h3>Últimos pagamentos</h3><table><tr><th>Data</th><th>Meio</th><th class="n">Recebido</th><th class="n">Abatimento</th><th>Recibo</th></tr>${D.rc.map(r=>`<tr><td>${dBR(r.at)}</td><td>${esc(r.meio||'')}</td><td class="n">${R(r.amount)}</td><td class="n">${r.disc?R(r.disc):'—'}</td><td>${String(r.rid).slice(0,8).toUpperCase()}</td></tr>`).join('')}</table>`:''}
+  <p class="m">Valores de multa e juros calculados até hoje (multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês). Documento sem valor fiscal.</p></body></html>`;
+}
+function extratoTxt(cid){
+  const D=extratoDados(cid),co=CO();
+  return`*${co.trade_name||co.legal_name||'MultMix'}* - Extrato de ${D.c.name||'cliente'}\n${fmtD(now())}\n\n`+(D.rows.length?D.rows.map(r=>`- Parcela ${r.n}/${r.of} venc. ${fmtD(r.due)}: ${R(r.total)}${r.dl>0?` (${r.dl} dias de atraso)`:''}`).join('\n')+`\n\n*Total hoje: ${R(D.tot)}*${D.atraso?`\nEm atraso: ${R(D.atraso)}`:''}`:'Nenhuma parcela em aberto. Obrigado!');
+}
+function extratoOpen(cid){
+  const c=db.customers.find(x=>x.id===cid)||{};
+  modal(`<h2>Extrato · ${esc(c.name||'')}</h2><iframe id="ex_fr" style="width:100%;height:380px;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>
+  <div class="row"><button class="btn" onclick="printFrame(extratoHtml('${cid}'))">Imprimir / salvar PDF</button><button class="btn g" onclick="window.open('https://wa.me/${waTel(c.phone)}?text='+encodeURIComponent(extratoTxt('${cid}')),'_blank','noopener')">Enviar por WhatsApp</button>${owed(cid).length?`<button class="btn g" onclick="quitaOpen('${cid}')">Receber parcelas</button>`:''}</div>`);
+  $('#ex_fr').srcdoc=extratoHtml(cid);
+}
 
 /* ========= Pedidos do catálogo ========= */
 function vPed(){
@@ -2961,7 +3159,7 @@ function vIni(){
   if(window.__syncing&&!db.sales.length&&!db.products.length){$('#app').innerHTML=skel(7);return}
   const today=ld(now()),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
   const vd=SV().filter(s=>!s.canceled_at&&ld(s.created_at)===today),vm=SV().filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===today.slice(0,7));
-  const rec=db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===today),open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&(db.sales.find(x=>x.id===i.sale_id)||{}).canceled_at==null);
+  const rec=recebs().filter(r=>ld(r.at)===today),open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&(db.sales.find(x=>x.id===i.sale_id)||{}).canceled_at==null);
   const late=open.filter(i=>i.due_date.slice(0,10)<today),hoje=open.filter(i=>i.due_date.slice(0,10)===today),pg=(db.payables||[]).filter(p=>!p.paid_at&&!p.canceled_at),pl=pg.filter(p=>String(p.due_date).slice(0,10)<today),p7=pg.filter(p=>{const n=dleft(p.due_date);return n>=0&&n<=7});
   const lo=lowStock();
   const pendF=SV().filter(s=>!s.canceled_at&&s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'),prontas=pendF.filter(s=>!fisCheck(s).length).length,falta=pendF.length-prontas;
@@ -2979,7 +3177,7 @@ function vIni(){
   <div class="tiles">
   ${tile('Vendas hoje',R(sum(vd,s=>+s.total)),vd.length+' venda(s)'+(vd.length?' · ticket médio '+R(ticket):''),'cx')}
   ${tile('Vendas no mês',R(sum(vm,s=>+s.total)),vm.length+' venda(s)')}
-  ${tile('Recebido hoje (parcelas)',R(sum(rec,i=>+i.paid_amount||+i.amount)),rec.length+' parcela(s)','cx')}
+  ${tile('Recebido hoje (parcelas)',R(sum(rec,r=>r.amount)),rec.length+' recebimento(s)','cx')}
   ${tile('Parcelas em atraso',R(sum(late,i=>due(i).v)),late.length+' parcela(s)','cob',late.length)}
   ${tile('Contas a pagar vencidas',R(sum(pl,p=>+p.amount)),pl.length+' conta(s)','pag',pl.length)}
   ${tile('Contas a pagar em 7 dias',R(sum(p7,p=>+p.amount)),p7.length+' conta(s)','pag')}
@@ -3007,7 +3205,7 @@ function vCob(){
   ${list.length?`<div style="overflow:auto"><table><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor hoje</th><th></th></tr>
   ${list.map(r=>`<tr><td>${esc(r.c.name||'Cliente')}<div class="sm">${esc(r.c.phone||'sem telefone')}</div></td><td>${r.i.number}/${r.tot}</td>
   <td class="${r.n<0?'bad':''}">${fmtD(r.i.due_date)}<div class="sm">${dtxt(r.n)}</div></td><td><b>${R(r.d.v)}</b>${r.d.fee?`<div class="sm">com R$ ${(+r.d.fee).toFixed(2).replace('.',',')} de encargos</div>`:''}</td>
-  <td style="white-space:nowrap"><button class="btn s" onclick="pixAtual('${r.i.id}','${r.sl.id}')">Cobrar</button> <button class="btn g s" onclick="payAsk('${r.i.id}','${r.sl.id}')">Receber</button> <button class="btn g s" onclick="carne('${r.sl.id}')">Carnê</button></td></tr>`).join('')}</table></div>`
+  <td style="white-space:nowrap"><button class="btn s" onclick="pixAtual('${r.i.id}','${r.sl.id}')">Cobrar</button> <button class="btn g s" onclick="payAsk('${r.i.id}','${r.sl.id}')">Receber</button> <button class="btn g s" onclick="carne('${r.sl.id}')">Carnê</button> <button class="btn g s" onclick="quitaOpen('${r.c.id}')">Receber várias</button> <button class="btn g s" onclick="extratoOpen('${r.c.id}')">Extrato</button></td></tr>`).join('')}</table></div>`
   :empty('Nenhuma parcela nesta lista 🎉','Tudo em dia por aqui.')}`;
 }
 
@@ -3063,7 +3261,7 @@ function vCx(){
   const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
   const sd=SV().filter(s=>day(s.created_at)),sdOk=sd.filter(s=>!s.canceled_at),devs=SV().filter(s=>s.canceled_at&&day(s.canceled_at)&&+s.refund_amount>0);
   sd.forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
-  db.installments.filter(i=>day(i.paid_at)).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+  recebs().filter(r=>day(r.at)).forEach(r=>add(r.method||'Não informado',r.amount));
   devs.forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount)); // devoluções saem do caixa no dia do cancelamento
   const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
   const open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
@@ -3276,7 +3474,7 @@ function cupomHtml(sid,cfg){
   ${(s.items||[]).map((i,n)=>`<div class="it"><div>${String(n+1).padStart(2,'0')} ${esc(i.name)}</div>${cfg.unit?L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN')+' x '+R(i.price),'<b>'+R(i.qty*i.price)+'</b>'):L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN'),'<b>'+R(i.qty*i.price)+'</b>')}</div>`).join('')}
   <div class="hr"></div>
   ${sub!==tot?L('Subtotal',R(sub)):''}${L('<b class="big">TOTAL</b>','<b class="big">'+R(tot)+'</b>')}${L('Pagamento',esc(pay))}
-  ${s.pay_type==='crediario'?`${+s.entry>0?L('Entrada',R(s.entry)):''}${L('Restante',R(tot-(+s.entry||0)))}${cfg.inst?`<div class="hr"></div><div class="b">PARCELAS (${ins.length}x)</div>${ins.map(i=>L(String(i.number).padStart(2,'0')+'/'+ins.length+'  '+fmtD(i.due_date),R(i.amount))).join('')}`:''}`:''}
+  ${s.pay_type==='crediario'?`${+s.entry>0?L('Entrada',R(s.entry)):''}${L('Restante',R(tot-(+s.entry||0)))}${cfg.inst?`<div class="hr"></div><div class="b">PARCELAS (${ins.length}x)</div>${ins.map(i=>L(String(i.number).padStart(2,'0')+'/'+ins.length+'  '+fmtD(i.due_date),R(origAmt(i)))).join('')}`:''}`:''}
   ${cfg.nf&&s.fiscal_status==='emitida'&&s.fiscal_number?`<div class="hr"></div><div class="sm c">Nota fiscal emitida: nº ${esc(s.fiscal_number)}${s.fiscal_series?' série '+esc(s.fiscal_series):''}</div>`:''}
   ${cfg.aviso?`<div class="nf">CUPOM NÃO FISCAL<br><span class="sm">SEM VALOR FISCAL · CONTROLE INTERNO<br>A nota fiscal é emitida separadamente.</span></div>`:'<div class="hr"></div>'}
   ${msg?`<div class="c b" style="margin-top:6px">${esc(msg)}</div>`:''}${cfg.wa&&(co.whatsapp||co.phone)?`<div class="c sm">WhatsApp ${esc(co.whatsapp||co.phone)}</div>`:''}
@@ -3417,7 +3615,7 @@ function relBuild(){
       const day=ld(d.toISOString()),by={},add=(m,v)=>by[m]=(by[m]||0)+v;
       const sd=SV().filter(s=>!s.canceled_at&&ld(s.created_at)===day);
       SV().filter(s=>ld(s.created_at)===day).forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
-      db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===day).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
+      recebs().filter(r=>ld(r.at)===day).forEach(r=>add(r.method||'Não informado',r.amount));
       SV().filter(s=>s.canceled_at&&ld(s.canceled_at)===day&&+s.refund_amount>0).forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount));
       const tot=Object.values(by).reduce((a,b)=>a+b,0);for(const m in by)tm[m]=(tm[m]||0)+by[m];
       if(sd.length||tot)rows.push([fmtD(day),sd.length,Object.entries(by).map(([m,v])=>m+' '+R(v)).join(' · ')||'—',R(tot),tot]);
@@ -3648,8 +3846,8 @@ function rtcSave(){
 
 
 /* ========= Restaurar backup ========= */
-const BK_ORDER=['customers','company','company_private','sales','installments','payables','orders','products'];
-const BK_N={customers:'Clientes e fornecedores',company:'Dados da empresa',company_private:'Dados privados (Pix, token IBPT)',sales:'Vendas',installments:'Parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',products:'Produtos'};
+const BK_ORDER=['customers','company','company_private','sales','installments','parcel_payments','payables','orders','products'];
+const BK_N={customers:'Clientes e fornecedores',company:'Dados da empresa',company_private:'Dados privados (Pix, token IBPT)',sales:'Vendas',installments:'Parcelas',parcel_payments:'Recebimentos de parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',products:'Produtos'};
 const bkCanon=v=>Array.isArray(v)?v.map(bkCanon):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==null&&v[k]!==undefined).map(k=>[k,bkCanon(v[k])])):v;
 function bkDiff(t,c,r){const a={...c},b={...r};delete a.updated_at;delete b.updated_at;if(t==='products'){delete a.stock;delete b.stock}return JSON.stringify(bkCanon(a))!==JSON.stringify(bkCanon(b))}
 function bkPlan(o,mode){

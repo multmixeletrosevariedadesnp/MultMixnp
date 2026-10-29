@@ -1,5 +1,5 @@
 {
- "version": "1.34.0",
+ "version": "1.35.0",
  "date": "2026-10-28",
- "notes": "Fiado antigo (saldo anterior): lançar ou importar dívidas de antes do sistema sem baixar estoque, sem nota e fora do faturamento."
+ "notes": "Crediário: pagamento parcial, abatimento com motivo, recibo (cupom, A4/PDF, WhatsApp), receber várias parcelas e extrato do cliente."
 }
