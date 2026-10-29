@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.33.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.33.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -365,7 +365,7 @@ async function doSync(){
     save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){setSync('offline · '+db.outbox.length+' pendente(s)')}
   render();
-  try{loadPev().then(()=>notifCheck());certCheck();ibptMeta().then(()=>notifCheck());ibptAuto()}catch(e){}
+  try{loadPev().then(()=>notifCheck());certCheck();ibptMeta().then(()=>{notifCheck();fiscHealth()});ibptAuto()}catch(e){}
 }
 const setSync=t=>$('#sync').textContent=t;
 addEventListener('online',sync);
@@ -1627,13 +1627,34 @@ function margCalc(cost,price){cost=+cost||0;price=+price||0;if(!(cost>0)||!(pric
 const pc1=n=>n.toFixed(1).replace('.',',')+'%';
 function margTxt(cost,price){const m=margCalc(cost,price);return m?`<span class="${m.lucro<0?'bad':''}">${pc1(m.mk)}</span><div class="sm">lucro ${R(m.lucro)}</div>`:'<span class="sm">sem custo</span>'}
 function prodRows(){
-  const k=norm(pq),l=db.products.filter(p=>!pq.trim()||norm([p.name,p.category,p.ncm].join(' ')).includes(k));
+  const k=norm(pq),l=db.products.filter(p=>(!pq.trim()||norm([p.name,p.category,p.ncm].join(' ')).includes(k))&&(!pcat||(pcat==='__sem'?!String(p.category||'').trim():String(p.category||'').trim()===pcat)));
   const n=$('#pcount');if(n)n.textContent=pq.trim()?l.length+' de '+db.products.length+' produtos':db.products.length+' produtos';
   return l.length?l.map(p=>`<tr><td>${esc(p.name)}${promoPct(p)?` <b class="bdg" style="background:var(--bad);color:#fff">-${promoPct(p)}%</b>`:''}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${margTxt(p.cost,p.price_cash)}</td><td><span class="stk ${(+p.stock||0)<=0?'bad':(+p.stock||0)<=stockMin()?'warn':'ok'}">${+p.stock||0}</span></td>
   <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join(''):`<tr><td colspan="7">${window.__syncing&&!db.products.length?skel(6):empty('Nenhum produto encontrado',pq.trim()?'Tente outro termo.':'Cadastre o primeiro produto ou importe uma planilha.')}</td></tr>`;
 }
+let pcat='';
+const cats=()=>[...new Set(db.products.map(p=>String(p.category||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+function catOpen(){
+  const n={};db.products.forEach(p=>{const c=String(p.category||'').trim()||'';n[c]=(n[c]||0)+1});
+  const L=cats();
+  modal(`<h2>Categorias</h2><p class="sm">Renomear altera todos os produtos da categoria. Se o novo nome já existir, as duas se unem.</p>
+  ${L.length?L.map((c,i)=>`<div class="bar" style="align-items:center"><input id="cr${i}" value="${esc(c)}" style="flex:1"><span class="sm">${n[c]} produto(s)</span><button class="btn g s" onclick="catRen(${i})">Salvar</button><button class="btn g s" onclick="catDel(${i})">Remover</button></div>`).join(''):empty('Nenhuma categoria ainda','Digite uma categoria ao cadastrar um produto.')}
+  ${n['']?`<p class="sm">${n['']} produto(s) sem categoria.</p>`:''}
+  <div class="bar"><button class="btn g" onclick="closeM()">Fechar</button></div>`);
+}
+function catRen(i){
+  const old=cats()[i],nv=$('#cr'+i).value.trim();if(!nv||nv===old)return;
+  const l=db.products.filter(p=>String(p.category||'').trim()===old);
+  if(!confirm(`Trocar "${old}" por "${nv}" em ${l.length} produto(s)?`))return;
+  l.forEach(p=>put('products',{...p,category:nv},true));save();sync();catOpen();if(view==='prod')vProd();
+}
+function catDel(i){
+  const old=cats()[i],l=db.products.filter(p=>String(p.category||'').trim()===old);
+  if(!confirm(`Remover a categoria "${old}"? Os ${l.length} produto(s) ficam sem categoria (não são apagados).`))return;
+  l.forEach(p=>put('products',{...p,category:''},true));save();sync();catOpen();if(view==='prod')vProd();
+}
 function vProd(){
-  $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar produto, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
+  $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar produto, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><select id="pcatf" style="max-width:190px" onchange="pcat=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${cats().map(c=>`<option value="${esc(c)}" ${pcat===c?'selected':''}>${esc(c)}</option>`).join('')}<option value="__sem" ${pcat==='__sem'?'selected':''}>Sem categoria</option></select><button class="btn g" onclick="catOpen()">Categorias</button><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
   <div class="tw"><table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Margem</th><th>Estoque</th><th></th></tr><tbody id="ptb">${prodRows()}</tbody></table></div>`;
 }
 /* ========= Importar produtos (xlsx / csv) ========= */
@@ -1802,7 +1823,7 @@ function prodForm(id){
   const v=(k)=>esc(p[k]??'');
   modal(`<h2>${id?'Editar':'Novo'} produto</h2><p class="sm">Cartão e carnê são opcionais: o catálogo mostra só as formas de pagamento que você preencher.</p><div class="f">
    <div class="w"><label>Nome</label><input id="f_name" value="${v('name')}"></div>
-   <div><label>Categoria</label><input id="f_category" value="${v('category')}"></div>
+   <div><label>Categoria (escolha ou digite uma nova)</label><input id="f_category" list="catlist" autocomplete="off" value="${v('category')}"><datalist id="catlist">${cats().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
    <div><label>Estoque</label><input id="f_stock" type="number" value="${v('stock')}"></div>
    <div><label>Preço de custo (R$)</label><input id="f_cost" type="number" step="0.01" min="0" value="${v('cost')}" oninput="prodMarg()" placeholder="vem da nota (XML)"></div>
    <div><label>Margem desejada sobre o custo (%) <span class="sm">preenche o à vista</span></label><input id="f_mk" type="number" step="0.1" min="0" oninput="prodMk()" placeholder="ex.: 40"></div>
@@ -2496,6 +2517,12 @@ function notifs(){
   if(ADM()){const n=dfePend();if(n)out.push({id:'n'+ld(now())+':'+n,kind:'nota',days:0,title:`${n} nota${n>1?'s':''} de compra recebida${n>1?'s':''}`,sub:'Notas emitidas contra o CNPJ da loja, aguardando entrada no estoque',amount:0})}
   if(ADM()){const lo=lowStock();if(lo.length)out.push({id:'e'+ld(now()),kind:'estoque',days:0,title:`${lo.length} produto${lo.length>1?'s':''} com estoque baixo`,sub:lo.slice(0,3).map(x=>x.name+' ('+(+x.stock||0)+')').join(', ')+(lo.length>3?'…':''),amount:0})}
   if(ADM()&&CERT&&((CERT.ok&&CERT.dias<=30)||CERT.ok===false&&CERT.erro)){out.push(CERT.ok?{id:'cert'+ld(now()),kind:'cert',days:CERT.vencido?-1:CERT.dias,title:CERT.vencido?'Certificado digital VENCIDO':'Certificado digital vence em '+CERT.dias+' dia'+(CERT.dias===1?'':'s'),sub:'Válido até '+fmtD(CERT.ate)+'. Renove com a certificadora e troque no Render (CERT_PFX_BASE64 e CERT_PASSWORD).',amount:0}:{id:'cert'+ld(now()),kind:'cert',days:-1,title:'Não foi possível ler o certificado digital',sub:CERT.erro,amount:0})}
+  if(ADM()&&FH&&Date.now()-FH.t<6*3600e3){
+    const hj=ld(now())+':'+Math.floor(new Date().getHours()/3);
+    if(FH.api===false)out.push({id:'fapi'+hj,kind:'fiscal',days:-1,title:'API fiscal fora do ar',sub:'Não dá para emitir notas agora. '+(FH.motivo||'')+' Se for o servidor "dormindo", espere 1 minuto e confira o Fiscal.',amount:0});
+    else if(FH.sefaz===false)out.push({id:'fsef'+hj,kind:'fiscal',days:-1,title:'SEFAZ fora do ar',sub:'As vendas continuam normais; emita as notas mais tarde. '+(FH.motivo||''),amount:0});
+    if(FH.ibpt===false)out.push({id:'fib'+ld(now()),kind:'ibpt',days:-1,title:'Consulta do IBPT falhou',sub:(FH.ibptMsg||'')+' Confira o token em Empresa ou mude a fonte para a tabela.',amount:0});
+  }
   if(ADM()&&IBM&&IBM.v&&ibptDias()!==null&&ibptDias()<=10){const d=ibptDias();out.push({id:'ibpt'+IBM.v.versao,kind:'ibpt',days:d,title:d<0?'Tabela do IBPT vencida':'Tabela do IBPT vence em '+d+' dia'+(d===1?'':'s'),sub:'Baixe a nova no site do IBPT e envie em Fiscal → Tabela IBPT. A nota continua saindo, com percentuais antigos.',amount:0})}
   if(ADM()&&IBM&&IBM.v&&IBM.v.carregado_por==='repositório'&&Date.now()-new Date(IBM.v.carregado_em)<3*864e5)out.push({id:'ibptok'+IBM.v.versao,kind:'ibpt',days:1,title:'Tabela do IBPT atualizada: versão '+IBM.v.versao,sub:'Carregada do repositório. Vale até '+(IBM.v.vigencia_fim?fmtD(IBM.v.vigencia_fim):'?')+'.',amount:0});
   if(ADM())pevNew().slice(0,10).forEach(e=>out.push({id:'ev'+e.id,kind:'pdv',days:0,title:(EVN[e.kind]||'Aviso do PDV')+' · '+(e.seller_name||''),sub:e.detail||'',amount:0}));
@@ -2521,7 +2548,7 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado ou tabela IBPT':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado ou tabela IBPT':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+(n.amount?' · '+R(n.amount):'')).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
@@ -2530,8 +2557,8 @@ function notifCheck(){
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='cert'||n.kind==='ibpt'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt'].includes(n.kind));
+    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt','fiscal'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt','fiscal'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
@@ -2554,6 +2581,7 @@ function notifPerm(el){
   }
 }
 setInterval(()=>{try{notifCheck()}catch(e){}},60000);
+setInterval(()=>{try{fiscHealth()}catch(e){}},5*60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)try{notifCheck()}catch(e){}});
 setTimeout(()=>{try{notifCheck()}catch(e){}},4000);
 
@@ -3442,6 +3470,22 @@ function balCfSave(){
 }
 /* validade do certificado digital (lida na API fiscal; avisa 30 dias antes) */
 let CERT=null;try{CERT=JSON.parse(localStorage.mm_cert||'null')}catch(e){}
+let FH=null;try{FH=JSON.parse(localStorage.mm_fh||'null')}catch(e){}
+/* saúde da emissão: API fiscal, SEFAZ e consulta do IBPT (só se a fonte usa a API do IBPT) */
+async function fiscHealth(force){
+  if(!sb||!ADM()||navigator.onLine===false)return;
+  if(!force&&FH&&Date.now()-FH.t<30*60e3)return;
+  const r={t:Date.now(),api:null,sefaz:null,motivo:'',ibpt:null,ibptMsg:''};
+  try{const d=await fisCall({action:'status'});r.api=!!d.api;r.sefaz=d.api?!!d.sefaz_ok:null;r.motivo=d.motivo||d.erro||'';if(d.api)window.__amb=d.ambiente}
+  catch(e){r.api=false;r.motivo=e.message}
+  const modo=IBM&&IBM.modo;
+  if(r.api&&(modo==='api'||modo==='auto')&&(!FH||!FH.ibptT||Date.now()-FH.ibptT>6*3600e3||force)){
+    r.ibptT=Date.now();
+    try{const d=await fisCall({action:'ibpt',ncm:'84796000'});r.ibpt=!!d.ok;r.ibptMsg=d.ok?'':(d.erro||'sem resposta')}catch(e){r.ibpt=false;r.ibptMsg=e.message}
+  }else if(FH){r.ibpt=FH.ibpt;r.ibptMsg=FH.ibptMsg;r.ibptT=FH.ibptT}
+  FH=r;try{localStorage.mm_fh=JSON.stringify(r)}catch(e){}
+  try{notifCheck()}catch(e){}
+}
 async function certCheck(force){
   if(!sb||!ADM()||navigator.onLine===false)return;
   if(!force&&CERT&&Date.now()-CERT.t<12*3600e3)return;
