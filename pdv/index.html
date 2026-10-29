@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.1.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.1.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -533,12 +533,27 @@ async function finish(){
     cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
     cart=[];saleDisc={mode:'val',val:0};window.lastRec=rec;
     modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':s_m.value)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
-    <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
+    <div class="f"><div class="w"><label>WhatsApp do cliente (para enviar o recibo)</label><input id="wa_n" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((rec.customer&&rec.customer.phone)||'')}"></div></div>
+    <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="reciboWa()">Enviar recibo no WhatsApp</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
     sync();
   }finally{finishing=false}
 }
 function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
 function closeM(){scanStop();$('#modal').classList.remove('open')}
+/* ----- recibo da venda pelo WhatsApp (texto; não vale como nota fiscal) ----- */
+function reciboTxt(r){
+  const c=CO||{},dt=new Date(r.created_at),R2=v=>R(v);
+  const pag=r.pay_type==='crediario'?`Carnê ${r.n_inst}x de ${R2(Math.round((r.total-(+r.entry||0))/r.n_inst*100)/100)}${+r.entry>0?' (entrada '+R2(r.entry)+')':''}${r.first_due?'\n1º vencimento: '+r.first_due.split('-').reverse().join('/'):''}`:r.method;
+  return`*${c.trade_name||c.legal_name||'MultMix'}*\nRecibo da venda ${String(r.id).slice(0,8).toUpperCase()}\n${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}\n\n`+
+    r.lines.map(l=>`${l.qty}x ${l.name} - ${R2(l.qty*l.price)}`).join('\n')+(r.disc>0.004?`\nDesconto: -${R2(r.disc)}`:'')+`\n\n*Total: ${R2(r.total)}*\nPagamento: ${pag}\n\nObrigado pela preferência!\n_Recibo para controle, sem valor fiscal. A nota fiscal é emitida separadamente._`;
+}
+function reciboWa(){
+  const r=window.lastRec;if(!r)return;
+  let d=String(($('#wa_n')&&$('#wa_n').value)||'').replace(/\D/g,'');
+  if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');
+  if(d.length<=11)d='55'+d;
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(reciboTxt(r)),'_blank','noopener');
+}
 /* ----- cupom não fiscal (só controle, não vale como nota) ----- */
 function cupomPrint(){
   const r=window.lastRec;if(!r)return;const c=CO||{},dt=new Date(r.created_at);
