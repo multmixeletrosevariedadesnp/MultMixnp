@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.31.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.32.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -131,6 +131,56 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 .pbar>div{display:flex;flex-direction:column}.pbar b{font-size:17px}
 @media(max-width:899px){main{padding-bottom:86px}.citem{grid-template-columns:40px minmax(0,1fr) auto 26px}.citem .lt{grid-column:2;text-align:left;grid-row:2}.citem .stp{grid-row:2;grid-column:3}.citem .rx{grid-row:1;grid-column:4}}
 body:not(.in) .pbar{display:none}
+/* ===== Layouts do menu (por aparelho: menu > Conta > Layout do menu) ===== */
+.ng,.nd{display:contents}
+nav button{position:relative}
+nav .gconta>.grp{display:none!important}
+@media(min-width:900px){
+ /* SUPERIOR: barra no topo com menus que abrem */
+ body.in.L-top{display:block}
+ body.in.L-top header{position:sticky;top:0;height:auto;align-self:auto;flex-direction:row;align-items:center;flex-wrap:nowrap;padding:8px 18px;gap:14px;overflow:visible;z-index:20}
+ .L-top .brand{padding:0}
+ .L-top nav{flex-direction:row;flex-wrap:nowrap;overflow:visible;width:auto;flex:1;gap:2px;align-items:center}
+ .L-top nav>button{width:auto;padding:9px 12px;border-radius:10px}
+ .L-top .ng{display:block;position:relative}
+ .L-top .ng>.grp{display:flex!important;align-items:center;gap:6px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;opacity:.95;cursor:pointer;color:#fff}
+ .L-top .ng>.grp::after{content:"▾";font-size:11px;opacity:.8}
+ .L-top .ng.open>.grp,.L-top .ng>.grp:hover{background:rgba(255,255,255,.16)}
+ .L-top .ng:has(button.on)>.grp{box-shadow:inset 0 -3px 0 var(--tag)}
+ .L-top .nd{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:230px;flex-direction:column;background:#002e68;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:30}
+ .L-top .ng.open>.nd{display:flex}
+ .L-top .nd button{width:100%;text-align:left;border-radius:8px}
+ .L-top nav button.on{box-shadow:inset 0 -3px 0 var(--tag)}
+ .L-top .nd button.on{box-shadow:inset 3px 0 0 var(--tag)}
+ .L-top nav .out{margin:0 0 0 auto;border:0;border-radius:10px}
+ .L-top .sync{margin:0;padding:0}
+ /* LATERAL COMPACTA: só ícones, abre ao passar o mouse */
+ body.in.L-mini{display:block;padding-left:64px}
+ body.in.L-mini header{position:fixed;left:0;top:0;bottom:0;width:64px;height:100vh;overflow-x:hidden;overflow-y:auto;z-index:25;transition:width .18s;padding:14px 8px}
+ body.in.L-mini header:is(:hover,:focus-within){width:240px;box-shadow:6px 0 30px rgba(0,0,0,.35)}
+ .L-mini .brand{padding:2px 4px 14px}
+ .L-mini .brand h1,.L-mini .sync,.L-mini .appv,.L-mini .ibtn,.L-mini nav .grp{display:none}
+ .L-mini header:is(:hover,:focus-within) .brand h1,.L-mini header:is(:hover,:focus-within) .sync{display:block}
+ .L-mini header:is(:hover,:focus-within) nav .grp{display:block}
+ .L-mini nav button{padding:10px 13px}
+ .L-mini nav button span{font-size:0}
+ .L-mini nav button .bdg{position:absolute;top:3px;right:5px;font-size:10px;padding:0 5px;margin:0}
+ .L-mini header:is(:hover,:focus-within) nav button span{font-size:inherit}
+ .L-mini header:is(:hover,:focus-within) nav button .bdg{position:static;font-size:12px;padding:0 7px;margin-left:2px}
+}
+/* BARRA INFERIOR: abas embaixo, estilo aplicativo (qualquer largura) */
+body.in.L-bot{display:block;padding-bottom:78px}
+body.in.L-bot header{position:sticky;top:0;height:auto;align-self:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 18px;gap:14px;overflow:visible}
+.L-bot .brand{padding:0}
+.L-bot .sync{margin:0 0 0 auto;padding:0}
+.L-bot nav{position:fixed;left:0;right:0;bottom:0;z-index:25;order:0;width:100%;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#002e68,var(--brand));box-shadow:0 -6px 24px rgba(0,0,0,.3)}
+.L-bot nav button{flex-direction:column;justify-content:center;gap:2px;font-size:11px;padding:6px 10px;min-width:68px;width:auto;text-align:center;border-radius:10px}
+.L-bot nav button{flex:0 0 auto}
+.L-bot nav button span{max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.L-bot nav .grp{display:none!important}
+.L-bot nav button.on{background:rgba(255,255,255,.2);box-shadow:none}
+.L-bot nav .out{margin:0;border:0;border-radius:10px}
+.L-bot nav button .bdg{position:absolute;top:0;right:8px;font-size:10px;padding:0 5px;margin:0}
 </style>
 </head>
 <body>
@@ -1173,6 +1223,23 @@ function saveEmp(){
     alert('Dados da empresa salvos.');render()});
 }
 
+/* ========= Layout do menu (por aparelho) ========= */
+const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.']};
+const LAY=()=>{try{const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
+const LAYSVG={side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
+function layoutOpen(){
+  modal(`<h2>Layout do menu</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
+  <div style="display:grid;gap:10px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
+}
+function layoutSet(k){try{localStorage.mm_layout=k}catch(e){}closeM();render()}
+function ngTog(ev,el){
+  if(!document.body.classList.contains('L-top')||innerWidth<900)return;
+  ev.stopPropagation();const g=el.parentElement,o=g.classList.contains('open');
+  document.querySelectorAll('.ng.open').forEach(x=>x.classList.remove('open'));if(!o)g.classList.add('open');
+}
+document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ng')))document.querySelectorAll('.ng.open').forEach(x=>x.classList.remove('open'))});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.ng.open').forEach(x=>x.classList.remove('open'))});
+
 /* ========= Tabela do IBPT (tributos aproximados · Lei 12.741) no banco ========= */
 let IBM=null;try{IBM=JSON.parse(localStorage.mm_ibpt||'null')}catch(e){}
 async function ibptMeta(force){
@@ -1333,15 +1400,16 @@ function render(){
   try{applyTema(CO())}catch(e){}
   if(sb&&!role&&view!=='login')view='login';
   if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal'].includes(view)&&!ADM())view='pdv';
-  document.body.className=isAdmin()?'in':'out';
-  const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
+  document.body.className=(isAdmin()?'in':'out')+' L-'+LAY();
+  const grp=(t,inner,cls)=>`<div class="ng ${cls||''}"><div class="grp" onclick="ngTog(event,this)">${t}</div><div class="nd">${inner}</div></div>`,
+    item=(v,l,i)=>`<button class="${view===v?'on':''}" title="${l.replace(/<[^>]*>/g,'').trim()}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
   let h='';
   if(isAdmin()){
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
-    h+='<div class="grp">Vendas</div>'+item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin'));
-    if(ADM())h+='<div class="grp">Gestão</div>'+item('ini','Início','wallet')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'cart')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield');
-    if(sb)h+=`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`;
+    h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin')));
+    if(ADM())h+=grp('Gestão',item('ini','Início','wallet')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'cart')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield'));
+    h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('image')}<span>Layout do menu</span></button>`,'gconta');
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   $('#nav').innerHTML=h;

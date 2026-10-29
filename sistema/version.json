@@ -1,5 +1,5 @@
 {
- "version": "1.31.0",
+ "version": "1.32.0",
  "date": "2026-10-28",
- "notes": "Escolha de onde vêm os tributos aproximados: tabela, API com token, automático ou não informar."
+ "notes": "Layout do menu à escolha: lateral, superior, lateral compacta ou barra inferior (menu Conta)."
 }
