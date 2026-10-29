@@ -1,0 +1,13 @@
+TABELA DO IBPT (tributos aproximados na nota, Lei 12.741)
+
+A cada atualização do IBPT (cerca de 2 em 2 meses):
+ 1. Baixe no site do IBPT o arquivo CSV da tabela do seu estado (ex.: Pará).
+ 2. Renomeie para:  tabela.csv
+ 3. Coloque nesta pasta (ibpt/) do repositório do GitHub, substituindo o antigo, e confirme (Commit).
+ 4. Em até 12 horas o sistema, aberto pelo administrador, encontra o arquivo e carrega sozinho.
+    Para forçar na hora: Fiscal > Tabela IBPT > "Buscar atualização no repositório".
+
+Observações
+ - O arquivo precisa ser o CSV separado por ponto e vírgula, com as colunas do IBPT (codigo, ex, tipo, descricao, nacionalfederal, importadosfederal, estadual, municipal, vigenciainicio, vigenciafim, chave, versao, fonte).
+ - Se o arquivo for mais antigo que a tabela já carregada, o sistema não troca.
+ - Este repositório é público (GitHub Pages): a tabela do IBPT é pública, mas NÃO coloque aqui senhas nem tokens.
