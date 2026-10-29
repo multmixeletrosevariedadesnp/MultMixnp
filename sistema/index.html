@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.35.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.36.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2470,9 +2470,9 @@ function carne(id){
   const ins=db.installments.filter(i=>i.sale_id===id).sort((a,b)=>a.number-b.number);
   modal(`<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px"><img src="${esc(logoIcon())}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"><p class="sm" style="margin:0">${esc(coLine())}</p></div><h2>Carnê · ${esc(c.name)}</h2>${s.canceled_at?`<p class="bad"><b>Venda cancelada em ${ld(s.canceled_at).split('-').reverse().join('/')}</b>${s.cancel_reason?' · '+esc(s.cancel_reason):''}${+s.refund_amount?` · devolvido ${R(s.refund_amount)}`:''}</p>`:''}<p class="sm">${esc(c.phone||'')} · Total ${R(s.total)} · Entrada ${R(s.entry)} · Multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês após o vencimento</p>
   <div style="overflow:auto"><table><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Hoje</th><th></th></tr>${ins.map(i=>{const d=due(i);if(i.canceled_at&&!i.paid_at)return`<tr><td>${i.number}/${ins.length}</td><td>${i.due_date.split('-').reverse().join('/')}</td><td>${R(origAmt(i))}</td><td>—</td><td><span class="sm">Cancelada</span></td></tr>`;return`<tr><td>${i.number}/${ins.length}</td>
-  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
+  <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}${i.due_orig&&i.due_orig!==i.due_date?`<div class="sm">alterado (era ${fmtD(i.due_orig)})</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
   <td>${i.paid_at?`${R(i.paid_amount||i.amount)}${+i.rebate?`<div class="sm">abatido ${R(i.rebate)}</div>`:''}`:`<b>${R(d.v)}</b>`}</td>
-  <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button>`}`}</td></tr>`}).join('')}</table></div>
+  <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button> <button class="btn g s" onclick="vencAsk('${i.id}','${id}')">Vencimento</button>`}`}</td></tr>`}).join('')}</table></div>
   ${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
 }
 function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e estorno
@@ -2657,6 +2657,29 @@ function quitaOk(cid){
   const rid=uid(),meio=$('#qm').value,nota=$('#qn').value.trim(),motivo=$('#qj').value.trim();let Dl=D,Vl=V;
   sel.forEach(i=>{const d=due(i),di=Math.min(Dl,d.v),pi=Math.min(Vl,r2(d.v-di));Dl=r2(Dl-di);Vl=r2(Vl-pi);if(di+pi>0.004)parcAplica(i,{valor:pi,desc:di,meio,nota,motivo,rid})});
   save();sync();reciboPos(rid,null);
+}
+/* --- alterar a data de vencimento (com motivo; fica na auditoria) --- */
+function vencAsk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid);if(!i||i.paid_at||i.canceled_at)return alert('Esta parcela não está em aberto.');
+  const seg=db.installments.filter(x=>x.sale_id===i.sale_id&&!x.paid_at&&!x.canceled_at&&x.number>i.number).length;
+  modal(`<h2>Alterar vencimento · parcela ${i.number}</h2><p class="sm">Vencimento atual: <b>${fmtD(i.due_date)}</b>${i.due_orig&&i.due_orig!==i.due_date?` (original ${fmtD(i.due_orig)})`:''}. A multa e os juros passam a contar a partir da nova data. A alteração fica registrada com o motivo.</p>
+  <div class="f"><div><label>Novo vencimento</label><input id="vd" type="date" value="${i.due_date.slice(0,10)}"></div><div class="w"><label>Motivo (obrigatório)</label><input id="vm" placeholder="Ex.: cliente pediu mais prazo"></div></div>
+  ${seg?`<label class="sm" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vs" style="width:auto"> Mover também as ${seg} parcela(s) seguinte(s) em aberto (uma por mês, a partir da nova data)</label>`:''}
+  <p id="vp" class="sm"></p><button class="btn" onclick="vencOk('${iid}','${sid}')">Salvar vencimento</button>`);
+}
+function vencOk(iid,sid){
+  const i=db.installments.find(x=>x.id===iid);if(!i||i.paid_at||i.canceled_at)return;
+  const nd=$('#vd').value,mot=$('#vm').value.trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(nd))return alert('Informe a nova data.');
+  if(nd===i.due_date.slice(0,10))return alert('A data é a mesma de antes.');
+  if(!mot)return alert('Informe o motivo.');
+  const alvo=[i];if($('#vs')&&$('#vs').checked)db.installments.filter(x=>x.sale_id===i.sale_id&&!x.paid_at&&!x.canceled_at&&x.number>i.number).sort((a,b)=>a.number-b.number).forEach(x=>alvo.push(x));
+  master(()=>{
+    if(!confirm(`Mudar o vencimento de ${alvo.length} parcela(s)? A parcela ${i.number} passa para ${fmtD(nd)}${alvo.length>1?' e as seguintes vão de mês em mês':''}.\nMotivo: ${mot}`))return;
+    alvo.forEach((x,k)=>{const d=new Date(nd+'T12:00');d.setMonth(d.getMonth()+k);
+      put('installments',{...x,due_orig:x.due_orig||x.due_date.slice(0,10),due_date:k===0?nd:d.toISOString().slice(0,10),due_note:mot},true)});
+    save();sync();closeM();if(view==='cob')vCob();else{carne(sid);if(view==='car')vCar()}
+  });
 }
 /* --- recibo --- */
 function reciboDados(rid){
@@ -3205,7 +3228,7 @@ function vCob(){
   ${list.length?`<div style="overflow:auto"><table><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor hoje</th><th></th></tr>
   ${list.map(r=>`<tr><td>${esc(r.c.name||'Cliente')}<div class="sm">${esc(r.c.phone||'sem telefone')}</div></td><td>${r.i.number}/${r.tot}</td>
   <td class="${r.n<0?'bad':''}">${fmtD(r.i.due_date)}<div class="sm">${dtxt(r.n)}</div></td><td><b>${R(r.d.v)}</b>${r.d.fee?`<div class="sm">com R$ ${(+r.d.fee).toFixed(2).replace('.',',')} de encargos</div>`:''}</td>
-  <td style="white-space:nowrap"><button class="btn s" onclick="pixAtual('${r.i.id}','${r.sl.id}')">Cobrar</button> <button class="btn g s" onclick="payAsk('${r.i.id}','${r.sl.id}')">Receber</button> <button class="btn g s" onclick="carne('${r.sl.id}')">Carnê</button> <button class="btn g s" onclick="quitaOpen('${r.c.id}')">Receber várias</button> <button class="btn g s" onclick="extratoOpen('${r.c.id}')">Extrato</button></td></tr>`).join('')}</table></div>`
+  <td style="white-space:nowrap"><button class="btn s" onclick="pixAtual('${r.i.id}','${r.sl.id}')">Cobrar</button> <button class="btn g s" onclick="payAsk('${r.i.id}','${r.sl.id}')">Receber</button> <button class="btn g s" onclick="carne('${r.sl.id}')">Carnê</button> <button class="btn g s" onclick="vencAsk('${r.i.id}','${r.sl.id}')">Vencimento</button> <button class="btn g s" onclick="quitaOpen('${r.c.id}')">Receber várias</button> <button class="btn g s" onclick="extratoOpen('${r.c.id}')">Extrato</button></td></tr>`).join('')}</table></div>`
   :empty('Nenhuma parcela nesta lista 🎉','Tudo em dia por aqui.')}`;
 }
 
@@ -3907,9 +3930,9 @@ async function restoreGo(){
 
 /* ========= Auditoria ========= */
 const AUD_N={mfa_ativado:'2 etapas ativada',mfa_desativado:'2 etapas desativada',produto_alterado:'Produto alterado',produto_excluido:'Produto excluído',venda_cancelada:'Venda cancelada',venda_excluida:'Venda excluída',venda_valor:'Valor da venda',nota_situacao:'Situação da nota',nota_emitida:'Nota emitida',nota_cancelada:'Nota cancelada',nota_inutilizada:'Numeração inutilizada',
-  parcela_paga:'Parcela recebida',parcela_estornada:'Recebimento estornado',parcela_valor:'Valor da parcela',parcela_excluida:'Parcela excluída',conta_paga:'Conta paga',conta_estornada:'Pagamento estornado',conta_valor:'Valor da conta',conta_cancelada:'Conta cancelada',conta_excluida:'Conta excluída',
+  parcela_paga:'Parcela recebida',parcela_estornada:'Recebimento estornado',parcela_valor:'Valor da parcela',parcela_vencimento:'Vencimento alterado',parcela_excluida:'Parcela excluída',conta_paga:'Conta paga',conta_estornada:'Pagamento estornado',conta_valor:'Valor da conta',conta_cancelada:'Conta cancelada',conta_excluida:'Conta excluída',
   cliente_excluido:'Cadastro excluído',cliente_ativo:'Cliente ativo/inativo',empresa_alterada:'Dados da empresa',usuario_criado:'Usuário criado',usuario_excluido:'Usuário excluído',usuario_perfil:'Perfil de usuário',usuario_ativo:'Usuário ativo/inativo',usuario_comissao:'Comissão do usuário',backup_gerado:'Backup gerado',backup_restaurado:'Backup restaurado'};
-const AUD_G={preco:['produto_alterado','produto_excluido'],venda:['venda_cancelada','venda_excluida','venda_valor','nota_situacao','nota_emitida','nota_cancelada','nota_inutilizada'],dinheiro:['parcela_paga','parcela_estornada','parcela_valor','parcela_excluida','conta_paga','conta_estornada','conta_valor','conta_cancelada','conta_excluida'],
+const AUD_G={preco:['produto_alterado','produto_excluido'],venda:['venda_cancelada','venda_excluida','venda_valor','nota_situacao','nota_emitida','nota_cancelada','nota_inutilizada'],dinheiro:['parcela_paga','parcela_estornada','parcela_valor','parcela_vencimento','parcela_excluida','conta_paga','conta_estornada','conta_valor','conta_cancelada','conta_excluida'],
   gestao:['mfa_ativado','mfa_desativado','cliente_excluido','cliente_ativo','empresa_alterada','usuario_criado','usuario_excluido','usuario_perfil','usuario_ativo','usuario_comissao'],backup:['backup_gerado','backup_restaurado']};
 let AUD={from:'',to:'',q:'',g:'',rows:null,err:''};
 async function vAud(){

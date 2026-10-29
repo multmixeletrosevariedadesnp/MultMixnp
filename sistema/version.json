@@ -1,5 +1,5 @@
 {
- "version": "1.35.0",
+ "version": "1.36.0",
  "date": "2026-10-28",
- "notes": "Crediário: pagamento parcial, abatimento com motivo, recibo (cupom, A4/PDF, WhatsApp), receber várias parcelas e extrato do cliente."
+ "notes": "Alterar a data de vencimento da parcela (com motivo e registro na auditoria)."
 }
