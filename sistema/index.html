@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.30.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.31.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1059,7 +1059,8 @@ function vEmp(){
   <div><label>Chave Pix</label><input id="e_pix_key" value="${esc(PRIV().pix_key||'')}"></div></div></div>
   <div style="margin:14px 0"><b>Tributos aproximados na nota (IBPT · De Olho no Imposto)</b>
   <p class="sm" style="margin:2px 0 8px">Cole aqui o token que o IBPT gerou para o CNPJ desta empresa. A nota passa a mostrar o valor aproximado de tributos (Lei 12.741) sempre atualizado. O token fica guardado só para o administrador e <b>não aparece no catálogo nem no PDV</b>. Em branco = não muda.</p>
-  <div class="f"><div class="w"><label>Token do IBPT ${PRIV().ibpt_token?'<span class="tag">cadastrado</span>':''}</label><input id="e_ibpt" type="password" autocomplete="off" placeholder="${PRIV().ibpt_token?'•••••••• (deixe em branco para manter)':'cole o token aqui'}"></div>
+  <div class="f"><div class="w"><label>De onde vêm os percentuais</label><select id="e_tmodo">${[['auto','Automático: tabela do banco e, se o NCM não estiver nela, a API'],['tabela','Só a tabela carregada no banco (Fiscal → Tabela IBPT)'],['api','Só a API do IBPT (precisa do token abaixo)'],['off','Não informar tributos na nota']].map(([k,l])=>`<option value="${k}" ${((IBM&&IBM.modo)||'auto')===k?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="w"><label>Token do IBPT ${PRIV().ibpt_token?'<span class="tag">cadastrado</span>':''}</label><input id="e_ibpt" type="password" autocomplete="off" placeholder="${PRIV().ibpt_token?'•••••••• (deixe em branco para manter)':'cole o token aqui'}"></div>
   ${PRIV().ibpt_token?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_ibpt_clr" style="width:auto"> Remover o token</label>':''}</div>
   ${PRIV().ibpt_token&&sb?'<button class="btn g s" type="button" onclick="ibptTeste()">Testar consulta (NCM 84796000)</button> <span id="ibptRes" class="sm"></span>':''}</div>
   <div style="margin:14px 0"><b>Tema do sistema e do catálogo</b>
@@ -1166,7 +1167,10 @@ function saveEmp(){
   if(tk&&!/^[A-Za-z0-9_\-]{20,200}$/.test(tk))return alert('Token do IBPT com formato estranho. Copie de novo, sem espaços.');
   if(tk||tkClr)prv={...(prv||{}),ibpt_token:tkClr?null:tk};
   const pixRow=prv?{...PRIV(),id:1,...prv}:null;
-  master(()=>{put('company',row);if(pixRow)put('company_private',pixRow);alert('Dados da empresa salvos.');render()});
+  const tmodo=$('#e_tmodo').value,tmodoMudou=tmodo!==((IBM&&IBM.modo)||'auto');
+  master(async()=>{put('company',row);if(pixRow)put('company_private',pixRow);
+    if(tmodoMudou&&sb){const{error}=await sb.from('app_settings').upsert({key:'ibpt_cfg',value:{modo:tmodo},updated_at:now()});if(error)alert('Não consegui salvar a fonte dos tributos: '+error.message+' (rode o supabase-v29.sql)');else{IBM={...(IBM||{t:0,v:null}),modo:tmodo};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}}}
+    alert('Dados da empresa salvos.');render()});
 }
 
 /* ========= Tabela do IBPT (tributos aproximados · Lei 12.741) no banco ========= */
@@ -1174,8 +1178,8 @@ let IBM=null;try{IBM=JSON.parse(localStorage.mm_ibpt||'null')}catch(e){}
 async function ibptMeta(force){
   if(!sb||!ADM()||navigator.onLine===false)return;
   if(!force&&IBM&&Date.now()-IBM.t<6*3600e3)return;
-  try{const{data,error}=await sb.from('app_settings').select('value').eq('key','ibpt').maybeSingle();
-    if(!error){IBM={t:Date.now(),v:(data&&data.value)||null};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}}}catch(e){}
+  try{const{data,error}=await sb.from('app_settings').select('key,value').in('key',['ibpt','ibpt_cfg']);
+    if(!error){const g=k=>((data||[]).find(r=>r.key===k)||{}).value||null;IBM={t:Date.now(),v:g('ibpt'),modo:(g('ibpt_cfg')||{}).modo||'auto'};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}}}catch(e){}
 }
 const ibptDias=()=>{const f=IBM&&IBM.v&&IBM.v.vigencia_fim;if(!f)return null;return Math.floor((new Date(f+'T23:59:59')-new Date())/864e5)};
 const ibptLine=()=>{const m=IBM&&IBM.v;if(!m)return'';const d=ibptDias();return`<div class="sm ${d!==null&&d<=10?'bad':''}">Tabela IBPT ${esc(m.versao||'')}: ${d===null?'':d<0?'<b>VENCIDA</b> em '+fmtD(m.vigencia_fim):'vale até '+fmtD(m.vigencia_fim)+' ('+d+' dia'+(d===1?'':'s')+')'} · ${m.n} NCMs</div>`};

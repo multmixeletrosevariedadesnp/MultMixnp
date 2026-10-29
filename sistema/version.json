@@ -1,5 +1,5 @@
 {
- "version": "1.30.0",
+ "version": "1.31.0",
  "date": "2026-10-28",
- "notes": "A tabela do IBPT é buscada sozinha no repositório (pasta ibpt)."
+ "notes": "Escolha de onde vêm os tributos aproximados: tabela, API com token, automático ou não informar."
 }
