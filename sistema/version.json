@@ -1,5 +1,5 @@
 {
- "version": "1.27.0",
+ "version": "1.30.0",
  "date": "2026-10-28",
- "notes": "Tela Balcão (caixas, avisos, devoluções, descontos, regras) e alerta de vencimento do certificado."
+ "notes": "A tabela do IBPT é buscada sozinha no repositório (pasta ibpt)."
 }

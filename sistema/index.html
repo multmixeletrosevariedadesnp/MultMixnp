@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.27.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>window.APP_VERSION='1.30.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -257,7 +257,7 @@ async function doSync(){
     save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){setSync('offline · '+db.outbox.length+' pendente(s)')}
   render();
-  try{loadPev().then(()=>notifCheck());certCheck()}catch(e){}
+  try{loadPev().then(()=>notifCheck());certCheck();ibptMeta().then(()=>notifCheck());ibptAuto()}catch(e){}
 }
 const setSync=t=>$('#sync').textContent=t;
 addEventListener('online',sync);
@@ -1057,6 +1057,11 @@ function vEmp(){
   <p class="sm" style="margin:2px 0 8px">Usada no QR Code de cada parcela do carnê em PDF. Digite a chave exatamente como está cadastrada no seu banco. Ela não aparece no catálogo.</p>
   <div class="f"><div><label>Tipo da chave</label><select id="e_pix_key_type">${[['','Sem chave'],['cnpj','CNPJ'],['cpf','CPF'],['telefone','Telefone'],['email','E-mail'],['aleatoria','Chave aleatória']].map(([k,l])=>`<option value="${k}" ${(PRIV().pix_key_type||'')===k?'selected':''}>${l}</option>`).join('')}</select></div>
   <div><label>Chave Pix</label><input id="e_pix_key" value="${esc(PRIV().pix_key||'')}"></div></div></div>
+  <div style="margin:14px 0"><b>Tributos aproximados na nota (IBPT · De Olho no Imposto)</b>
+  <p class="sm" style="margin:2px 0 8px">Cole aqui o token que o IBPT gerou para o CNPJ desta empresa. A nota passa a mostrar o valor aproximado de tributos (Lei 12.741) sempre atualizado. O token fica guardado só para o administrador e <b>não aparece no catálogo nem no PDV</b>. Em branco = não muda.</p>
+  <div class="f"><div class="w"><label>Token do IBPT ${PRIV().ibpt_token?'<span class="tag">cadastrado</span>':''}</label><input id="e_ibpt" type="password" autocomplete="off" placeholder="${PRIV().ibpt_token?'•••••••• (deixe em branco para manter)':'cole o token aqui'}"></div>
+  ${PRIV().ibpt_token?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_ibpt_clr" style="width:auto"> Remover o token</label>':''}</div>
+  ${PRIV().ibpt_token&&sb?'<button class="btn g s" type="button" onclick="ibptTeste()">Testar consulta (NCM 84796000)</button> <span id="ibptRes" class="sm"></span>':''}</div>
   <div style="margin:14px 0"><b>Tema do sistema e do catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Muda as cores e a faixa de campanha do catálogo. <b>Automático</b> usa Black Friday de 2 semanas antes até 3 dias depois e Natal de 1 a 26 de dezembro. Use <b>Personalizado</b> para escolher suas próprias cores.</p>
   <div class="f"><div class="w"><label>Tema</label><select id="e_theme" onchange="temaPrev()"><option value="auto" ${(c.theme||'auto')==='auto'?'selected':''}>Automático por data</option>${Object.entries(TEMAS).map(([k,t])=>`<option value="${k}" ${c.theme===k?'selected':''}>${t.n}</option>`).join('')}<option value="custom" ${c.theme==='custom'?'selected':''}>Personalizado (minhas cores)</option></select></div>
@@ -1156,8 +1161,126 @@ function saveEmp(){
   const pt=$('#e_pix_key_type').value,pk=pixNorm(pt,$('#e_pix_key').value);
   if(pk&&!pt)return alert('Escolha o tipo da chave Pix.');
   if(pk&&!pixOk(pt,pk))return alert('Chave Pix inválida para o tipo escolhido. Confira os números ou o e-mail.');
-  const pixRow=(pk||PRIV().pix_key)?{id:1,pix_key:pk||null,pix_key_type:pk?pt:null}:null;
+  let prv=(pk||PRIV().pix_key)?{pix_key:pk||null,pix_key_type:pk?pt:null}:null;
+  const tk=$('#e_ibpt').value.trim(),tkClr=!!($('#e_ibpt_clr')&&$('#e_ibpt_clr').checked);
+  if(tk&&!/^[A-Za-z0-9_\-]{20,200}$/.test(tk))return alert('Token do IBPT com formato estranho. Copie de novo, sem espaços.');
+  if(tk||tkClr)prv={...(prv||{}),ibpt_token:tkClr?null:tk};
+  const pixRow=prv?{...PRIV(),id:1,...prv}:null;
   master(()=>{put('company',row);if(pixRow)put('company_private',pixRow);alert('Dados da empresa salvos.');render()});
+}
+
+/* ========= Tabela do IBPT (tributos aproximados · Lei 12.741) no banco ========= */
+let IBM=null;try{IBM=JSON.parse(localStorage.mm_ibpt||'null')}catch(e){}
+async function ibptMeta(force){
+  if(!sb||!ADM()||navigator.onLine===false)return;
+  if(!force&&IBM&&Date.now()-IBM.t<6*3600e3)return;
+  try{const{data,error}=await sb.from('app_settings').select('value').eq('key','ibpt').maybeSingle();
+    if(!error){IBM={t:Date.now(),v:(data&&data.value)||null};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}}}catch(e){}
+}
+const ibptDias=()=>{const f=IBM&&IBM.v&&IBM.v.vigencia_fim;if(!f)return null;return Math.floor((new Date(f+'T23:59:59')-new Date())/864e5)};
+const ibptLine=()=>{const m=IBM&&IBM.v;if(!m)return'';const d=ibptDias();return`<div class="sm ${d!==null&&d<=10?'bad':''}">Tabela IBPT ${esc(m.versao||'')}: ${d===null?'':d<0?'<b>VENCIDA</b> em '+fmtD(m.vigencia_fim):'vale até '+fmtD(m.vigencia_fim)+' ('+d+' dia'+(d===1?'':'s')+')'} · ${m.n} NCMs</div>`};
+function csvLinha(l){const o=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(q){if(ch==='"'){if(l[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===';'){o.push(c);c=''}else c+=ch}o.push(c);return o}
+const ibNum=v=>{const n=parseFloat(String(v||'').replace('%','').replace(',','.'));return isFinite(n)?n:0};
+const ibData=v=>{const m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:''};
+/* lê o CSV do IBPT (separado por ;) e devolve {rows, meta} só com mercadorias (tipo 0) e exceção 0/vazia */
+function ibptParse(txt){
+  const L=txt.split(/\r?\n/).filter(x=>x.trim());if(L.length<2)throw new Error('Arquivo vazio.');
+  const norm=h=>h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z]/g,'');
+  const H=csvLinha(L[0]).map(norm),ix=n=>H.indexOf(n);
+  const c={cod:ix('codigo'),ex:ix('ex'),tipo:ix('tipo'),nac:ix('nacionalfederal'),imp:ix('importadosfederal'),est:ix('estadual'),fim:ix('vigenciafim'),ini:ix('vigenciainicio'),chave:ix('chave'),ver:ix('versao'),fonte:ix('fonte')};
+  if(c.cod<0||c.nac<0||c.est<0)throw new Error('Não parece a tabela do IBPT (faltam as colunas codigo, nacionalfederal e estadual). Baixe o arquivo CSV da tabela no site do IBPT.');
+  const rows=new Map();let meta={versao:'',vigencia_fim:'',vigencia_ini:'',chave:'',fonte:''};
+  for(let i=1;i<L.length;i++){
+    const f=csvLinha(L[i]);const cod=(f[c.cod]||'').replace(/\D/g,'');
+    if(cod.length!==8)continue;
+    if(c.tipo>=0&&String(f[c.tipo]).trim()!==''&&String(f[c.tipo]).trim()!=='0')continue;
+    const ex=c.ex>=0?String(f[c.ex]).trim():'';if(ex!==''&&ex!=='0'&&ex!=='00')continue;
+    if(rows.has(cod))continue;
+    rows.set(cod,{codigo:cod,nacional:ibNum(f[c.nac]),importado:c.imp>=0?ibNum(f[c.imp]):0,estadual:ibNum(f[c.est])});
+    if(!meta.versao&&c.ver>=0){meta={versao:(f[c.ver]||'').trim(),vigencia_fim:ibData(f[c.fim]),vigencia_ini:ibData(f[c.ini]),chave:c.chave>=0?(f[c.chave]||'').trim():'',fonte:c.fonte>=0?(f[c.fonte]||'').trim():''}}
+  }
+  if(!rows.size)throw new Error('Nenhum NCM de mercadoria encontrado no arquivo.');
+  return{rows:[...rows.values()],meta};
+}
+function ibptOpen(){
+  ibptMeta(true).then(()=>{const m=IBM&&IBM.v;
+  modal(`<h2>Tabela do IBPT</h2>
+  <p class="sm">Os percentuais de tributos aproximados (Lei 12.741) da nota vêm desta tabela, por NCM. O IBPT publica uma nova a cada ~2 meses. O sistema procura sozinho o arquivo <b>ibpt/tabela.csv</b> no repositório do site (a cada 12 h); você também pode enviar o CSV do seu estado (PA) por aqui.</p>
+  ${m?`<div class="box"><b>Tabela atual:</b> versão ${esc(m.versao||'?')} · vigência até ${m.vigencia_fim?fmtD(m.vigencia_fim):'?'} · ${m.n} NCMs · carregada em ${m.carregado_em?new Date(m.carregado_em).toLocaleDateString('pt-BR'):'?'}${ibptDias()!==null&&ibptDias()<0?' · <b class="bad">VENCIDA</b>':''}</div>`:'<p class="bad">Nenhuma tabela carregada ainda.</p>'}
+  <div class="f"><div class="w"><label>Arquivo da tabela (.csv)</label><input id="ib_f" type="file" accept=".csv,.txt"></div></div>
+  <p><button class="btn" id="ib_b" onclick="ibptCarregar()">Carregar tabela do arquivo</button> <button class="btn g" id="ib_rb" onclick="ibptRepoBtn()">Buscar atualização no repositório</button></p><p id="ib_m" class="sm"></p>
+  <hr><div class="f"><div><label>Conferir um NCM</label><input id="ib_n" inputmode="numeric" placeholder="84796000" maxlength="10"></div><div style="align-self:end"><button class="btn g s" onclick="ibptConsulta()">Consultar</button></div></div><p id="ib_r" class="sm"></p>`)})
+}
+async function ibptConsulta(){
+  const n=($('#ib_n').value||'').replace(/\D/g,'');if(n.length!==8)return $('#ib_r').innerHTML='<span class="bad">Digite 8 dígitos.</span>';
+  const{data,error}=await sb.from('ibpt_ncm').select('*').eq('codigo',n).maybeSingle();
+  $('#ib_r').innerHTML=error?`<span class="bad">${esc(error.message)} (rodou o supabase-v29.sql?)</span>`:data?`NCM ${n}: federal nacional <b>${data.nacional}%</b> · federal importado ${data.importado}% · estadual <b>${data.estadual}%</b>`:'<span class="bad">NCM não encontrado na tabela carregada.</span>';
+}
+const ibptTexto=buf=>{let t=new TextDecoder('utf-8').decode(buf);if(t.includes('\uFFFD'))t=new TextDecoder('windows-1252').decode(buf);return t};
+/* grava no banco: envia em lotes, remove NCMs da versão antiga e guarda versão/vigência. `say` mostra o andamento */
+async function ibptGravar(rows,meta,say,quem){
+  if(!meta.versao)meta.versao='sem versão';
+  const ver=meta.versao;
+  for(let i=0;i<rows.length;i+=500){
+    say(`Enviando ${Math.min(i+500,rows.length)} de ${rows.length}…`);
+    const{error}=await sb.from('ibpt_ncm').upsert(rows.slice(i,i+500).map(r=>({...r,versao:ver})));
+    if(error)throw new Error(error.message+(/relation|does not exist/i.test(error.message)?' (rode o supabase-v29.sql)':''));
+  }
+  say('Removendo NCMs da tabela antiga…');
+  const{error:e2}=await sb.from('ibpt_ncm').delete().neq('versao',ver);if(e2)throw new Error(e2.message);
+  const val={...meta,n:rows.length,carregado_em:now(),carregado_por:quem||(me&&me.name)||''};
+  const{error:e3}=await sb.from('app_settings').upsert({key:'ibpt',value:val,updated_at:now()});if(e3)throw new Error(e3.message);
+  IBM={t:Date.now(),v:val};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}
+  try{notifCheck()}catch(e){}
+  return val;
+}
+async function ibptCarregar(){
+  const f=$('#ib_f').files[0],msg=$('#ib_m');if(!f)return msg.innerHTML='<span class="bad">Escolha o arquivo.</span>';
+  if(!sb||navigator.onLine===false)return msg.innerHTML='<span class="bad">Precisa de internet.</span>';
+  $('#ib_b').disabled=true;
+  try{
+    msg.textContent='Lendo o arquivo…';
+    const{rows,meta}=ibptParse(ibptTexto(await f.arrayBuffer()));
+    if(!confirm(`Carregar a tabela ${meta.versao||'sem versão'} (${rows.length} NCMs, vigência até ${meta.vigencia_fim?fmtD(meta.vigencia_fim):'?'}) no lugar da atual?`)){$('#ib_b').disabled=false;msg.textContent='';return}
+    await ibptGravar(rows,meta,t=>msg.textContent=t);
+    msg.innerHTML=`<b class="ok">Pronto.</b> Tabela ${esc(meta.versao)} carregada (${rows.length} NCMs). As próximas notas já usam estes percentuais.`;
+  }catch(e){msg.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+  $('#ib_b').disabled=false;
+}
+/* repositório: o arquivo ibpt/tabela.csv publicado junto do sistema (GitHub Pages). Busca sozinho a cada 12 h. */
+const IBPT_URL=()=>new URL('../ibpt/tabela.csv',location.href).href;
+async function ibptRepo(auto,say){
+  say=say||(()=>{});
+  if(!sb||!ADM()||navigator.onLine===false)return{st:'offline'};
+  say('Procurando a tabela no repositório…');
+  let r;try{r=await fetch(IBPT_URL()+'?t='+Date.now(),{cache:'no-store'})}catch(e){return{st:'erro',msg:'Não consegui acessar o repositório.'}}
+  if(r.status===404)return{st:'vazio',msg:'Ainda não há tabela em ibpt/tabela.csv no repositório.'};
+  if(!r.ok)return{st:'erro',msg:'Repositório respondeu HTTP '+r.status+'.'};
+  let rows,meta;try{({rows,meta}=ibptParse(ibptTexto(await r.arrayBuffer())))}catch(e){return{st:'erro',msg:'Arquivo do repositório: '+e.message}}
+  const cur=IBM&&IBM.v;
+  if(cur&&cur.versao===meta.versao&&cur.n===rows.length)return{st:'igual',meta};
+  if(cur&&cur.vigencia_fim&&meta.vigencia_fim&&meta.vigencia_fim<cur.vigencia_fim)return{st:'antiga',msg:`A tabela do repositório (${meta.versao}) é mais antiga que a carregada (${cur.versao}).`,meta};
+  try{const v=await ibptGravar(rows,meta,say,'repositório');return{st:'novo',meta:v}}catch(e){return{st:'erro',msg:e.message}}
+}
+async function ibptRepoBtn(){
+  const m=$('#ib_m');$('#ib_rb').disabled=true;
+  const x=await ibptRepo(false,t=>m.textContent=t);
+  m.innerHTML=x.st==='novo'?`<b class="ok">Tabela ${esc(x.meta.versao)} carregada do repositório</b> (${x.meta.n} NCMs, vigência até ${x.meta.vigencia_fim?fmtD(x.meta.vigencia_fim):'?'}).`:x.st==='igual'?`<b class="ok">Já está atualizada</b> (versão ${esc(x.meta.versao)}).`:x.st==='offline'?'<span class="bad">Precisa de internet.</span>':`<span class="bad">${esc(x.msg||'')}</span>`;
+  $('#ib_rb').disabled=false;
+}
+async function ibptAuto(){
+  if(!sb||!ADM()||navigator.onLine===false)return;
+  let t=0;try{t=+localStorage.mm_ibpt_chk||0}catch(e){}
+  if(Date.now()-t<12*3600e3)return;
+  try{localStorage.mm_ibpt_chk=Date.now()}catch(e){}
+  await ibptMeta(true);const x=await ibptRepo(true);
+  if(x.st==='novo')try{notifCheck()}catch(e){}
+}
+async function ibptTeste(){
+  const el=$('#ibptRes');if(el)el.textContent='consultando…';
+  try{const d=await fisCall({action:'ibpt',ncm:'84796000'});
+    if(el)el.innerHTML=d.ok?`<b class="ok">funcionou</b>: federal ${d.nacional}% · estadual ${d.estadual}% · tabela ${esc(d.versao||'')} ${esc(d.chave||'')} (vale até ${esc(d.vigencia_fim||'?')})`:`<b class="bad">${esc(d.erro||'não funcionou')}</b>`}
+  catch(e){if(el)el.innerHTML=`<b class="bad">${esc(e.message)}</b>`}
 }
 
 /* ========= Perfil e senha mestre ========= */
@@ -2183,6 +2306,8 @@ function notifs(){
   if(ADM()){const n=dfePend();if(n)out.push({id:'n'+ld(now())+':'+n,kind:'nota',days:0,title:`${n} nota${n>1?'s':''} de compra recebida${n>1?'s':''}`,sub:'Notas emitidas contra o CNPJ da loja, aguardando entrada no estoque',amount:0})}
   if(ADM()){const lo=lowStock();if(lo.length)out.push({id:'e'+ld(now()),kind:'estoque',days:0,title:`${lo.length} produto${lo.length>1?'s':''} com estoque baixo`,sub:lo.slice(0,3).map(x=>x.name+' ('+(+x.stock||0)+')').join(', ')+(lo.length>3?'…':''),amount:0})}
   if(ADM()&&CERT&&((CERT.ok&&CERT.dias<=30)||CERT.ok===false&&CERT.erro)){out.push(CERT.ok?{id:'cert'+ld(now()),kind:'cert',days:CERT.vencido?-1:CERT.dias,title:CERT.vencido?'Certificado digital VENCIDO':'Certificado digital vence em '+CERT.dias+' dia'+(CERT.dias===1?'':'s'),sub:'Válido até '+fmtD(CERT.ate)+'. Renove com a certificadora e troque no Render (CERT_PFX_BASE64 e CERT_PASSWORD).',amount:0}:{id:'cert'+ld(now()),kind:'cert',days:-1,title:'Não foi possível ler o certificado digital',sub:CERT.erro,amount:0})}
+  if(ADM()&&IBM&&IBM.v&&ibptDias()!==null&&ibptDias()<=10){const d=ibptDias();out.push({id:'ibpt'+IBM.v.versao,kind:'ibpt',days:d,title:d<0?'Tabela do IBPT vencida':'Tabela do IBPT vence em '+d+' dia'+(d===1?'':'s'),sub:'Baixe a nova no site do IBPT e envie em Fiscal → Tabela IBPT. A nota continua saindo, com percentuais antigos.',amount:0})}
+  if(ADM()&&IBM&&IBM.v&&IBM.v.carregado_por==='repositório'&&Date.now()-new Date(IBM.v.carregado_em)<3*864e5)out.push({id:'ibptok'+IBM.v.versao,kind:'ibpt',days:1,title:'Tabela do IBPT atualizada: versão '+IBM.v.versao,sub:'Carregada do repositório. Vale até '+(IBM.v.vigencia_fim?fmtD(IBM.v.vigencia_fim):'?')+'.',amount:0});
   if(ADM())pevNew().slice(0,10).forEach(e=>out.push({id:'ev'+e.id,kind:'pdv',days:0,title:(EVN[e.kind]||'Aviso do PDV')+' · '+(e.seller_name||''),sub:e.detail||'',amount:0}));
   if(ADM()){const bk=bkLast(),dd=bk?-dleft(bk):99;if(dd>=7)out.push({id:'bk'+ld(now()).slice(0,7),kind:'backup',days:-dd,title:'Fazer backup dos dados',sub:bk?`último backup há ${dd} dias`:'nenhum backup feito neste aparelho',amount:0})}
   return out.sort((a,b)=>a.days-b.days||a.title.localeCompare(b.title,'pt-BR'));
@@ -2206,7 +2331,7 @@ function notifCheck(){
   if(!nw.length)return;
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const ce=nw.some(n=>n.kind==='cert'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado digital':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),txt=[c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado ou tabela IBPT':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+(n.amount?' · '+R(n.amount):'')).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
@@ -2215,8 +2340,8 @@ function notifCheck(){
 }
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${['backup','estoque','nota','cert','pdv'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='cert'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv'].includes(n.kind));
+    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='cert'||n.kind==='ibpt'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
@@ -2665,7 +2790,7 @@ function vFis(){
   $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). O botão Emitir nota envia a venda à API fiscal (em homologação, a nota não tem valor fiscal).</p>
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
   <div class="pr" id="fisSt" style="margin:8px 0"><span>Emissão (API fiscal e SEFAZ)</span><b class="sm">verificando…</b></div>
-  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="ibptOpen()">Tabela IBPT</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':s.fiscal_status==='cancelada'?'<span class="bad">Nota cancelada</span>':em?`<span class="ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
@@ -2687,7 +2812,8 @@ async function fisStatus(force){
     else h=`<b class="bad">SEFAZ fora do ar</b><div class="sm">${esc(d.motivo||d.erro||'')} As vendas continuam normais. Tente emitir mais tarde; as notas ficam na lista abaixo. Se a SEFAZ ficar muito tempo fora, fale com o contador sobre contingência (SVC/EPEC).</div>`;
   }catch(e){h=`<b class="bad">Não foi possível verificar</b><div class="sm">${esc(e.message)}</div>`}
   if(force)await certCheck(true);
-  h+=certLine();FST={t:Date.now(),h};paint(h);
+  if(force)await ibptMeta(true);
+  h+=certLine()+ibptLine();FST={t:Date.now(),h};paint(h);
 }
 async function fisEmitAll(){
   const ids=db.sales.filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
@@ -2707,9 +2833,9 @@ async function fisNumOpen(){
   modal('<h2>Numeração das notas</h2><p class="sm">Verificando…</p>');
   try{
     const out=[];
-    for(const m of [55,65]){const d=await fisCall({action:'fiscal_gaps',modelo:m,serie:1});out.push({m,d})}
+    for(const m of [55,65]){const d=await fisCall({action:'fiscal_gaps',modelo:m});out.push({m,d})}
     modal('<h2>Numeração das notas</h2><p class="sm">Número que nunca virou nota (venda cancelada antes de emitir, erro, etc.) deixa um "buraco". A SEFAZ aceita o buraco, mas o certo é <b>inutilizar</b> o número. Fale com o contador se tiver dúvida.</p>'+
-      out.map(({m,d})=>`<h3>${m===55?'NF-e (55)':'NFC-e (65)'} · série 1 · último número reservado: ${d.ultimo}</h3>`+
+      out.map(({m,d})=>`<h3>${m===55?'NF-e (55)':'NFC-e (65)'} · série ${d.serie||1} · último número reservado: ${d.ultimo}</h3>`+
         (d.gaps.length?`<table>${d.gaps.map(g=>`<tr><td>${g.ini===g.fin?'Nº '+g.ini:'Nº '+g.ini+' a '+g.fin}</td><td><button class="btn s" onclick="fisInut(${m},${g.ini},${g.fin})">Inutilizar</button></td></tr>`).join('')}</table>`:'<p class="ok">Sem buracos.</p>')+
         (d.historico.filter(h=>h.model===m).length?`<p class="sm">Já inutilizados: ${d.historico.filter(h=>h.model===m).map(h=>(h.ini===h.fin?h.ini:h.ini+'-'+h.fin)).join(', ')}</p>`:'')).join(''));
   }catch(e){modal('<h2>Numeração das notas</h2><p class="bad">'+esc(e.message)+'</p><p class="sm">Se a mensagem falar de função desconhecida ou tabela, falta publicar a função fiscal nova e rodar o SQL v22.</p>')}
@@ -2719,7 +2845,7 @@ function fisInut(m,ini,fin){
   if(j.trim().length<15)return alert('O motivo precisa ter ao menos 15 caracteres.');
   if(!confirm('Inutilizar '+(m===55?'NF-e':'NFC-e')+' nº '+ini+(fin>ini?' a '+fin:'')+' na SEFAZ? Isso não pode ser desfeito.'))return;
   master(async()=>{
-    try{await fisCall({action:'inutilizar',modelo:m,serie:1,ini,fin,justificativa:j.trim()});alert('Numeração inutilizada na SEFAZ.')}
+    try{await fisCall({action:'inutilizar',modelo:m,ini,fin,justificativa:j.trim()});alert('Numeração inutilizada na SEFAZ.')}
     catch(e){alert('Não foi possível inutilizar:\n'+e.message)}
     fisNumOpen();
   });
@@ -3176,7 +3302,7 @@ function rtcSave(){
 
 /* ========= Restaurar backup ========= */
 const BK_ORDER=['customers','company','company_private','sales','installments','payables','orders','products'];
-const BK_N={customers:'Clientes e fornecedores',company:'Dados da empresa',company_private:'Chave Pix (privado)',sales:'Vendas',installments:'Parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',products:'Produtos'};
+const BK_N={customers:'Clientes e fornecedores',company:'Dados da empresa',company_private:'Dados privados (Pix, token IBPT)',sales:'Vendas',installments:'Parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',products:'Produtos'};
 const bkCanon=v=>Array.isArray(v)?v.map(bkCanon):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==null&&v[k]!==undefined).map(k=>[k,bkCanon(v[k])])):v;
 function bkDiff(t,c,r){const a={...c},b={...r};delete a.updated_at;delete b.updated_at;if(t==='products'){delete a.stock;delete b.stock}return JSON.stringify(bkCanon(a))!==JSON.stringify(bkCanon(b))}
 function bkPlan(o,mode){
