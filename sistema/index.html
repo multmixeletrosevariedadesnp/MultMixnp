@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.33.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.34.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -454,7 +454,7 @@ async function pwSave(){
 let comMonth='',comSel='todos';
 function comRows(m,sel){
   const out=[],cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão';
-  db.sales.filter(s=>!s.canceled_at&&(sel==='todos'||s.seller_id===sel)).forEach(s=>{
+  SV().filter(s=>!s.canceled_at&&(sel==='todos'||s.seller_id===sel)).forEach(s=>{
     const mode=s.commission_mode||'venda',pct=+s.commission_pct||0,rec=s.pay_type==='crediario'&&mode==='recebimento';
     if(ld(s.created_at).slice(0,7)===m){
       const base=rec?+s.entry:+s.total;
@@ -2086,6 +2086,7 @@ function finish(){
 /* ========= Clientes ========= */
 let cq='',showInat=false,ckind='todos';
 const digits=v=>(v||'').replace(/\D/g,'');
+const SV=()=>db.sales.filter(s=>!s.legacy); // vendas de verdade: fora o fiado antigo (saldo anterior)
 const owed=id=>db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&db.sales.some(s=>s.id===i.sale_id&&s.customer_id===id));
 function cliFilter(){
   const k=norm(cq),d=digits(cq);
@@ -2361,10 +2362,98 @@ function pickCli(id){
 /* ========= Carnês ========= */
 function vCar(){
   const sales=db.sales.filter(s=>s.pay_type==='crediario').sort((a,b)=>b.created_at.localeCompare(a.created_at));
-  $('#app').innerHTML=sales.length?`<table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="fiadoOpen()">Lançar fiado antigo</button><button class="btn g" onclick="fiadoImpOpen()">Importar fiados (planilha)</button><span class="sm" style="align-self:center">Fiado antigo = dívida de antes do sistema: não baixa estoque, não gera nota e não entra no faturamento.</span></div>
+  ${sales.length?`<div class="tw"><table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
   ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=!s.canceled_at&&ins.some(i=>!i.paid_at&&!i.canceled_at&&i.due_date<now().slice(0,10));
-  return`<tr><td>${esc(c.name)} ${s.canceled_at?'<span class="tag">cancelada</span>':late?'<span class="tag bad">em atraso</span>':''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.filter(i=>i.paid_at||!i.canceled_at).length}</td>
-  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button></td></tr>`}).join('')}</table>`:'<p>Nenhum carnê ainda. Faça uma venda no crediário.</p>';
+  return`<tr><td>${esc(c.name)} ${s.legacy?'<span class="tag">saldo anterior</span>':''} ${s.canceled_at?'<span class="tag">cancelada</span>':late?'<span class="tag bad">em atraso</span>':''}${s.legacy&&s.legacy_note?`<div class="sm">${esc(s.legacy_note)}</div>`:''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.filter(i=>i.paid_at||!i.canceled_at).length}</td>
+  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button> ${s.legacy?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>`}</td></tr>`}).join('')}</table></div>`:empty('Nenhum carnê ainda','Faça uma venda no crediário ou lance os fiados antigos.')}`;
+}
+/* ========= Fiado antigo (saldo anterior): sem estoque, sem nota, fora do faturamento ========= */
+function fiadoCria(o){ // {nome,doc,total,n,primeiro(yyyy-mm-dd),compra(yyyy-mm-dd),obs}
+  const nm=String(o.nome||'').trim(),d=digits(o.doc);
+  let c=(d&&db.customers.find(x=>digits(x.cpf)===d))||db.customers.find(x=>norm(x.name)===norm(nm));
+  if(!c){c={id:uid(),name:nm,cpf:o.doc?String(o.doc).trim():'',phone:'',kind:'cliente',active:true};}
+  else if(!c.cpf&&o.doc){c={...c,cpf:String(o.doc).trim()}}
+  put('customers',c,true);
+  const tot=+(+o.total).toFixed(2),n=Math.max(1,Math.min(60,Math.round(+o.n||1)));
+  const sale={id:uid(),customer_id:c.id,pay_type:'crediario',method:'Carnê',total:tot,entry:0,n_inst:n,fiscal_status:'dispensada',doc_type:'nfe',nat_op:'Saldo anterior',freight:'9',
+    legacy:true,legacy_note:o.obs||'',...sellerInfo(),commission_pct:0,created_at:new Date((o.compra||now().slice(0,10))+'T12:00:00').toISOString(),items:[]};
+  put('sales',sale,true);
+  const per=Math.floor(tot/n*100)/100;let dt=new Date(o.primeiro+'T12:00');
+  for(let k=1;k<=n;k++){
+    put('installments',{id:uid(),sale_id:sale.id,number:k,due_date:dt.toISOString().slice(0,10),amount:k===n?+(tot-per*(n-1)).toFixed(2):per,paid_at:null},true);
+    dt=new Date(dt);dt.setMonth(dt.getMonth()+1);
+  }
+  return sale;
+}
+function fiadoOpen(){
+  const hoje=now().slice(0,10);
+  modal(`<h2>Lançar fiado antigo</h2><p class="sm">Para dívida de antes do sistema. <b>Não baixa estoque</b>, <b>não gera nota</b> e <b>não soma no faturamento</b>. Lance o valor que o cliente <b>ainda deve</b>. Se ele tem várias compras com vencimentos diferentes, lance uma por vez.</p>
+  <div class="f"><div class="w"><label>Cliente (escolha da lista ou digite um novo)</label><input id="fd_n" list="fd_l" autocomplete="off"><datalist id="fd_l">${db.customers.filter(c=>c.active!==false).map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div>
+  <div><label>CPF / CNPJ (opcional)</label><input id="fd_c" inputmode="numeric"></div></div>
+  <div class="f"><div><label>Valor que ainda deve (R$)</label><input id="fd_v" inputmode="decimal" placeholder="0,00"></div><div><label>Parcelas</label><input id="fd_p" type="number" min="1" max="60" value="1"></div>
+  <div><label>1º vencimento</label><input id="fd_d" type="date" value="${hoje}"></div><div><label>Data da compra (opcional)</label><input id="fd_b" type="date" value="${hoje}"></div></div>
+  <div class="f"><div class="w"><label>Observação (opcional)</label><input id="fd_o" placeholder="Ex.: compra de agosto, fogão"></div></div>
+  <p class="sm" id="fd_r"></p>
+  <div class="bar"><button class="btn" onclick="fiadoGo(false)">Lançar</button><button class="btn g" onclick="fiadoGo(true)">Lançar e adicionar outro</button></div>`);
+}
+function fiadoGo(outro){
+  const o={nome:$('#fd_n').value,doc:$('#fd_c').value,total:num($('#fd_v').value),n:+$('#fd_p').value||1,primeiro:$('#fd_d').value,compra:$('#fd_b').value,obs:$('#fd_o').value.trim()};
+  if(!o.nome.trim())return alert('Informe o cliente.');
+  if(o.doc&&!(digits(o.doc).length===11&&okCpf(digits(o.doc))||digits(o.doc).length===14&&okCnpj(digits(o.doc))))return alert('CPF/CNPJ inválido. Corrija ou deixe em branco.');
+  if(!(o.total>0))return alert('Informe o valor que ainda deve.');
+  if(!o.primeiro)return alert('Informe o 1º vencimento.');
+  if(!confirm(`Lançar ${R(o.total)} em ${o.n}x para ${o.nome.trim()}?\n\nNão baixa estoque nem gera nota.`))return;
+  fiadoCria(o);save();sync();
+  if(outro){fiadoOpen();$('#fd_r').innerHTML='<b class="ok">Lançado: '+esc(o.nome)+' · '+R(o.total)+'</b>';$('#fd_n').focus()}else{closeM();alert('Fiado lançado.')}
+  if(view==='car')vCar();
+}
+const FDALI={nome:['cliente','nome','nome do cliente'],doc:['cpf','cnpj','cpf cnpj','cpf / cnpj','documento'],total:['valor','valor devido','saldo','valor em aberto','total','divida'],n:['parcelas','qtd parcelas','numero de parcelas'],primeiro:['primeiro vencimento','1 vencimento','vencimento','1o vencimento'],compra:['data da compra','compra','data'],obs:['observacao','obs','descricao','detalhes']};
+function fiadoData(v){
+  v=String(v??'').trim();if(!v)return'';
+  const ok=(y,mo,d)=>{const t=new Date(Date.UTC(y,mo-1,d));return t.getUTCFullYear()===y&&t.getUTCMonth()===mo-1&&t.getUTCDate()===d?`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`:''};
+  let m=v.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return ok(+m[1],+m[2],+m[3]);
+  m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+  if(m){let y=+m[3];if(y<100)y+=2000;return ok(y,+m[2],+m[1])}
+  return'';
+}
+let fimp=[];
+function fiadoImpOpen(){
+  modal(`<h2>Importar fiados antigos</h2><p class="sm">Planilha (.csv ou .xlsx), <b>uma linha por dívida</b>. Colunas: <b>cliente</b> (obrigatório), <b>cpf/cnpj</b>, <b>valor</b> (o que ainda deve), <b>parcelas</b> (padrão 1), <b>primeiro vencimento</b> (dd/mm/aaaa), <b>data da compra</b> e <b>observação</b>. O mesmo cliente pode ter várias linhas. Cliente que não existe é cadastrado. Nada é gravado antes de você conferir e confirmar. Dica: no Excel, deixe a coluna de datas como <b>texto</b> (dd/mm/aaaa) ou salve em CSV, para o dia e o mês não se trocarem.</p>
+  <div class="row"><input type="file" accept=".csv,.txt,.xlsx,.xls" onchange="fiadoImpRead(this)" style="flex:1"><button class="btn g" onclick="fiadoImpModel()">Baixar modelo</button></div><div id="fdv" style="margin-top:12px"></div>`);
+}
+function fiadoImpModel(){
+  const csv='cliente;cpf/cnpj;valor;parcelas;primeiro vencimento;data da compra;observação\nMaria da Silva;529.982.247-25;350,00;1;15/11/2026;10/08/2026;fogão\nJoão Souza;;1200,00;4;05/11/2026;;geladeira\nJoão Souza;;180,00;1;30/11/2026;02/09/2026;ventilador\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='modelo-fiados.csv';a.click();
+}
+async function fiadoImpRead(inp){
+  const fl=inp.files[0];if(!fl)return;let rows;
+  try{rows=await readTable(fl)}catch(e){return alert(e.message==='xlsx'?'A biblioteca de planilhas não carregou. Verifique a internet.':'Não consegui ler o arquivo.')}
+  if(!rows.length)return alert('A planilha está vazia.');
+  const hs=Object.keys(rows[0]),nh=hs.map(norm),col={};
+  for(const k in FDALI)for(const a of FDALI[k]){const i=nh.indexOf(a);if(i>=0){col[k]=hs[i];break}}
+  if(col.nome==null||col.total==null)return $('#fdv').innerHTML='<p class="bad">Não achei as colunas <b>cliente</b> e <b>valor</b>. Baixe o modelo e confira os títulos.</p>';
+  const hoje=now().slice(0,10),vistos=new Set(db.customers.map(c=>norm(c.name)));
+  fimp=rows.map((r,i)=>{
+    const g=k=>col[k]!=null?String(r[col[k]]??'').trim():'';
+    const o={lin:i+2,nome:g('nome'),doc:g('doc'),total:num(g('total')),n:Math.max(1,Math.round(num(g('n'))||1)),primeiro:fiadoData(g('primeiro')),compra:fiadoData(g('compra'))||hoje,obs:g('obs')},er=[];
+    if(!o.nome&&!g('total'))return null;
+    if(!o.nome)er.push('sem cliente');if(!(o.total>0))er.push('valor inválido');if(!o.primeiro)er.push('vencimento inválido');
+    if(o.n>60)er.push('parcelas demais');
+    const d=digits(o.doc);if(o.doc&&!(d.length===11&&okCpf(d)||d.length===14&&okCnpj(d)))er.push('CPF/CNPJ inválido');
+    o.er=er;o.novo=!!o.nome&&!vistos.has(norm(o.nome));return o;
+  }).filter(Boolean);
+  const ok=fimp.filter(x=>!x.er.length),novos=new Set(ok.filter(x=>x.novo).map(x=>norm(x.nome))).size,tot=ok.reduce((a,x)=>a+x.total,0);
+  $('#fdv').innerHTML=`<p><b>${ok.length} dívidas</b> (${R(tot)}) · ${novos} cliente(s) novo(s) · ${fimp.length-ok.length?`<span class="bad">${fimp.length-ok.length} com erro (não serão importadas)</span>`:'sem erros'}</p>
+  <div class="tw" style="max-height:280px;overflow:auto"><table><tr><th>Lin.</th><th>Cliente</th><th>Valor</th><th>Parc.</th><th>1º venc.</th><th>Situação</th></tr>
+  ${fimp.slice(0,100).map(x=>`<tr><td>${x.lin}</td><td>${esc(x.nome)}</td><td>${R(x.total)}</td><td>${x.n}</td><td>${x.primeiro?fmtD(x.primeiro):'—'}</td><td>${x.er.length?`<span class="bad">${esc(x.er.join(', '))}</span>`:x.novo?'<span class="ok">cliente novo</span>':'ok'}</td></tr>`).join('')}</table></div>
+  ${fimp.length>100?'<p class="sm">Mostrando as 100 primeiras linhas.</p>':''}<p class="sm">Confira se as datas estão certas (dia/mês) antes de importar.</p>
+  <p><button class="btn" onclick="fiadoImpGo()" ${ok.length?'':'disabled'}>Importar ${ok.length} dívida(s)</button></p>`;
+}
+function fiadoImpGo(){
+  const ok=fimp.filter(x=>!x.er.length);if(!ok.length)return;
+  if(!confirm(`Importar ${ok.length} fiado(s) antigo(s) no total de ${R(ok.reduce((a,x)=>a+x.total,0))}?\n\nNão baixa estoque nem gera nota.`))return;
+  ok.forEach(fiadoCria);save();sync();closeM();alert(ok.length+' fiado(s) importado(s).');fimp=[];if(view==='car')vCar();else go('car');
 }
 /* ========= Carnê com multa e juros ========= */
 const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
@@ -2871,11 +2960,11 @@ function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('p
 function vIni(){
   if(window.__syncing&&!db.sales.length&&!db.products.length){$('#app').innerHTML=skel(7);return}
   const today=ld(now()),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
-  const vd=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at)===today),vm=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===today.slice(0,7));
+  const vd=SV().filter(s=>!s.canceled_at&&ld(s.created_at)===today),vm=SV().filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===today.slice(0,7));
   const rec=db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===today),open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&(db.sales.find(x=>x.id===i.sale_id)||{}).canceled_at==null);
   const late=open.filter(i=>i.due_date.slice(0,10)<today),hoje=open.filter(i=>i.due_date.slice(0,10)===today),pg=(db.payables||[]).filter(p=>!p.paid_at&&!p.canceled_at),pl=pg.filter(p=>String(p.due_date).slice(0,10)<today),p7=pg.filter(p=>{const n=dleft(p.due_date);return n>=0&&n<=7});
   const lo=lowStock();
-  const pendF=db.sales.filter(s=>!s.canceled_at&&s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'),prontas=pendF.filter(s=>!fisCheck(s).length).length,falta=pendF.length-prontas;
+  const pendF=SV().filter(s=>!s.canceled_at&&s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'),prontas=pendF.filter(s=>!fisCheck(s).length).length,falta=pendF.length-prontas;
   const tile=(t,v,sub,go_,bad)=>`<button type="button" class="tile ${bad?'warn':''}" ${go_?`onclick="go('${go_}')"`:''}><span class="t">${t}</span><span class="v">${v}</span>${sub?`<span class="s">${sub}</span>`:''}</button>`;
   const ticket=vd.length?sum(vd,s=>+s.total)/vd.length:0;
   const T=[[NN(),'pedido(s) novo(s) do catálogo','ped','warn'],[pevNew().length,'aviso(s) do balcão (PDV) para ver','bal','warn'],
@@ -2972,13 +3061,13 @@ function pagPayOk(id){
 let cxd=ld(now());
 function vCx(){
   const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
-  const sd=db.sales.filter(s=>day(s.created_at)),sdOk=sd.filter(s=>!s.canceled_at),devs=db.sales.filter(s=>s.canceled_at&&day(s.canceled_at)&&+s.refund_amount>0);
+  const sd=SV().filter(s=>day(s.created_at)),sdOk=sd.filter(s=>!s.canceled_at),devs=SV().filter(s=>s.canceled_at&&day(s.canceled_at)&&+s.refund_amount>0);
   sd.forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
   db.installments.filter(i=>day(i.paid_at)).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
   devs.forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount)); // devoluções saem do caixa no dia do cancelamento
   const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
   const open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
-  const vm=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
+  const vm=SV().filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
   $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value;vCx()"><button class="btn g s" onclick="cupomCfg()">Configurar cupom</button></div>
   <div class="prices"><div class="pr k"><span>Recebido no dia</span><b>${R(tot)}</b></div>
   ${Object.keys(by).map(m=>`<div class="pr"><span>${esc(m)}</span><b>${R(by[m])}</b></div>`).join('')}
@@ -3020,7 +3109,7 @@ function fisFix(t,s){
   return'';
 }
 function vFis(){
-  const l=[...db.sales].filter(s=>!s.canceled_at||s.fiscal_status==='emitida').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const l=[...SV()].filter(s=>!s.canceled_at||s.fiscal_status==='emitida').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   const rows=l.map(s=>({s,p:s.fiscal_status==='emitida'?[]:fisCheck(s)}));
   const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'&&!x.s.canceled_at),prontas=pend.filter(x=>!x.p.length).length;
   const kind=x=>x.s.canceled_at||x.s.fiscal_status==='cancelada'?'canc':x.s.fiscal_status==='emitida'?'emit':x.p.length?'pend':'pronta';
@@ -3057,7 +3146,7 @@ async function fisStatus(force){
   h+=certLine()+ibptLine();FST={t:Date.now(),h};paint(h);
 }
 async function fisEmitAll(){
-  const ids=db.sales.filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
+  const ids=SV().filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
   if(!ids.length)return alert('Nenhuma venda pronta.');
   if(!confirm('Emitir '+ids.length+' nota(s) agora, uma por vez, da mais antiga para a mais nova?\nSe a SEFAZ ou a API falhar, o processo para.'+(window.__amb===1?'\n\nAMBIENTE DE PRODUÇÃO: cada nota autorizada vale de verdade.':'')))return;
   let ok=0,rec=0,falha='';
@@ -3141,7 +3230,7 @@ function fisSave(id){
 }
 function csvFis(){
   const rows=[['data','documento','cliente','cpf_cnpj','ie','cep','endereco','numero','bairro','cidade','uf','ibge','natureza','frete','produto','ncm','cfop','csosn','un','qtd','valor_unit','valor_total']];
-  db.sales.filter(s=>s.fiscal_status!=='emitida'&&!s.canceled_at).forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
+  SV().filter(s=>s.fiscal_status!=='emitida'&&!s.canceled_at).forEach(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{};
     s.items.forEach(i=>rows.push([s.created_at.slice(0,10),s.doc_type==='nfce'?'NFC-e 65':'NF-e 55',c.name||'',c.cpf||'',c.ie||'',c.cep||'',c.street||'',c.number||'',c.district||'',c.city||'',c.uf||'',c.ibge||'',s.nat_op||'Venda de mercadoria',s.freight||'9',i.name,i.ncm||'',i.cfop||'',i.csosn||'',i.unit||'UN',i.qty,i.price,(i.price*i.qty).toFixed(2)]))});
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='pendentes-fiscal.csv';a.click();
@@ -3223,9 +3312,9 @@ function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
   if(k==='vendas'){
-    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)).sort((a,b)=>a.created_at.localeCompare(b.created_at)),by={};
+    const L=SV().filter(s=>!s.canceled_at&&inP(s.created_at)).sort((a,b)=>a.created_at.localeCompare(b.created_at)),by={};
     L.forEach(s=>{const m=s.pay_type==='crediario'?'Carnê':(s.method||'Não informado');by[m]=(by[m]||0)+ +s.total});
-    const tot=sum(L,s=>+s.total),nc=db.sales.filter(s=>s.canceled_at&&inP(s.created_at)).length;
+    const tot=sum(L,s=>+s.total),nc=SV().filter(s=>s.canceled_at&&inP(s.created_at)).length;
     return{title:RELN[k],sub:'Período: '+per,head:['Data','Cliente','Vendedor','Pagamento','Itens','Total'],al:'lllllr',
       rows:L.map(s=>[fmtD(ld(s.created_at)),cn(s.customer_id),s.seller_name||'—',s.pay_type==='crediario'?'Carnê':(s.method||'—'),(s.items||[]).reduce((a,i)=>a+ +i.qty,0),R(s.total)]),
       foot:['','','','','Total',R(tot)],
@@ -3244,7 +3333,7 @@ function relBuild(){
       sum:[['A receber',R(te)],['A pagar',R(ts)],['Saldo previsto',R(te-ts)],['Já vencido a receber',R(rows[0]&&rows[0].lab[0]==='J'?rows[0].e:0)],['Já vencido a pagar',R(rows[0]&&rows[0].lab[0]==='J'?rows[0].s:0)]]};
   }
   if(k==='lucro'||k==='dre'){
-    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)),M={};let sc=0,rec=0,cmv=0;
+    const L=SV().filter(s=>!s.canceled_at&&inP(s.created_at)),M={};let sc=0,rec=0,cmv=0;
     L.forEach(s=>{rec+=+s.total||0;(s.items||[]).forEach(i=>{const pr=db.products.find(x=>x.id===i.id)||{},q=+i.qty||0,f=q*(+i.price||0),c=+pr.cost>0?q*pr.cost:0,o=M[i.id]=M[i.id]||{n:i.name,q:0,f:0,c:0,sc:0};o.q+=q;o.f+=f;o.c+=c;if(!(+pr.cost>0)){o.sc=1;sc++}else cmv+=c})});
     if(k==='lucro'){
       const A=Object.values(M).map(o=>({...o,l:o.f-o.c,m:o.f&&!o.sc?(o.f-o.c)/o.f*100:null})).sort((a,b)=>(b.sc?-1e12:b.l)-(a.sc?-1e12:a.l)),ok=A.filter(o=>!o.sc);
@@ -3267,7 +3356,7 @@ function relBuild(){
   }
   if(k==='compras'){
     const d0=Math.max(1,Math.round((new Date(t)-new Date(f))/864e5)+1),sold={};
-    db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)).forEach(s=>(s.items||[]).forEach(i=>sold[i.id]=(sold[i.id]||0)+(+i.qty||0)));
+    SV().filter(s=>!s.canceled_at&&inP(s.created_at)).forEach(s=>(s.items||[]).forEach(i=>sold[i.id]=(sold[i.id]||0)+(+i.qty||0)));
     const cob=+REL.cob||30,mn=stockMin();
     const A=db.products.filter(p=>p.active!==false&&p.active!==0).map(p=>{const st=+p.stock||0,q=sold[p.id]||0,r=q/d0,dias=r>0?st/r:null,need=Math.max(Math.ceil(r*cob-st),st<mn?mn-st:0,0);return{p,st,q,dias,need,cost:need*(+p.cost||0)}})
       .filter(o=>o.need>0).sort((a,b)=>(a.dias==null?1e9:a.dias)-(b.dias==null?1e9:b.dias));
@@ -3277,7 +3366,7 @@ function relBuild(){
       sum:[['Produtos a repor',A.length],['Unidades',sum(A,o=>o.need)],['Custo estimado',R(sum(A,o=>o.cost))],['Acabam em até 7 dias',A.filter(o=>o.dias!=null&&o.dias<=7).length]]};
   }
   if(k==='abc'){
-    const L=db.sales.filter(s=>!s.canceled_at&&inP(s.created_at)),M={},cli=REL.abcFor==='cli',by=cli&&REL.abcBy==='lucro'?'fat':REL.abcBy;
+    const L=SV().filter(s=>!s.canceled_at&&inP(s.created_at)),M={},cli=REL.abcFor==='cli',by=cli&&REL.abcBy==='lucro'?'fat':REL.abcBy;
     L.forEach(s=>{
       if(cli){const id=s.customer_id||'-',o=M[id]=M[id]||{n:cn(s.customer_id),q:0,f:0,l:0,v:0};o.q+=1;o.f+=+s.total||0;o.v+=1;return}
       (s.items||[]).forEach(i=>{const o=M[i.id]=M[i.id]||{n:i.name,q:0,f:0,l:0,c:0},pr=db.products.find(x=>x.id===i.id)||{},q=+i.qty||0,f=q*(+i.price||0);
@@ -3326,10 +3415,10 @@ function relBuild(){
     const rows=[],tm={};
     for(let d=new Date(f+'T12:00:00');ld(d.toISOString())<=t&&rows.length<400;d.setDate(d.getDate()+1)){
       const day=ld(d.toISOString()),by={},add=(m,v)=>by[m]=(by[m]||0)+v;
-      const sd=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at)===day);
-      db.sales.filter(s=>ld(s.created_at)===day).forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
+      const sd=SV().filter(s=>!s.canceled_at&&ld(s.created_at)===day);
+      SV().filter(s=>ld(s.created_at)===day).forEach(s=>{const v=s.pay_type==='crediario'?+s.entry:+s.total;if(v)add(s.method||'Não informado',v)});
       db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===day).forEach(i=>add(i.method||'Não informado',+i.paid_amount||+i.amount));
-      db.sales.filter(s=>s.canceled_at&&ld(s.canceled_at)===day&&+s.refund_amount>0).forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount));
+      SV().filter(s=>s.canceled_at&&ld(s.canceled_at)===day&&+s.refund_amount>0).forEach(s=>add(s.refund_method||'Não informado',-s.refund_amount));
       const tot=Object.values(by).reduce((a,b)=>a+b,0);for(const m in by)tm[m]=(tm[m]||0)+by[m];
       if(sd.length||tot)rows.push([fmtD(day),sd.length,Object.entries(by).map(([m,v])=>m+' '+R(v)).join(' · ')||'—',R(tot),tot]);
     }
