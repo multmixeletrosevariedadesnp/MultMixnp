@@ -1,5 +1,5 @@
 {
- "version": "1.32.0",
+ "version": "1.33.0",
  "date": "2026-10-28",
- "notes": "Layout do menu à escolha: lateral, superior, lateral compacta ou barra inferior (menu Conta)."
+ "notes": "Melhorias de uso: Início como painel do dia, busca global (Ctrl+K), tema claro/escuro, barra inferior com Mais, Fiscal com filtros e pendências com botão Corrigir, estoque em cor, atalhos F3/F9, confirmações mais claras, acessibilidade."
 }

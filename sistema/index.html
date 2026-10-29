@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.32.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.33.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
-@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
 header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;display:flex;align-items:center;gap:14px;padding:12px 18px;flex-wrap:wrap}
@@ -55,7 +55,7 @@ th{color:var(--mut);font-weight:600}
 @media print{header,.noprint{display:none}}
 
 :root{--brand:#00468f;--pri:#00539f;--tag:#ffc21a}
-@media(prefers-color-scheme:dark){:root{--pri:#2b78d6}}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--pri:#2b78d6}}
 header{background:linear-gradient(135deg,#002e68,var(--brand))}
 header h1{color:#e9eef6}
 header h1 span{background:none;color:var(--tag);padding:0;margin:0}
@@ -178,21 +178,79 @@ body.in.L-bot header{position:sticky;top:0;height:auto;align-self:auto;flex-dire
 .L-bot nav button{flex:0 0 auto}
 .L-bot nav button span{max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .L-bot nav .grp{display:none!important}
+@media(max-width:600px){.L-bot nav button{flex:1 1 0;min-width:0;padding:6px 2px}.L-bot nav button span{max-width:100%}}
+.tw{overflow-x:auto}
 .L-bot nav button.on{background:rgba(255,255,255,.2);box-shadow:none}
 .L-bot nav .out{margin:0;border:0;border-radius:10px}
 .L-bot nav button .bdg{position:absolute;top:0;right:8px;font-size:10px;padding:0 5px;margin:0}
+/* ===== UX: números alinhados, cartões, pílulas, estados vazios, tema, acessibilidade ===== */
+:root[data-theme="dark"]{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#2b78d6;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66;color-scheme:dark}
+:root[data-theme="light"]{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#00539f;--tag:#ffc21a;--ok:#12805c;--bad:#c4321f;color-scheme:light}
+.pr{align-items:baseline;gap:12px}
+.pr>span:first-child{flex:1}
+.pr b{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
+.pr>.sm{margin:0;min-width:84px;text-align:right}
+td,th,.pr b,.tile .v{font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+.tile{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;font:inherit;color:inherit}
+.tile[onclick]{cursor:pointer}.tile[onclick]:hover{border-color:var(--pri)}
+.tile .t{color:var(--mut);font-size:13px}
+.tile .v{font-size:24px;font-weight:800;letter-spacing:-.3px;line-height:1.2}
+.tile .s{color:var(--mut);font-size:12.5px}
+.tile.warn{border-color:var(--bad)}.tile.warn .v{color:var(--bad)}
+.todo{display:grid;gap:8px;margin:8px 0 4px}
+.todo button{display:flex;align-items:center;gap:12px;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:12px;padding:10px 14px;cursor:pointer}
+.todo button.bad{border-left-color:var(--bad)}.todo button.ok{border-left-color:var(--ok)}.todo button.warn{border-left-color:var(--tag)}
+.todo button:hover{border-color:var(--pri)}
+.todo b{font-size:20px;min-width:34px;font-variant-numeric:tabular-nums}
+.todo span{flex:1}.todo i{font-style:normal;color:var(--mut)}
+.qa{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ok{background:rgba(18,128,92,.13);color:var(--ok)}.pill.bad{background:rgba(196,50,31,.13);color:var(--bad)}
+.pill.warn{background:rgba(255,193,60,.28);color:#7a5400}.pill.mut{background:var(--line);color:var(--mut)}
+:root[data-theme="dark"] .pill.warn,:root:not([data-theme="light"]) .pill.warn{color:#ffd77a}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .pill.warn{color:#7a5400}}
+.stk{display:inline-block;min-width:34px;text-align:center;padding:1px 8px;border-radius:8px;font-weight:700;font-variant-numeric:tabular-nums}
+.stk.ok{background:rgba(18,128,92,.13);color:var(--ok)}.stk.warn{background:rgba(255,193,60,.28);color:#7a5400}.stk.bad{background:rgba(196,50,31,.13);color:var(--bad)}
+.empty{text-align:center;padding:30px 12px;color:var(--mut)}.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}.empty .btn{margin-top:12px}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--line),transparent,var(--line));background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.skr{display:grid;gap:12px;padding:10px 0}
+details.more{position:relative;display:inline-block}
+details.more>summary{list-style:none;cursor:pointer}details.more>summary::-webkit-details-marker{display:none}
+details.more>div{position:absolute;z-index:6;top:calc(100% + 6px);left:0;min-width:210px;display:grid;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.fchips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.fchips .chip b{font-variant-numeric:tabular-nums}
+.pend{margin:4px 0 0;padding:0;list-style:none;display:grid;gap:3px}
+.pend li{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut)}
+.pend li button{padding:1px 8px;font-size:12px}
+#kq{font-size:17px}
+.kres{display:grid;gap:2px;margin-top:10px;max-height:56vh;overflow:auto}
+.kres .kg{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:8px 8px 2px}
+.kres button{display:flex;justify-content:space-between;gap:10px;text-align:left;font:inherit;color:inherit;background:transparent;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}
+.kres button.on,.kres button:hover{background:var(--line)}
+.kres button small{color:var(--mut)}
+.skip{position:absolute;left:-999px;top:8px;z-index:60;background:var(--tag);color:#101828;padding:8px 14px;border-radius:8px;font-weight:700}
+.skip:focus{left:8px}
+a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,.todo button:focus-visible,.tile:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+@media(pointer:coarse){.btn,.btn.s,nav button,.chip,input,select{min-height:44px}.btn.s{padding:9px 14px}.todo button{min-height:52px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.moreg button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--line);padding:12px 6px;cursor:pointer}
+.moreg .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:12px 6px 2px}
+.moreg .ng,.moreg .nd{display:block}
 </style>
 </head>
 <body>
+<a class="skip" href="#app">Pular para o conteúdo</a>
 <header>
   <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
   <nav id="nav"></nav>
   <button class="ibtn" data-install hidden>Instalar app</button>
-  <span class="sync" id="sync"></span>
+  <span class="sync" id="sync" role="status" aria-live="polite"></span>
   <button type="button" class="appv" data-appver></button>
   <button type="button" class="appv" data-appforce></button>
 </header>
-<main id="app"></main>
+<main id="app" tabindex="-1"></main>
 <div id="modal"></div>
 <div id="master"></div>
 
@@ -288,7 +346,7 @@ function put(t,row,q){ // grava local + fila
   save();if(!q)sync();
 }
 let syncP=Promise.resolve();
-function sync(){return syncP=syncP.then(doSync,doSync)}
+function sync(){window.__syncing=true;return syncP=syncP.then(doSync,doSync).finally(()=>{window.__syncing=false})}
 async function doSync(){
   if(!sb)return setSync('modo demo (local)');
   try{
@@ -1223,13 +1281,63 @@ function saveEmp(){
     alert('Dados da empresa salvos.');render()});
 }
 
+/* ========= UX: busca global, tema, estados vazios, menu "Mais" ========= */
+const skel=n=>'<div class="skr">'+Array.from({length:n},(_,i)=>`<div class="skel" style="width:${92-i*7}%"></div>`).join('')+'</div>';
+const empty=(t,sub,btn)=>`<div class="empty"><b>${t}</b>${sub||''}${btn?`<div>${btn}</div>`:''}</div>`;
+let NAVFULL='';
+function moreOpen(){modal('<h2>Menu</h2><div class="moreg">'+NAVFULL.replace(/onclick="go\(/g,'onclick="closeM();go(')+'</div>')}
+/* busca global: Ctrl+K (ou Cmd+K) */
+let KSEL=0,KRES=[];
+function searchOpen(){
+  if(!isAdmin())return;
+  modal(`<h2 style="margin:0 0 8px">Buscar</h2><input id="kq" type="search" autocomplete="off" placeholder="Cliente, produto, venda ou tela…" oninput="searchRun()" onkeydown="searchKey(event)"><div class="kres" id="kres"></div><p class="sm">↑ ↓ escolhem · Enter abre · Esc fecha · atalho: Ctrl+K</p>`);
+  setTimeout(()=>{const e=$('#kq');if(e){e.focus();searchRun()}},30);
+}
+function searchRun(){
+  const raw=($('#kq')||{}).value||'',q=norm(raw),qd=digits(raw),out=[];
+  const T=[['ini','Início'],['pdv','Nova venda'],['ped','Pedidos'],['cli','Clientes'],['car','Carnês'],['cob','Cobrança'],...(ADM()?[['bal','Balcão (PDV)'],['prod','Produtos'],['cx','Caixa'],['pag','Contas a pagar'],['fis','Fiscal'],['rtc','IBS / CBS / IS'],['dfe','Notas recebidas'],['com','Comissões'],['aud','Auditoria'],['rel','Relatórios (PDF)'],['arte','Arte do produto'],['emp','Empresa'],['usr','Usuários']]:[])];
+  const add=(g,t,sub,a)=>out.push({g,t,sub,a});
+  T.filter(([v,l])=>!q||norm(l).includes(q)).slice(0,q?5:8).forEach(([v,l])=>add('Ir para',l,'',{k:'go',v}));
+  if(q.length>=2||qd.length>=3){
+    db.customers.filter(c=>norm([c.name,c.trade_name,c.city,c.email].join(' ')).includes(q)||(qd.length>=3&&digits([c.cpf,c.phone].join(' ')).includes(qd))).slice(0,6).forEach(c=>add('Clientes',c.name,[c.cpf,c.phone,c.city].filter(Boolean).join(' · '),{k:'cli',id:c.id}));
+    db.products.filter(p=>norm([p.name,p.category,p.ncm,p.ean].join(' ')).includes(q)||(qd.length>=6&&String(p.ean||'')===qd)).slice(0,6).forEach(p=>add('Produtos',p.name,R(p.price_cash)+' · estoque '+(+p.stock||0),{k:'prod',id:p.id}));
+    db.sales.filter(s=>String(s.id).slice(0,8).toUpperCase().includes(raw.trim().toUpperCase())||norm((db.customers.find(c=>c.id===s.customer_id)||{}).name||'').includes(q)).sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,6).forEach(s=>add('Vendas',String(s.id).slice(0,8).toUpperCase()+' · '+R(s.total),fmtD(ld(s.created_at))+' · '+((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')+(s.canceled_at?' · cancelada':''),{k:'sale',id:s.id}));
+  }
+  KRES=out;KSEL=0;searchPaint();
+}
+function searchPaint(){
+  let g='',h='';
+  KRES.forEach((r,i)=>{if(r.g!==g){g=r.g;h+=`<div class="kg">${g}</div>`}h+=`<button class="${i===KSEL?'on':''}" onclick="searchGo(${i})"><span>${esc(r.t)}</span><small>${esc(r.sub||'')}</small></button>`});
+  const e=$('#kres');if(e){e.innerHTML=h||'<p class="sm">Nada encontrado.</p>';const on=e.querySelector('.on');if(on)on.scrollIntoView({block:'nearest'})}
+}
+function searchKey(e){
+  if(e.key==='ArrowDown'){e.preventDefault();KSEL=Math.min(KRES.length-1,KSEL+1);searchPaint()}
+  else if(e.key==='ArrowUp'){e.preventDefault();KSEL=Math.max(0,KSEL-1);searchPaint()}
+  else if(e.key==='Enter'){e.preventDefault();searchGo(KSEL)}
+  else if(e.key==='Escape'){closeM()}
+}
+function searchGo(i){
+  const r=KRES[i];if(!r)return;closeM();const a=r.a;
+  if(a.k==='go')go(a.v);else if(a.k==='cli')cliForm(a.id);else if(a.k==='prod')prodForm(a.id);else if(a.k==='sale')cupom(a.id);
+}
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'&&isAdmin()){e.preventDefault();if($('#modal').classList.contains('open')&&$('#kq'))return;searchOpen()}
+});
+/* tema claro/escuro (por aparelho) */
+const TEMAUI=()=>{try{const v=localStorage.mm_tema_ui;return v==='dark'||v==='light'?v:'auto'}catch(e){return'auto'}};
+function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else localStorage.mm_tema_ui=k}catch(e){}
+  if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);layoutOpen()}
+
 /* ========= Layout do menu (por aparelho) ========= */
 const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.']};
 const LAY=()=>{try{const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
 const LAYSVG={side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
 function layoutOpen(){
-  modal(`<h2>Layout do menu</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
-  <div style="display:grid;gap:10px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
+  const TE=TEMAUI();
+  modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
+  <b>Tema</b><div class="fchips" style="margin-bottom:12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
+  <b>Layout do menu</b>
+  <div style="display:grid;gap:10px;margin-top:6px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
 }
 function layoutSet(k){try{localStorage.mm_layout=k}catch(e){}closeM();render()}
 function ngTog(ev,el){
@@ -1395,6 +1503,7 @@ const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a
  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.5-1-1.5-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1 0-2-.5-2.5-1.5M12 6.5v1.5M12 16v1.5"/>',
  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
  logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
+ICON.menu='<path d="M4 6h16M4 12h16M4 18h16"/>';ICON.search='<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>';
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 function render(){
   try{applyTema(CO())}catch(e){}
@@ -1406,11 +1515,17 @@ function render(){
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
   let h='';
   if(isAdmin()){
+    h+=`<button onclick="searchOpen()" title="Buscar (Ctrl+K)">${ic('search')}<span>Buscar</span></button>`;
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin')));
     if(ADM())h+=grp('Gestão',item('ini','Início','wallet')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'cart')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield'));
-    h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('image')}<span>Layout do menu</span></button>`,'gconta');
+    h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('image')}<span>Aparência</span></button>`,'gconta');
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
+  }
+  NAVFULL=h;
+  if(LAY()==='bot'&&isAdmin()){
+    const bell=(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0];
+    h=bell+item('ini','Início','wallet')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','receipt'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
   }
   $('#nav').innerHTML=h;
   ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
@@ -1514,12 +1629,12 @@ function margTxt(cost,price){const m=margCalc(cost,price);return m?`<span class=
 function prodRows(){
   const k=norm(pq),l=db.products.filter(p=>!pq.trim()||norm([p.name,p.category,p.ncm].join(' ')).includes(k));
   const n=$('#pcount');if(n)n.textContent=pq.trim()?l.length+' de '+db.products.length+' produtos':db.products.length+' produtos';
-  return l.length?l.map(p=>`<tr><td>${esc(p.name)}${promoPct(p)?` <b class="bdg" style="background:var(--bad);color:#fff">-${promoPct(p)}%</b>`:''}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${margTxt(p.cost,p.price_cash)}</td><td>${p.stock}</td>
-  <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join(''):'<tr><td colspan="7">Nenhum produto encontrado.</td></tr>';
+  return l.length?l.map(p=>`<tr><td>${esc(p.name)}${promoPct(p)?` <b class="bdg" style="background:var(--bad);color:#fff">-${promoPct(p)}%</b>`:''}</td><td>${R(p.price_cash)}</td><td>${p.price_card>0?R(p.price_card):'—'}</td><td>${p.price_credit>0?R(p.price_credit):'—'}</td><td>${margTxt(p.cost,p.price_cash)}</td><td><span class="stk ${(+p.stock||0)<=0?'bad':(+p.stock||0)<=stockMin()?'warn':'ok'}">${+p.stock||0}</span></td>
+  <td><button class="btn g s" onclick="prodForm('${p.id}')">Editar</button></td></tr>`).join(''):`<tr><td colspan="7">${window.__syncing&&!db.products.length?skel(6):empty('Nenhum produto encontrado',pq.trim()?'Tente outro termo.':'Cadastre o primeiro produto ou importe uma planilha.')}</td></tr>`;
 }
 function vProd(){
   $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar produto, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
-  <table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Margem</th><th>Estoque</th><th></th></tr><tbody id="ptb">${prodRows()}</tbody></table>`;
+  <div class="tw"><table><tr><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Margem</th><th>Estoque</th><th></th></tr><tbody id="ptb">${prodRows()}</tbody></table></div>`;
 }
 /* ========= Importar produtos (xlsx / csv) ========= */
 const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -1776,7 +1891,7 @@ function vPdv(){
     <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
     <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
    <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div>
-   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · digite <b>3*código</b> para 3 unidades · o leitor USB funciona de qualquer lugar da tela</p></section>
+   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F3</b> cliente · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>F9</b> forma de pagamento · <b>Esc</b> limpa a busca · digite <b>3*código</b> para 3 unidades · o leitor USB funciona de qualquer lugar da tela</p></section>
   <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
@@ -1894,7 +2009,10 @@ document.addEventListener('keydown',e=>{
   if(k==='F2'){e.preventDefault();$('#p_q').focus();$('#p_q').select()}
   else if(k==='F4'){e.preventDefault();finish()}
   else if(k==='F6'){e.preventDefault();$('#s_q').focus();$('#s_q').select()}
+  else if(k==='F3'){e.preventDefault();$('#c_n').focus();$('#c_n').select()}
+  else if(k==='F9'){e.preventDefault();$('#s_t').focus()}
   else if(k==='F8'){e.preventDefault();if(cart.length&&confirm('Limpar o carrinho?')){cart=[];cartView()}}
+  else if(k==='Escape'&&document.activeElement===$('#p_q')){$('#p_q').value='';pdvSearch()}
   else if(!/INPUT|SELECT|TEXTAREA/.test(tag)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
     const n=Date.now();if(n-_kt>120)_kb='';_kt=n;
     if(k==='Enter'){if(_kb.length>=6){e.preventDefault();pdvCode(_kb)}_kb=''}
@@ -1958,8 +2076,8 @@ function vCli(){
   $('#app').innerHTML=`<div class="bar"><input placeholder="Buscar por nome, fantasia, CPF/CNPJ, telefone, e-mail ou cidade" value="${esc(cq)}" oninput="cq=this.value;cliList()">
   <select style="max-width:170px" onchange="ckind=this.value;cliList()"><option value="todos" ${ckind==='todos'?'selected':''}>Todos</option><option value="cliente" ${ckind==='cliente'?'selected':''}>Clientes</option><option value="fornecedor" ${ckind==='fornecedor'?'selected':''}>Fornecedores</option></select>
   <button class="btn" onclick="cliForm()">Novo cadastro</button></div>
-  <div class="bar"><label class="sm" style="align-self:center"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label>
-  <button class="btn g s" onclick="cliImpOpen()">Importar planilha</button><button class="btn g s" onclick="cliExport('xlsx')">Exportar Excel</button><button class="btn g s" onclick="cliExport('csv')">Exportar CSV</button><span class="sm" id="cn" style="align-self:center"></span></div>
+  <div class="bar" style="align-items:center"><label class="sm" style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" style="width:auto" ${showInat?'checked':''} onchange="showInat=this.checked;cliList()"> Mostrar inativos</label>
+  <details class="more"><summary class="btn g s">Mais ações ▾</summary><div><button class="btn g s" onclick="cliImpOpen()">Importar planilha</button><button class="btn g s" onclick="cliExport('xlsx')">Exportar Excel</button><button class="btn g s" onclick="cliExport('csv')">Exportar CSV</button></div></details><span class="sm" id="cn" style="margin:0"></span></div>
   <div id="cl" style="overflow:auto"></div>`;cliList();
 }
 function cliList(){
@@ -1968,7 +2086,7 @@ function cliList(){
   $('#cl').innerHTML=l.length?`<table><tr><th>Nome</th><th>CPF / CNPJ</th><th>Telefone</th><th>Cidade</th><th>Em aberto</th><th></th></tr>${l.map(c=>{const o=owed(c.id),late=o.some(i=>i.due_date<today),forn=c.kind==='fornecedor';
   return`<tr><td>${esc(c.name)} ${forn?'<span class="tag">fornecedor</span>':''}${c.person_type==='PJ'?' <span class="tag">PJ</span>':''}${c.active===false?' <span class="tag">inativo</span>':''}${c.trade_name?`<div class="sm">${esc(c.trade_name)}</div>`:''}</td><td>${esc(c.cpf)}</td><td>${esc(c.phone)}</td><td>${esc(c.city||'')}${c.uf?'/'+esc(c.uf):''}</td>
   <td>${forn?'—':o.length?`<span class="${late?'bad':''}">${R(o.reduce((s,i)=>s+i.amount,0))} (${o.length} parc.)</span>`:'<span class="ok">Em dia</span>'}</td>
-  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:'<p>Nenhum cadastro encontrado. Use "Novo cadastro" para incluir.</p>';
+  <td><button class="btn g s" onclick="cliForm('${c.id}')">Abrir</button></td></tr>`}).join('')}</table>`:(window.__syncing&&!db.customers.length?skel(6):empty('Nenhum cadastro encontrado',cq.trim()?'Tente outro termo de busca.':'Cadastre o primeiro cliente ou importe uma planilha.',`<button class="btn" onclick="cliForm()">Novo cadastro</button>`));
 }
 /* ========= Importar clientes e fornecedores (csv / xlsx) ========= */
 const CALI={name:['nome razao social','razao social','nome completo','nome','cliente','fornecedor','empresa'],trade_name:['nome fantasia','fantasia'],
@@ -2346,7 +2464,7 @@ function vPed(){
   <td><span class="tag ${o.status==='novo'?'ok':''}">${st[o.status]||o.status}</span></td>
   <td>${o.status==='novo'?`<button class="btn s" onclick="toSale('${o.id}')">Vender</button> <button class="btn g s" onclick="cancelOrder('${o.id}')">Cancelar</button>`:''}
   ${o.customer_phone?` <a class="btn g s" target="_blank" rel="noopener" href="https://wa.me/55${digits(o.customer_phone)}">WhatsApp</a>`:''}</td></tr>`).join('')}</table></div>`
-  :'<p>Nenhum pedido ainda. Os pedidos feitos no catálogo aparecem aqui.</p>';
+  :empty('Nenhum pedido ainda','Os pedidos feitos no catálogo aparecem aqui.');
 }
 function toSale(id){
   const o=db.orders.find(x=>x.id===id);
@@ -2723,24 +2841,35 @@ const stockMin=()=>+(NS().stockMin??3);
 const lowStock=()=>db.products.filter(p=>p.active!==false&&p.active!==0&&(+p.stock||0)<=stockMin()).sort((a,b)=>(+a.stock||0)-(+b.stock||0)||String(a.name).localeCompare(b.name,'pt-BR'));
 function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('prod')}
 function vIni(){
+  if(window.__syncing&&!db.sales.length&&!db.products.length){$('#app').innerHTML=skel(7);return}
   const today=ld(now()),sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
   const vd=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at)===today),vm=db.sales.filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===today.slice(0,7));
   const rec=db.installments.filter(i=>i.paid_at&&ld(i.paid_at)===today),open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&(db.sales.find(x=>x.id===i.sale_id)||{}).canceled_at==null);
-  const late=open.filter(i=>i.due_date.slice(0,10)<today),pg=(db.payables||[]).filter(p=>!p.paid_at&&!p.canceled_at),pl=pg.filter(p=>String(p.due_date).slice(0,10)<today),p7=pg.filter(p=>{const n=dleft(p.due_date);return n>=0&&n<=7});
+  const late=open.filter(i=>i.due_date.slice(0,10)<today),hoje=open.filter(i=>i.due_date.slice(0,10)===today),pg=(db.payables||[]).filter(p=>!p.paid_at&&!p.canceled_at),pl=pg.filter(p=>String(p.due_date).slice(0,10)<today),p7=pg.filter(p=>{const n=dleft(p.due_date);return n>=0&&n<=7});
   const lo=lowStock();
-  const card=(t,v,sub,go_,bad)=>`<div class="pr ${go_?'':''}" ${go_?`style="cursor:pointer" onclick="go('${go_}')"`:''}><span ${bad?'class="bad"':''}>${t}</span><b ${bad?'class="bad"':''}>${v}</b>${sub?`<span class="sm">${sub}</span>`:''}</div>`;
-  $('#app').innerHTML=`<div class="prices">
-  ${card('Vendas hoje',R(sum(vd,s=>+s.total)),vd.length+' venda(s)','cx')}
-  ${card('Vendas no mês',R(sum(vm,s=>+s.total)),vm.length+' venda(s)')}
-  ${card('Parcelas recebidas hoje',R(sum(rec,i=>+i.paid_amount||+i.amount)),rec.length+' parcela(s)','cx')}
-  ${card('Parcelas em atraso',R(sum(late,i=>due(i).v)),late.length+' parcela(s)','cob',late.length)}
-  ${card('Contas a pagar vencidas',R(sum(pl,p=>+p.amount)),pl.length+' conta(s)','pag',pl.length)}
-  ${card('Contas a pagar em 7 dias',R(sum(p7,p=>+p.amount)),p7.length+' conta(s)','pag')}
-  ${card('Pedidos novos',NN(),'do catálogo','ped',NN())}
+  const pendF=db.sales.filter(s=>!s.canceled_at&&s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'),prontas=pendF.filter(s=>!fisCheck(s).length).length,falta=pendF.length-prontas;
+  const tile=(t,v,sub,go_,bad)=>`<button type="button" class="tile ${bad?'warn':''}" ${go_?`onclick="go('${go_}')"`:''}><span class="t">${t}</span><span class="v">${v}</span>${sub?`<span class="s">${sub}</span>`:''}</button>`;
+  const ticket=vd.length?sum(vd,s=>+s.total)/vd.length:0;
+  const T=[[NN(),'pedido(s) novo(s) do catálogo','ped','warn'],[pevNew().length,'aviso(s) do balcão (PDV) para ver','bal','warn'],
+   [late.length,'parcela(s) em atraso · '+R(sum(late,i=>due(i).v)),'cob','bad'],[hoje.length,'parcela(s) vencem hoje · '+R(sum(hoje,i=>due(i).v)),'cob',''],
+   [pl.length,'conta(s) a pagar vencida(s) · '+R(sum(pl,p=>+p.amount)),'pag','bad'],[p7.length,'conta(s) a pagar nos próximos 7 dias','pag',''],
+   [prontas,'nota(s) pronta(s) para emitir','fis','ok'],[falta,'venda(s) sem nota com dado faltando','fis','warn'],
+   [dfePend(),'nota(s) recebida(s) para lançar','dfe',''],[lo.length,'produto(s) com estoque baixo','prod','warn']].filter(x=>x[0]>0);
+  $('#app').innerHTML=`<h2 style="margin:0 0 2px">Hoje, ${fmtD(today)}</h2>
+  <div class="qa"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar (Ctrl+K)</button></div>
+  <h3 style="margin:10px 0 0">Para fazer</h3>
+  <div class="todo">${T.length?T.map(([n,t,g,c])=>`<button type="button" class="${c}" onclick="go('${g}')"><b>${n}</b><span>${t}</span><i>›</i></button>`).join(''):'<p class="ok" style="margin:6px 0">Tudo em dia. 🎉</p>'}</div>
+  <div class="tiles">
+  ${tile('Vendas hoje',R(sum(vd,s=>+s.total)),vd.length+' venda(s)'+(vd.length?' · ticket médio '+R(ticket):''),'cx')}
+  ${tile('Vendas no mês',R(sum(vm,s=>+s.total)),vm.length+' venda(s)')}
+  ${tile('Recebido hoje (parcelas)',R(sum(rec,i=>+i.paid_amount||+i.amount)),rec.length+' parcela(s)','cx')}
+  ${tile('Parcelas em atraso',R(sum(late,i=>due(i).v)),late.length+' parcela(s)','cob',late.length)}
+  ${tile('Contas a pagar vencidas',R(sum(pl,p=>+p.amount)),pl.length+' conta(s)','pag',pl.length)}
+  ${tile('Contas a pagar em 7 dias',R(sum(p7,p=>+p.amount)),p7.length+' conta(s)','pag')}
   </div>
   <div class="box" style="max-width:none"><h2>Estoque baixo (${lo.length})</h2>
   <p class="sm">Produtos ativos com ${stockMin()} unidade(s) ou menos. Mude o limite em Avisos &gt; Configurar avisos.</p>
-  ${lo.length?`<div style="overflow:auto"><table><tr><th>Produto</th><th>Estoque</th><th></th></tr>${lo.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td class="${(+p.stock||0)<=0?'bad':''}"><b>${+p.stock||0}</b></td><td><button class="btn g s" onclick="iniProd('${p.id}')">Abrir</button></td></tr>`).join('')}</table></div>`:'<p>Nenhum produto com estoque baixo. 🎉</p>'}</div>`;
+  ${lo.length?`<div style="overflow:auto"><table><tr><th>Produto</th><th>Estoque</th><th></th></tr>${lo.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td><span class="stk ${(+p.stock||0)<=0?'bad':'warn'}">${+p.stock||0}</span></td><td><button class="btn g s" onclick="iniProd('${p.id}')">Abrir</button></td></tr>`).join('')}</table></div>`:'<p>Nenhum produto com estoque baixo. 🎉</p>'}</div>`;
 }
 
 /* ========= Tela de cobrança (parcelas a receber) ========= */
@@ -2762,7 +2891,7 @@ function vCob(){
   ${list.map(r=>`<tr><td>${esc(r.c.name||'Cliente')}<div class="sm">${esc(r.c.phone||'sem telefone')}</div></td><td>${r.i.number}/${r.tot}</td>
   <td class="${r.n<0?'bad':''}">${fmtD(r.i.due_date)}<div class="sm">${dtxt(r.n)}</div></td><td><b>${R(r.d.v)}</b>${r.d.fee?`<div class="sm">com R$ ${(+r.d.fee).toFixed(2).replace('.',',')} de encargos</div>`:''}</td>
   <td style="white-space:nowrap"><button class="btn s" onclick="pixAtual('${r.i.id}','${r.sl.id}')">Cobrar</button> <button class="btn g s" onclick="payAsk('${r.i.id}','${r.sl.id}')">Receber</button> <button class="btn g s" onclick="carne('${r.sl.id}')">Carnê</button></td></tr>`).join('')}</table></div>`
-  :'<p>Nenhuma parcela nesta lista. 🎉</p>'}`;
+  :empty('Nenhuma parcela nesta lista 🎉','Tudo em dia por aqui.')}`;
 }
 
 /* ========= Contas a pagar ========= */
@@ -2855,18 +2984,29 @@ function fisCheck(s){
   return[...new Set(p)];
 }
 const DOC={nfce:'NFC-e (65)',nfe:'NF-e (55)'};
+let fisFl='todas';
+function fisFix(t,s){
+  if(/^(NCM|CFOP|CSOSN) de /.test(t)){const it=(s.items||[]).find(i=>t.endsWith(' de '+i.name));return it?`<button class="btn g s" onclick="prodForm('${it.id}')">Corrigir</button>`:''}
+  if(/empresa/i.test(t))return`<button class="btn g s" onclick="go('emp')">Abrir Empresa</button>`;
+  if(/cliente/i.test(t)&&s.customer_id)return`<button class="btn g s" onclick="cliForm('${s.customer_id}')">Corrigir</button>`;
+  return'';
+}
 function vFis(){
   const l=[...db.sales].filter(s=>!s.canceled_at||s.fiscal_status==='emitida').sort((a,b)=>b.created_at.localeCompare(a.created_at));
   const rows=l.map(s=>({s,p:s.fiscal_status==='emitida'?[]:fisCheck(s)}));
   const pend=rows.filter(x=>x.s.fiscal_status!=='emitida'&&!x.s.canceled_at),prontas=pend.filter(x=>!x.p.length).length;
+  const kind=x=>x.s.canceled_at||x.s.fiscal_status==='cancelada'?'canc':x.s.fiscal_status==='emitida'?'emit':x.p.length?'pend':'pronta';
+  const cnt={todas:rows.length,pronta:rows.filter(x=>kind(x)==='pronta').length,pend:rows.filter(x=>kind(x)==='pend').length,emit:rows.filter(x=>kind(x)==='emit').length,canc:rows.filter(x=>kind(x)==='canc').length};
+  const vis=fisFl==='todas'?rows:rows.filter(x=>kind(x)===fisFl);
   $('#app').innerHTML=`<p class="sm">Confira aqui, antes de emitir, se faltam dados para a NFC-e (modelo 65, consumidor final) ou para a NF-e (modelo 55, cliente identificado). O botão Emitir nota envia a venda à API fiscal (em homologação, a nota não tem valor fiscal).</p>
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
+  <div class="fchips">${[['todas','Todas'],['pronta','Prontas'],['pend','Com pendência'],['emit','Emitidas'],['canc','Canceladas']].map(([k,l])=>`<button class="chip ${fisFl===k?'on':''}" onclick="fisFl='${k}';vFis()">${l} <b>${cnt[k]}</b></button>`).join('')}</div>
   <div class="pr" id="fisSt" style="margin:8px 0"><span>Emissão (API fiscal e SEFAZ)</span><b class="sm">verificando…</b></div>
   <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="ibptOpen()">Tabela IBPT</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button>':''}</div>
-  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${rows.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
+  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${vis.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
-  <td>${s.canceled_at?'<span class="bad">Venda cancelada: cancele esta nota na SEFAZ</span>':s.fiscal_status==='cancelada'?'<span class="bad">Nota cancelada</span>':em?`<span class="ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="bad">${p.length} pendência(s)</span><div class="sm">${p.slice(0,3).map(esc).join('<br>')}${p.length>3?`<br>+${p.length-3} outras`:''}</div>`:'<span class="ok">Pronta para emitir</span>'}</td>
-  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>`;
+  <td>${s.canceled_at?'<span class="pill bad">Venda cancelada</span><div class="sm">Cancele esta nota na SEFAZ</div>':s.fiscal_status==='cancelada'?'<span class="pill mut">Nota cancelada</span>':em?`<span class="pill ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="pill warn">${p.length} pendência(s)</span><ul class="pend">${p.map(t=>`<li><span>${esc(t)}</span>${fisFix(t,s)}</li>`).join('')}</ul>`:'<span class="pill ok">Pronta para emitir</span>'}</td>
+  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>${vis.length?'':empty('Nenhuma venda neste filtro',fisFl==='todas'?'As vendas aparecem aqui para emitir a nota.':'Escolha outro filtro acima.')}`;
   fisStatus();
 }
 let FST=null;
@@ -2879,6 +3019,7 @@ async function fisStatus(force){
   let h;
   try{
     const d=await fisCall({action:'status'});
+    if(d.api)window.__amb=d.ambiente;
     if(!d.api)h=`<b class="bad">API fiscal indisponível</b><div class="sm">${esc(d.erro||'')} Se estiver "dormindo" (Render gratuito), espere 1 minuto e verifique de novo.</div>`;
     else if(d.sefaz_ok)h=`<b class="ok">SEFAZ em operação</b> <span class="tag">${d.ambiente===2?'homologação':'produção'}</span>`;
     else h=`<b class="bad">SEFAZ fora do ar</b><div class="sm">${esc(d.motivo||d.erro||'')} As vendas continuam normais. Tente emitir mais tarde; as notas ficam na lista abaixo. Se a SEFAZ ficar muito tempo fora, fale com o contador sobre contingência (SVC/EPEC).</div>`;
@@ -2890,7 +3031,7 @@ async function fisStatus(force){
 async function fisEmitAll(){
   const ids=db.sales.filter(s=>s.fiscal_status!=='emitida'&&s.fiscal_status!=='cancelada'&&!s.canceled_at&&!fisCheck(s).length).sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(s=>s.id);
   if(!ids.length)return alert('Nenhuma venda pronta.');
-  if(!confirm('Emitir '+ids.length+' nota(s) agora, uma por vez, da mais antiga para a mais nova?\nSe a SEFAZ ou a API falhar, o processo para.'))return;
+  if(!confirm('Emitir '+ids.length+' nota(s) agora, uma por vez, da mais antiga para a mais nova?\nSe a SEFAZ ou a API falhar, o processo para.'+(window.__amb===1?'\n\nAMBIENTE DE PRODUÇÃO: cada nota autorizada vale de verdade.':'')))return;
   let ok=0,rec=0,falha='';
   for(const id of ids){
     setSync('emitindo '+(ok+1)+' de '+ids.length+'…');
@@ -2944,7 +3085,8 @@ async function fisCall(body){
   return data;
 }
 async function fisEmit(id){
-  if(!confirm('Emitir a nota fiscal desta venda agora?'))return;
+  const sv=db.sales.find(x=>x.id===id)||{},cl=db.customers.find(x=>x.id===sv.customer_id)||{};
+  if(!confirm(`Emitir ${DOC[sv.doc_type]||'NF-e'} de ${R(sv.total)} para ${cl.name||'consumidor'}?\n\n${window.__amb===1?'AMBIENTE DE PRODUÇÃO: a nota vale de verdade e só se desfaz cancelando-a na SEFAZ (dentro do prazo).':window.__amb===2?'Ambiente de homologação: a nota não tem valor fiscal.':'Depois de autorizada, só se desfaz cancelando a nota na SEFAZ (dentro do prazo).'}`))return;
   setSync('emitindo nota…');
   try{await sync();const d=await fisCall({action:'emit',sale_id:id});await sync();alert((d.recuperada?'A SEFAZ já tinha autorizado esta nota; o sistema recuperou o XML sem emitir de novo':'Nota emitida')+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
   catch(e){await sync();alert('Não foi possível emitir:\n'+e.message)}
@@ -2960,7 +3102,7 @@ async function fisFile(id,kind){
   }catch(e){alert(e.message)}
 }
 function fisCancel(id){
-  const j=prompt('Justificativa do cancelamento da nota (mínimo 15 caracteres):');if(j===null)return;
+  const j=prompt('Cancelar a nota na SEFAZ? Não dá para desfazer, e o prazo costuma ser de 24 h após a autorização.\n\nJustificativa do cancelamento (mínimo 15 caracteres):');if(j===null)return;
   if(j.trim().length<15)return alert('A justificativa precisa ter ao menos 15 caracteres.');
   master(async()=>{try{await fisCall({action:'cancel',sale_id:id,justificativa:j.trim()});await sync();alert('Nota cancelada na SEFAZ.')}catch(e){alert('Não foi possível cancelar:\n'+e.message)}vFis()});
 }
