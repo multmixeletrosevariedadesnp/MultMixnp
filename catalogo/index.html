@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.4.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.4.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -22,7 +22,7 @@ input,select{font:inherit;color:var(--ink);background:var(--card);border:1px sol
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
 .card:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
-.ph{aspect-ratio:4/3;background:var(--line) center/cover no-repeat;display:grid;place-items:center;color:var(--mut)}
+.ph{aspect-ratio:1;padding:8px;background:#fff center/contain no-repeat;background-origin:content-box;display:grid;place-items:center;color:var(--mut)}
 .cb{padding:12px 14px 14px}.cb h3{margin:0 0 6px;font-size:16px;line-height:1.25}
 .cash{display:inline-block;background:var(--tag);color:#101828;font-weight:800;font-size:20px;padding:1px 9px;border-radius:7px}
 .sm{color:var(--mut);font-size:13px;margin-top:6px}
@@ -37,7 +37,7 @@ input,select{font:inherit;color:var(--ink);background:var(--card);border:1px sol
 .two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 @media(max-width:700px){.two{grid-template-columns:1fr}}
 .main{aspect-ratio:1;background:var(--line) center/contain no-repeat;border-radius:12px}
-.th{display:flex;gap:6px;margin-top:8px}.th div{width:56px;height:56px;border-radius:8px;background:var(--line) center/cover;cursor:pointer;border:2px solid transparent}
+.th{display:flex;gap:6px;margin-top:8px}.th div{width:56px;height:56px;border-radius:8px;background:#fff center/contain no-repeat;cursor:pointer;border:2px solid transparent}
 .th .on{border-color:var(--pri)}
 .prices{display:grid;gap:8px;margin:14px 0}
 .pr{display:flex;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:8px 12px}

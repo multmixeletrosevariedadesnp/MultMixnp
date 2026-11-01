@@ -1,5 +1,5 @@
 {
- "version": "1.4.0",
+ "version": "1.4.1",
  "date": "2026-11-01",
- "notes": "Catálogo mostra só produtos com estoque."
+ "notes": "Fotos inteiras no quadrado da lista, sem cortar."
 }
