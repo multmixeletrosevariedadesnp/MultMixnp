@@ -1,5 +1,5 @@
 {
- "version": "1.38.0",
+ "version": "1.38.1",
  "date": "2026-11-01",
- "notes": "Código interno do produto por faixa de categoria."
+ "notes": "Janelas de edição não fecham mais ao clicar fora."
 }
