@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.4.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.5.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -104,7 +104,7 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 .artp{position:sticky;top:12px}
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.hid{display:none!important}.art .box{margin-top:0}
-.car{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}.carv svg{width:150px;height:auto;display:block;background:var(--line);border-radius:12px}.carc label{font-size:13px;color:var(--mut);display:block}.cksw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}.cksw.on{outline:3px solid var(--pri);outline-offset:1px}
+.car{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}.carv svg{width:150px;height:auto;display:block;background:var(--line);border-radius:12px}.carc label{font-size:13px;color:var(--mut);display:block}.cksw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}.cksw[data-k="camisa"][data-v="7"]{background:linear-gradient(135deg,#16255a 62%,#ffc21a 62%)!important}.cksw.on{outline:3px solid var(--pri);outline-offset:1px}
 @media(max-width:560px){.car{grid-template-columns:1fr}.carv svg{margin:0 auto}}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:36vh;margin:0 auto}}
@@ -579,58 +579,88 @@ function artFilter(){
 /* ---- vendedor: dados, foto/avatar e cartão de visita ---- */
 
 /* ---- avatar caricatura (personagem desenhado, escolhido a partir da sua foto) ---- */
-const CAR_PELE=['#ffdbb4','#f1c27d','#e0ac69','#c68642','#8d5524','#5c3a1e'],CAR_CAB=['#1b1b1b','#3b2417','#6b4423','#a9712f','#d9b36c','#9a9a9a','#b5391c'],CAR_CAM=['#00539f','#d92d20','#1f9d55','#1d2939','#ffffff','#ffc21a','#7a3fb8'];
-const CAR_EST=[['curto','Curto'],['social','Social (risca)'],['longo','Longo liso'],['black','Cacheado / black'],['coque','Coque'],['rabo','Rabo de cavalo'],['careca','Careca']];
-let CAR=LS.get('pdv_car',{pele:1,estilo:'curto',cor:1,barba:'nao',oculos:false,camisa:0,corpo:'corpo'});
+const CAR_PELE=['#ffdbb4','#f1c27d','#e0ac69','#c68642','#8d5524','#5c3a1e'],CAR_CAB=['#1b1b1b','#3b2417','#6b4423','#a9712f','#d9b36c','#9a9a9a','#b5391c','#7a3b1e'],CAR_CAM=['#00539f','#d92d20','#1f9d55','#1d2939','#ffffff','#ffc21a','#7a3fb8','#16255a'],CAR_OLH=['#3a2a1e','#1b1b1b','#2e7d4f','#3a78c2','#7a5a2e'];
+const CAR_EST=[['curto','Curto'],['social','Social (risca)'],['topete','Topete / franja lateral'],['ondulado','Ondulado'],['longo','Longo liso'],['black','Cacheado / black'],['coque','Coque'],['rabo','Rabo de cavalo'],['raspado','Raspado'],['careca','Careca']];
+const CAR_DEF={pele:1,estilo:'topete',cor:7,barba:'nao',oculos:false,camisa:7,corpo:'corpo',olho:0,expr:'sorriso',pose:'joia',fundo:'loja'};
+let CAR=Object.assign({},CAR_DEF,LS.get('pdv_car',{}));
 const carSave=()=>LS.set('pdv_car',CAR);
-const carDark=(h,f)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)*f).toString(16).padStart(2,'0')).join('');
-function carSvg(c){
-  const sk=CAR_PELE[c.pele],sd=carDark(sk,.82),hc=CAR_CAB[c.cor],cam=CAR_CAM[c.camisa],lg=cam==='#ffffff'?'#d0d5dd':carDark(cam,.8);
-  const pants='#26324a',L=[];
-  L.push(`<ellipse cx="200" cy="676" rx="120" ry="16" fill="#000" fill-opacity=".18"/>`);
-  // cabelo de trás
-  if(c.estilo==='longo')L.push(`<path d="M100 190 C90 330 100 370 140 380 L260 380 C300 370 310 330 300 190Z" fill="${hc}"/>`);
-  if(c.estilo==='rabo')L.push(`<path d="M270 130 C340 150 350 260 310 320 C300 270 290 200 262 170Z" fill="${hc}"/>`);
+const carDark=(h,f)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.slice(i,i+2),16)*f))).toString(16).padStart(2,'0')).join('');
+function carSvg(c,logo){
+  const sk=CAR_PELE[c.pele],sd=carDark(sk,.8),sl=carDark(sk,1.08),hc=CAR_CAB[c.cor],hd=carDark(hc,.7),hl=carDark(hc,1.5),cam=CAR_CAM[c.camisa],uni=c.camisa===7,lg=cam==='#ffffff'?'#d0d5dd':carDark(cam,.78),ol=CAR_OLH[c.olho||0];
+  const pants=uni?'#1f2a44':'#26324a',L=[],D=[];
+  D.push(`<radialGradient id="kskin" cx=".42" cy=".34" r=".8"><stop offset="0" stop-color="${sl}"/><stop offset=".6" stop-color="${sk}"/><stop offset="1" stop-color="${sd}"/></radialGradient>`);
+  D.push(`<linearGradient id="kshirt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${carDark(cam,1.12)}"/><stop offset="1" stop-color="${carDark(cam,.82)}"/></linearGradient>`);
+  D.push(`<radialGradient id="kiris" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="${carDark(ol,1.7)}"/><stop offset="1" stop-color="${ol}"/></radialGradient>`);
+  D.push(`<linearGradient id="kbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a4aa6"/><stop offset="1" stop-color="#06285f"/></linearGradient><clipPath id="kclip"><rect width="400" height="700" rx="30"/></clipPath>`);
+  if(c.fundo==='loja'){
+    L.push(`<g clip-path="url(#kclip)"><rect width="400" height="700" fill="url(#kbg)"/><circle cx="330" cy="120" r="150" fill="#ffffff" fill-opacity=".06"/>`
+      +`<rect x="0" y="300" width="400" height="14" fill="#ffc21a"/><rect x="0" y="520" width="400" height="14" fill="#ffc21a"/>`
+      +`<rect x="20" y="214" width="46" height="86" rx="8" fill="#1d2939"/><rect x="26" y="228" width="34" height="22" rx="4" fill="#3d4a63"/><rect x="316" y="236" width="70" height="64" rx="6" fill="#b9c2d0"/><rect x="324" y="244" width="40" height="46" rx="3" fill="#2a3547"/><circle cx="376" cy="262" r="5" fill="#ffc21a"/>`
+      +`<rect x="30" y="436" width="40" height="84" rx="8" fill="#d92d20"/><rect x="36" y="420" width="28" height="22" rx="4" fill="#e9eef6" fill-opacity=".85"/><rect x="318" y="430" width="68" height="90" rx="6" fill="#1d2939"/><rect x="324" y="438" width="56" height="42" rx="3" fill="#3a8fe0"/>`
+      +`</g>`);
+  }
+  L.push(`<ellipse cx="200" cy="676" rx="118" ry="15" fill="#000" fill-opacity=".22"/>`);
+  if(c.estilo==='longo')L.push(`<path d="M100 190 C84 330 98 376 140 386 L260 386 C302 376 316 330 300 190Z" fill="${hc}"/>`);
+  if(c.estilo==='rabo')L.push(`<path d="M270 130 C346 150 356 262 312 324 C300 272 290 200 262 170Z" fill="${hc}"/>`);
   if(c.estilo==='black')L.push(`<g fill="${hc}"><circle cx="118" cy="150" r="46"/><circle cx="160" cy="98" r="52"/><circle cx="215" cy="88" r="54"/><circle cx="268" cy="108" r="50"/><circle cx="292" cy="160" r="44"/></g>`);
-  // pernas, sapatos
-  L.push(`<rect x="122" y="470" width="74" height="170" rx="18" fill="${pants}"/><rect x="204" y="470" width="74" height="170" rx="18" fill="${pants}"/><ellipse cx="150" cy="650" rx="46" ry="20" fill="#111"/><ellipse cx="250" cy="650" rx="46" ry="20" fill="#111"/>`);
-  // braços e mãos
-  L.push(`<rect x="72" y="340" width="44" height="140" rx="22" fill="${cam}"/><rect x="284" y="340" width="44" height="140" rx="22" fill="${cam}"/><circle cx="94" cy="494" r="24" fill="${sk}"/><circle cx="306" cy="494" r="24" fill="${sk}"/>`);
+  // pernas
+  L.push(`<rect x="122" y="470" width="74" height="176" rx="18" fill="${pants}"/><rect x="204" y="470" width="74" height="176" rx="18" fill="${pants}"/><path d="M200 480 L200 640" stroke="#000" stroke-opacity=".25" stroke-width="3"/><ellipse cx="150" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="250" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="140" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/><ellipse cx="240" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/>`);
+  const sleeve=(pts)=>`<polyline points="${pts}" fill="none" stroke="${lg}" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pts}" fill="none" stroke="url(#kshirt)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>`;
+  // braço esquerdo (do desenho) sempre para baixo
+  L.push(sleeve('92,356 90,446')+`<rect x="68" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="92" cy="490" r="25" fill="url(#kskin)"/>`);
   // tronco
-  L.push(`<path d="M112 350 C112 330 140 322 200 322 C260 322 288 330 288 350 L292 490 C292 505 280 512 266 512 L134 512 C120 512 108 505 108 490Z" fill="${cam}"/><path d="M176 322 L200 372 L224 322Z" fill="${sk}"/><path d="M168 322 L200 384 L232 322" fill="none" stroke="${lg}" stroke-width="7" stroke-linejoin="round"/>`);
-  // pescoço, orelhas, cabeça
-  L.push(`<rect x="172" y="290" width="56" height="50" rx="14" fill="${sd}"/><ellipse cx="104" cy="214" rx="17" ry="26" fill="${sk}"/><ellipse cx="296" cy="214" rx="17" ry="26" fill="${sk}"/><ellipse cx="200" cy="206" rx="98" ry="112" fill="${sk}"/>`);
-  // barba / bigode
-  if(c.barba==='barba')L.push(`<path d="M104 214 C104 300 150 326 200 326 C250 326 296 300 296 214 C288 262 246 270 200 270 C154 270 112 262 104 214Z" fill="${hc}"/>`);
-  if(c.barba==='cavanhaque')L.push(`<path d="M172 292 C180 322 220 322 228 292 C216 300 184 300 172 292Z" fill="${hc}"/>`);
-  // rosto
-  L.push(`<circle cx="138" cy="248" r="20" fill="#ff7a7a" fill-opacity=".22"/><circle cx="262" cy="248" r="20" fill="#ff7a7a" fill-opacity=".22"/>`);
-  L.push(`<ellipse cx="158" cy="206" rx="23" ry="16" fill="#fff"/><ellipse cx="242" cy="206" rx="23" ry="16" fill="#fff"/><circle cx="160" cy="207" r="10" fill="#3a2a1e"/><circle cx="240" cy="207" r="10" fill="#3a2a1e"/><circle cx="164" cy="203" r="3.5" fill="#fff"/><circle cx="244" cy="203" r="3.5" fill="#fff"/>`);
-  L.push(`<path d="M128 176 Q158 158 186 174" fill="none" stroke="${c.estilo==='careca'?sd:hc}" stroke-width="9" stroke-linecap="round"/><path d="M214 174 Q242 158 272 176" fill="none" stroke="${c.estilo==='careca'?sd:hc}" stroke-width="9" stroke-linecap="round"/>`);
-  L.push(`<path d="M200 214 C188 244 186 252 198 256 C208 258 214 254 212 248" fill="none" stroke="${sd}" stroke-width="6" stroke-linecap="round"/>`);
-  if(c.barba==='bigode'||c.barba==='barba'||c.barba==='cavanhaque')L.push(`<path d="M150 268 C170 252 190 262 200 266 C210 262 230 252 250 268 C230 276 210 272 200 272 C190 272 170 276 150 268Z" fill="${hc}"/>`);
-  L.push(`<path d="M164 282 Q200 322 236 282 Q200 292 164 282Z" fill="#fff" stroke="#7a2e2e" stroke-width="5" stroke-linejoin="round"/>`);
+  L.push(`<path d="M110 352 C110 330 142 322 200 322 C258 322 290 330 290 352 L294 492 C294 507 282 514 268 514 L132 514 C118 514 106 507 106 492Z" fill="url(#kshirt)"/><path d="M150 380 C150 440 150 480 152 512 M250 380 C250 440 250 480 248 512" stroke="#000" stroke-opacity=".08" stroke-width="10" fill="none"/>`);
+  if(uni){
+    L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M150 326 L196 388 L172 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/><path d="M250 326 L204 388 L228 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/>`
+      +`<path d="M200 388 L200 512" stroke="#0d1838" stroke-width="3"/><circle cx="200" cy="430" r="4" fill="#9fb0d8"/><circle cx="200" cy="470" r="4" fill="#9fb0d8"/>`
+      +(logo?`<rect x="224" y="400" width="52" height="52" rx="8" fill="#16255a"/><image href="${logo}" xlink:href="${logo}" x="226" y="402" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>`:`<text x="250" y="436" text-anchor="middle" font-family="Arial" font-weight="700" font-size="28" fill="#ffc21a">MM</text>`));
+  }else L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M166 322 L200 386 L234 322" fill="none" stroke="${lg}" stroke-width="8" stroke-linejoin="round"/>`);
+  // braço direito (pose)
+  const hand=(x,y)=>`<circle cx="${x}" cy="${y}" r="28" fill="url(#kskin)"/>`;
+  if(c.pose==='joia')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,330)+`<rect x="342" y="262" width="22" height="58" rx="11" fill="url(#kskin)"/><path d="M332 326 q22 6 44 0 M334 340 q20 6 40 0" stroke="${sd}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
+  else if(c.pose==='acenar')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,326)+[[332,276,-18],[347,268,-4],[362,272,10],[375,288,24]].map(([x,y,r])=>`<rect x="${x-8}" y="${y-6}" width="16" height="44" rx="8" fill="url(#kskin)" transform="rotate(${r} ${x} ${y+30})"/>`).join(''));
+  else L.push(sleeve('308,356 310,446')+`<rect x="286" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="308" cy="490" r="25" fill="url(#kskin)"/>`);
+  // pescoço, sombra, orelhas, cabeça
+  L.push(`<rect x="172" y="286" width="56" height="52" rx="14" fill="${sd}"/><ellipse cx="104" cy="216" rx="17" ry="27" fill="${sk}"/><ellipse cx="296" cy="216" rx="17" ry="27" fill="${sk}"/><path d="M104 206 q-6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/><path d="M296 206 q6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/>`);
+  L.push(`<path d="M102 202 C102 122 150 94 200 94 C250 94 298 122 298 202 C298 272 252 320 200 320 C148 320 102 272 102 202Z" fill="url(#kskin)"/>`);
+  if(c.barba==='barba')L.push(`<path d="M102 206 C102 296 150 328 200 328 C250 328 298 296 298 206 C290 262 246 272 200 272 C154 272 110 262 102 206Z" fill="${hc}"/><path d="M130 300 C160 318 240 318 270 300" stroke="${hl}" stroke-opacity=".25" stroke-width="5" fill="none"/>`);
+  if(c.barba==='cavanhaque')L.push(`<path d="M170 292 C178 326 222 326 230 292 C216 302 184 302 170 292Z" fill="${hc}"/>`);
+  L.push(`<ellipse cx="138" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/><ellipse cx="262" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/>`);
+  // olhos
+  const eye=x=>`<ellipse cx="${x}" cy="208" rx="24" ry="17" fill="#fff"/><circle cx="${x}" cy="209" r="12" fill="url(#kiris)"/><circle cx="${x}" cy="209" r="5.5" fill="#0b0b0b"/><circle cx="${x+4}" cy="204" r="3.8" fill="#fff"/><path d="M${x-26} 207 Q${x} 186 ${x+26} 207" fill="none" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/><path d="M${x-18} 222 Q${x} 230 ${x+18} 222" fill="none" stroke="${sd}" stroke-width="3" stroke-linecap="round"/>`;
+  L.push(eye(158)+eye(242));
+  const bc=c.estilo==='careca'||c.estilo==='raspado'?carDark(hc,.9):hc;
+  L.push(`<path d="M126 178 Q158 156 190 174" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/><path d="M210 174 Q242 156 274 178" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/>`);
+  L.push(`<path d="M200 214 C187 246 184 254 198 259 C210 261 216 256 214 249" fill="none" stroke="${sd}" stroke-width="6" stroke-linecap="round"/><circle cx="190" cy="258" r="2.6" fill="${carDark(sk,.55)}"/><circle cx="210" cy="258" r="2.6" fill="${carDark(sk,.55)}"/>`);
+  if(c.barba==='bigode'||c.barba==='barba'||c.barba==='cavanhaque')L.push(`<path d="M148 270 C168 254 190 264 200 268 C210 264 232 254 252 270 C232 280 210 275 200 275 C190 275 168 280 148 270Z" fill="${hc}"/>`);
+  if(c.expr==='aberto')L.push(`<path d="M162 282 Q200 326 238 282 Q200 292 162 282Z" fill="#fff" stroke="#7a2e2e" stroke-width="5" stroke-linejoin="round"/><path d="M178 300 Q200 316 222 300 Q200 296 178 300Z" fill="#c4545a"/>`);
+  else if(c.expr==='serio')L.push(`<path d="M170 284 Q200 290 230 282" fill="none" stroke="#7a2e2e" stroke-width="6" stroke-linecap="round"/>`);
+  else L.push(`<path d="M166 280 Q200 304 234 280" fill="none" stroke="#9c3b3b" stroke-width="7" stroke-linecap="round"/><path d="M174 285 Q200 301 226 285" fill="none" stroke="#c45a5a" stroke-width="3" stroke-linecap="round" stroke-opacity=".6"/>`);
   // cabelo da frente
-  if(c.estilo==='curto')L.push(`<path d="M104 200 C94 100 150 76 200 76 C250 76 306 100 296 200 C286 152 252 128 200 128 C148 128 114 152 104 200Z" fill="${hc}"/>`);
-  if(c.estilo==='social')L.push(`<path d="M104 200 C92 98 150 74 204 76 C256 78 308 100 296 200 C290 160 270 130 230 124 C190 142 140 134 118 160 C110 170 106 184 104 200Z" fill="${hc}"/>`);
-  if(c.estilo==='longo')L.push(`<path d="M102 214 C88 100 150 70 200 72 C252 70 312 100 298 214 C290 160 262 120 214 118 C170 130 130 150 102 214Z" fill="${hc}"/>`);
-  if(c.estilo==='coque')L.push(`<circle cx="200" cy="58" r="40" fill="${hc}"/><path d="M104 200 C94 100 150 80 200 80 C250 80 306 100 296 200 C286 152 252 128 200 128 C148 128 114 152 104 200Z" fill="${hc}"/>`);
-  if(c.estilo==='rabo')L.push(`<path d="M104 200 C94 100 150 76 200 76 C250 76 306 100 296 200 C286 152 252 128 200 128 C148 128 114 152 104 200Z" fill="${hc}"/>`);
-  if(c.estilo==='black')L.push(`<path d="M108 196 C112 150 150 130 200 130 C250 130 288 150 292 196 C280 160 250 144 200 144 C150 144 120 160 108 196Z" fill="${hc}"/>`);
-  if(c.oculos)L.push(`<g fill="#ffffff" fill-opacity=".18" stroke="#1d2939" stroke-width="7"><circle cx="158" cy="207" r="37"/><circle cx="242" cy="207" r="37"/></g><path d="M195 207 L205 207" stroke="#1d2939" stroke-width="7"/><path d="M121 205 L104 200 M279 205 L296 200" stroke="#1d2939" stroke-width="7" stroke-linecap="round"/>`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 700" width="400" height="700">${L.join('')}</svg>`;
+  const sheen=`<path d="M140 120 C170 100 220 98 262 116" fill="none" stroke="${hl}" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
+  if(c.estilo==='curto')L.push(`<path d="M102 202 C92 100 150 74 200 74 C250 74 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='social')L.push(`<path d="M102 202 C90 98 150 72 204 74 C256 76 310 100 298 202 C292 162 270 130 230 124 C190 142 140 134 118 160 C110 170 104 186 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='topete')L.push(`<path d="M100 206 C86 98 150 66 206 68 C264 70 312 104 300 206 C298 168 284 136 256 118 C228 150 164 150 126 176 C108 188 102 196 100 206Z" fill="${hc}"/><path d="M150 140 C196 150 250 132 290 118 C268 152 218 168 148 172Z" fill="${hd}" fill-opacity=".55"/><path d="M130 110 C170 84 232 84 276 108" fill="none" stroke="${hl}" stroke-opacity=".4" stroke-width="9" stroke-linecap="round"/><path d="M180 100 C200 112 232 112 262 104" fill="none" stroke="${hd}" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/>`);
+  if(c.estilo==='ondulado')L.push(`<path d="M102 204 C92 100 150 78 200 78 C250 78 308 100 298 204 C288 156 252 132 200 132 C148 132 112 156 102 204Z" fill="${hc}"/><g fill="${hc}"><circle cx="114" cy="150" r="24"/><circle cx="140" cy="108" r="28"/><circle cx="188" cy="86" r="30"/><circle cx="240" cy="92" r="30"/><circle cx="278" cy="126" r="26"/><circle cx="290" cy="170" r="20"/></g>${sheen}`);
+  if(c.estilo==='longo')L.push(`<path d="M100 216 C84 100 150 68 200 70 C252 68 316 100 300 216 C292 160 264 120 214 118 C170 130 130 152 100 216Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='coque')L.push(`<circle cx="200" cy="56" r="40" fill="${hc}"/><path d="M102 202 C92 100 150 80 200 80 C250 80 308 100 298 202 C288 154 252 130 200 130 C148 130 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='rabo')L.push(`<path d="M102 202 C92 100 150 76 200 76 C250 76 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='black')L.push(`<path d="M106 198 C110 150 150 130 200 130 C250 130 290 150 294 198 C282 162 250 146 200 146 C150 146 118 162 106 198Z" fill="${hc}"/>`);
+  if(c.estilo==='raspado')L.push(`<path d="M102 202 C96 110 150 90 200 90 C250 90 304 110 298 202 C290 156 252 130 200 130 C148 130 110 156 102 202Z" fill="${hc}" fill-opacity=".5"/>`);
+  if(c.oculos)L.push(`<g fill="#ffffff" fill-opacity=".16" stroke="#1d2939" stroke-width="7"><circle cx="158" cy="209" r="38"/><circle cx="242" cy="209" r="38"/></g><path d="M196 207 L204 207" stroke="#1d2939" stroke-width="7"/><path d="M120 205 L103 200 M280 205 L297 200" stroke="#1d2939" stroke-width="7" stroke-linecap="round"/><path d="M138 192 q10 -10 24 -8" stroke="#fff" stroke-opacity=".5" stroke-width="5" fill="none" stroke-linecap="round"/>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 700" width="400" height="700"><defs>${D.join('')}</defs>${L.join('')}</svg>`;
 }
 async function carPng(){
-  const url=URL.createObjectURL(new Blob([carSvg(CAR)],{type:'image/svg+xml;charset=utf-8'}));
+  const url=URL.createObjectURL(new Blob([carSvg(CAR,artLogo)],{type:'image/svg+xml;charset=utf-8'}));
   try{const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=url});
     const cv=document.createElement('canvas');cv.width=600;cv.height=1050;cv.getContext('2d').drawImage(img,0,0,600,1050);return cv.toDataURL('image/png')}
   finally{URL.revokeObjectURL(url)}
 }
 function carPaint(){
-  const e=$('#a_carv');if(e)e.innerHTML=carSvg(CAR);
+  const e=$('#a_carv');if(e)e.innerHTML=carSvg(CAR,artLogo);
   document.querySelectorAll('.cksw').forEach(b=>b.classList.toggle('on',String(CAR[b.dataset.k])===b.dataset.v));
 }
-function carSet(k,v){CAR[k]=(k==='pele'||k==='cor'||k==='camisa')?+v:(k==='oculos'?!!v:v);carSave();carPaint()}
+function carSet(k,v){CAR[k]=(k==='pele'||k==='cor'||k==='camisa'||k==='olho')?+v:(k==='oculos'?!!v:v);carSave();carPaint()}
 async function carUse(){
   try{SELPH=await carPng();setKind(CAR.corpo==='busto'?'busto':'corpo');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}catch(e){alert('Não consegui montar o avatar neste navegador.')}
 }
@@ -645,7 +675,7 @@ async function carSuggest(){
   CAR.cor=near(top,CAR_CAB);if(dist<28)CAR.estilo=CAR.estilo==='careca'?'curto':CAR.estilo;
   carSave();carPaint();carRefreshUi();
 }
-function carRefreshUi(){const e=$('#a_cest');if(e)e.value=CAR.estilo;const b=$('#a_cbar');if(b)b.value=CAR.barba;const o=$('#a_cocu');if(o)o.checked=CAR.oculos;const c=$('#a_ccor');if(c)c.value=CAR.corpo}
+function carRefreshUi(){['expr','pose','fundo'].forEach(k=>{const x=$('#a_c'+k);if(x)x.value=CAR[k]});const e=$('#a_cest');if(e)e.value=CAR.estilo;const b=$('#a_cbar');if(b)b.value=CAR.barba;const o=$('#a_cocu');if(o)o.checked=CAR.oculos;const c=$('#a_ccor');if(c)c.value=CAR.corpo}
 
 /* ---- avatar a partir da foto (filtros no aparelho, sem enviar nada) ---- */
 let SELORIG=null;
@@ -693,7 +723,7 @@ async function avGen(){
 }
 function avBack(){if(SELORIG){SELPH=SELORIG;setKind('foto');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}}
 
-let MODE='art',SELPH=null,SELKIND='foto';
+let MODE='art',SELPH=null,SELKIND='foto',SELFMT=LS.get('pdv_selfmt','circ');
 const SELKK=()=>'pdv_vendkind_'+(ME&&ME.id),setKind=k=>{SELKIND=k;try{localStorage.setItem(SELKK(),k)}catch(e){}};
 const SELK=()=>'pdv_vend_'+(ME&&ME.id),SELPK=()=>'pdv_vendfoto_'+(ME&&ME.id);
 const SEL=()=>{const d=LS.get(SELK(),{});return{name:(d.name!=null?d.name:(ME&&ME.name)||'').trim(),role:(d.role!=null?d.role:'Consultor de vendas').trim(),phone:digits(d.phone||''),extra:(d.extra||'').trim()}};
@@ -703,7 +733,7 @@ const logoIcon=()=>(CO&&CO.logo_url)||'logo-icon.png';
 function selSave(){LS.set(SELK(),{name:artVal('vn'),role:artVal('vr'),phone:artVal('vp'),extra:artVal('ve')});artRender()}
 async function selFoto(inp){const f=inp.files[0];if(!f)return;try{SELPH=SELORIG=await artBlobData(f,600);setKind('foto');try{localStorage.setItem(SELPK(),SELPH);localStorage.setItem(SELOK(),SELORIG)}catch(e){}}catch(e){alert('Não consegui ler essa imagem.')}artRender()}
 function selFotoDel(){SELPH=SELORIG=null;setKind('foto');try{localStorage.removeItem(SELPK());localStorage.removeItem(SELOK())}catch(e){}artRender()}
-const artSel=()=>{const s=SEL();return s.name||s.phone?{...s,photo:SELPH,kind:SELKIND}:null};
+const artSel=()=>{const s=SEL();return s.name||s.phone?{...s,photo:SELPH,kind:SELKIND,fmt:SELFMT}:null};
 function artAvatar(cx,cy,r,sel,th,F,id){
   const ini=(sel.name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
   let o=`<circle cx="${cx}" cy="${cy}" r="${r+Math.max(5,r*.07)}" fill="#ffffff"/>`;
@@ -725,7 +755,7 @@ function cardSvg(o){
   const tel=fmtTel(sel.phone);
   if(!V){
     E.push(`<rect x="0" y="0" width="16" height="${H}" fill="${th.accent}"/>`);
-    if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'));
+    if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="40" y="40" width="330" height="520" rx="28"/></clipPath><rect x="32" y="32" width="346" height="536" rx="34" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="40" y="40" width="330" height="520" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'));
     const x0=410,mw=W-x0-60;
     let [nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo?110:0),66,true,34);T(nm,x0,185,ns,{bold:1});
     if(sel.role)T(artFit(sel.role,mw,34,false),x0,236,34,{color:th.sub});
@@ -739,7 +769,7 @@ function cardSvg(o){
     const mw=W-120;
     logoBox(W/2-70,90,140);
     T(artFit(o.co.name,mw,56,true),W/2,o.showLogo&&o.logo?300:170,56,{bold:1,anchor:'m'});
-    if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-250}" y="320" width="500" height="780" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(W/2,700,280,sel,th,F,'c'));
+    if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="${W/2-270}" y="330" width="540" height="770" rx="40"/></clipPath><rect x="${W/2-280}" y="320" width="560" height="790" rx="46" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-270}" y="330" width="540" height="770" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-200}" y="330" width="400" height="700" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(W/2,700,280,sel,th,F,'c'));
     let [nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,1120,ns,{bold:1,anchor:'m'});
     if(sel.role)T(artFit(sel.role,mw,56,false),W/2,1195,56,{anchor:'m',color:th.sub});
     E.push(`<rect x="${W/2-80}" y="1240" width="160" height="10" rx="5" fill="${th.accent}"/>`);
@@ -754,7 +784,7 @@ function cardSvg(o){
 function cardOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
   const s=SEL();
-  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo')};
+  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo')};
 }
 function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
 const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
@@ -765,7 +795,7 @@ async function vArte(){
 <div class="box" style="max-width:none;margin-bottom:14px"><h2 style="margin-top:0">Meus dados</h2><p class="sm">Usados no rodapé da arte e no seu cartão de visita. Ficam salvos só neste aparelho.</p>
 <div class="f"><div><label>Meu nome</label><input id="a_vn" value="${esc(SEL().name)}" oninput="selSave()"></div><div><label>Cargo</label><input id="a_vr" value="${esc(SEL().role)}" oninput="selSave()"></div>
 <div><label>Meu WhatsApp (com DDD)</label><input id="a_vp" inputmode="tel" placeholder="(93) 99999-9999" value="${esc(fmtTel(SEL().phone))}" oninput="selSave()"></div><div><label>Linha extra (Instagram, site...)</label><input id="a_ve" value="${esc(SEL().extra)}" oninput="selSave()"></div>
-<div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button></div></div>
+<div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button><select id="a_sfmt" style="max-width:230px" onchange="SELFMT=this.value;LS.set('pdv_selfmt',SELFMT);artRender()"><option value="circ">Foto em círculo no cartão</option><option value="ret">Foto em retrato (inteira) no cartão</option></select></div></div>
 <div class="w"><label>Criar avatar a partir da foto (efeito de desenho feito no aparelho)</label><div class="row" style="margin:0"><select id="a_avs" style="max-width:210px"><option value="cartoon">Desenho (cartoon)</option><option value="sketch">Esboço a lápis</option><option value="pop">Pop-art</option></select>
 <label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="a_avbg" style="width:auto"> Trocar o fundo por</label><input type="color" id="a_avc" value="#ffc21a" style="width:42px;height:34px;padding:0"><button type="button" class="btn s" onclick="avGen()">Criar avatar</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div><div class="sm">Não é desenho feito por IA: é um filtro sobre a sua foto. Troca de fundo funciona melhor com parede lisa.</div></div>
 <div class="w"><label>Caricatura: personagem com o seu rosto (escolha os traços; o desenho é feito aqui, não por IA)</label>
@@ -777,7 +807,11 @@ async function vArte(){
 <label>Barba</label><select id="a_cbar" onchange="carSet('barba',this.value)"><option value="nao">Sem barba</option><option value="barba">Barba</option><option value="bigode">Bigode</option><option value="cavanhaque">Cavanhaque</option></select>
 <label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:6px"><input type="checkbox" id="a_cocu" style="width:auto" onchange="carSet('oculos',this.checked)"> Óculos</label>
 <label style="margin-top:6px">Camisa</label><div class="row" style="margin:0 0 6px">${CAR_CAM.map((h,i)=>`<button type="button" class="cksw" data-k="camisa" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('camisa',${i})"></button>`).join('')}</div>
-<label>Tamanho no cartão</label><select id="a_ccor" onchange="carSet('corpo',this.value)"><option value="corpo">Corpo inteiro</option><option value="busto">Só rosto e ombros (em círculo)</option></select>
+<label>Cor dos olhos</label><div class="row" style="margin:0 0 6px">${CAR_OLH.map((h,i)=>`<button type="button" class="cksw" data-k="olho" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('olho',${i})"></button>`).join('')}</div>
+<label>Expressão</label><select id="a_cexpr" onchange="carSet('expr',this.value)"><option value="sorriso">Sorriso</option><option value="aberto">Sorriso aberto</option><option value="serio">Sério</option></select>
+<label style="margin-top:6px">Pose</label><select id="a_cpose" onchange="carSet('pose',this.value)"><option value="joia">Joinha</option><option value="acenar">Acenando</option><option value="normal">Braços para baixo</option></select>
+<label style="margin-top:6px">Fundo</label><select id="a_cfundo" onchange="carSet('fundo',this.value)"><option value="loja">Loja MultMix (azul com prateleiras)</option><option value="nenhum">Sem fundo</option></select>
+<label style="margin-top:6px">Tamanho no cartão</label><select id="a_ccor" onchange="carSet('corpo',this.value)"><option value="corpo">Corpo inteiro</option><option value="busto">Só rosto e ombros (em círculo)</option></select>
 <div class="row"><button type="button" class="btn s" onclick="carUse()">Usar esta caricatura no cartão</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div></div></div></div></div></div>
 <div class="box" style="max-width:none"><div class="row" style="margin:0 0 10px"><button type="button" class="btn modb on" data-m="art" onclick="artMode('art')">Arte de oferta</button><button type="button" class="btn g modb" data-m="card" onclick="artMode('card')">Meu cartão de visita</button></div>
 <h2 style="margin-top:0" class="mA">Arte do produto</h2><p class="sm mA">Gere a imagem da oferta e publique no Status do seu WhatsApp. O WhatsApp não permite publicar sozinho: toque em <b>Enviar para o WhatsApp</b>, escolha o WhatsApp e depois <b>Meu status</b>.</p><p class="sm mC hid">Cartão com sua foto, nome e WhatsApp. Horizontal serve para imprimir (9 x 5 cm) e vertical para o Status.</p>
@@ -818,7 +852,7 @@ async function vArte(){
 </div>
 <div class="artp"><div id="artv"></div></div></div>`;
   try{SELPH=localStorage.getItem(SELPK())||null;SELORIG=localStorage.getItem(SELOK())||null;SELKIND=localStorage.getItem(SELKK())||'foto'}catch(e){SELPH=SELORIG=null}
-  MODE='art';carRefreshUi();carPaint();artFilter();
+  MODE='art';{const x=$('#a_sfmt');if(x)x.value=SELFMT}carRefreshUi();carPaint();artFilter();
   try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
   artRender();
 }
