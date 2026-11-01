@@ -1,5 +1,5 @@
 {
- "version": "1.36.0",
+ "version": "1.37.1",
  "date": "2026-10-28",
- "notes": "Alterar a data de vencimento da parcela (com motivo e registro na auditoria)."
+ "notes": "Lembrete mensal no sino para enviar o pacote do contador."
 }
