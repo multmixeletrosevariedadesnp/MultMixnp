@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.5.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.6.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -273,6 +273,7 @@ async function load(){
     try{P=JSON.parse(localStorage.mm).products.filter(p=>p.active!==false)}catch(e){}
   }
   P=P.filter(p=>p.stock>0); // catálogo mostra só produtos com estoque
+  await manLoad();
   try{CO=JSON.parse(localStorage.mmco||'{}')}catch(e){}
   if(sb){const{data}=await sb.from('company').select('*').eq('id',1).maybeSingle();if(data){CO=data;localStorage.mmco=JSON.stringify(CO)}}
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
@@ -315,16 +316,19 @@ function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacol
 // foto reduzida (JPEG até 800 px, leve) para o WhatsApp mostrar a prévia da imagem no chat
 const waImg=u=>u?'https://wsrv.nl/?url='+encodeURIComponent(u)+'&w=800&h=800&fit=inside&we&bg=white&output=jpg&q=80':'';
 const pageUrl=id=>location.origin+location.pathname+'#p='+id;
+let MAN={};
+async function manLoad(){try{const r=await fetch('p/manifest.json',{cache:'no-store'});if(r.ok)MAN=(await r.json()).itens||{}}catch(e){}}
+const pagePrev=p=>MAN[p.id]!=null&&MAN[p.id]===(p.updated_at||'')?new URL('p/'+p.id+'.html',location.href.split('#')[0]).href:''; // página com prévia (foto) pronta para este produto
 function productText(p,head,noPhoto,pf){
-  const ph0=(p.photos||[])[0];
-  const l=pf&&ph0?[head,'',waImg(ph0),'','*'+p.name+'*']:[head,'','*'+p.name+'*']; // pf: foto logo no começo, para o WhatsApp mostrar a prévia da imagem
+  const ph0=(p.photos||[])[0],pp=pf?pagePrev(p):'';
+  const l=pf&&pp?[head,'',pp,'','*'+p.name+'*']:pf&&ph0?[head,'',waImg(ph0),'','*'+p.name+'*']:[head,'','*'+p.name+'*']; // pf: foto logo no começo, para o WhatsApp mostrar a prévia da imagem
   if(p.internal_code)l.push('Cód. '+p.internal_code);
   if(p.category)l.push(p.category);
   const d=(p.description||'').trim();if(d)l.push(d.length>220?d.slice(0,217)+'...':d);
   const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
   const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
   l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto&&!pf)l.push('Foto: '+waImg(ph));
-  l.push('Ver no catálogo: '+pageUrl(p.id));
+  if(!(pf&&pp))l.push('Ver no catálogo: '+pageUrl(p.id));
   return l.join('\n');
 }
 let gal=[],gi=0,sx=0,shareFile=null;
