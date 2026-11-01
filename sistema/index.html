@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.38.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.39.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -835,7 +835,14 @@ const ART_TH={
   claro:{n:'Claro limpo',a:'#f8fafc',b:'#dfe5ee',text:'#101828',sub:'#475467',accent:'#00468f',price:'#00468f',badge:'#00468f',badgeT:'#ffffff',shape:'#00468f',foot:'rgba(0,70,143,.1)',footT:'#101828'}
 };
 const artX=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const artW=(s,size,bold)=>{let w=0;for(const ch of String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'')){const c=ch.charCodeAt(0);w+=c>=32&&c<=126?(bold?BW:HW)[c-32]:556}return w*size/1000};
+let ART_FONT='Arial,Helvetica,sans-serif',_artCx=null;const _artM=new Map();
+const ART_FONTS=[['Arial (padrão)','Arial,Helvetica,sans-serif'],['Verdana','Verdana,Geneva,sans-serif'],['Tahoma','Tahoma,Geneva,sans-serif'],['Trebuchet MS',"'Trebuchet MS',Helvetica,sans-serif"],['Arial Black',"'Arial Black',Gadget,sans-serif"],['Impact (forte e estreita)',"Impact,'Arial Narrow',sans-serif"],['Georgia (serifada)','Georgia,serif'],['Times New Roman','"Times New Roman",Times,serif'],['Palatino',"'Palatino Linotype',Palatino,serif"],['Comic Sans (divertida)',"'Comic Sans MS','Comic Sans',cursive"],['Courier New (máquina)',"'Courier New',monospace"]];
+const artW=(s,size,bold)=>{
+  if(!ART_FONT.startsWith('Arial,')){try{
+    const k=ART_FONT+(bold?'b':'n')+'|'+s;let w=_artM.get(k);
+    if(w==null){_artCx=_artCx||document.createElement('canvas').getContext('2d');_artCx.font=(bold?'700 ':'400 ')+'100px '+ART_FONT;w=_artCx.measureText(String(s)).width;if(_artM.size>4000)_artM.clear();_artM.set(k,w)}
+    return w*size/100}catch(e){}}
+  let w=0;for(const ch of String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'')){const c=ch.charCodeAt(0);w+=c>=32&&c<=126?(bold?BW:HW)[c-32]:556}return w*size/1000};
 function artWrap(s,maxW,size,bold){
   const out=[];let cur='';
   for(const word of String(s||'').split(/\s+/).filter(Boolean)){const t=cur?cur+' '+word:word;if(artW(t,size,bold)<=maxW)cur=t;else{if(cur)out.push(cur);cur=word}}
@@ -911,10 +918,10 @@ function artDates(from){
   return out.filter(([,d])=>d>=t).sort((a,b)=>a[1]-b[1]).filter((x,i,a)=>a.findIndex(z=>z[0]===x[0])===i);
 }
 function artSvg(o){
-  const oc=ART_OCC[o.occ],th=oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
-  const F="Arial,Helvetica,sans-serif",E=[];
+  const oc=ART_OCC[o.occ],th=Object.assign({},oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),o.cols||{}),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
+  const F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold);const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
-    E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
+    E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.stroke?` stroke="${op.stroke}" stroke-width="${op.sw||6}" stroke-linejoin="round" paint-order="stroke"`:''}${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
   // fundo
   E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
     <clipPath id="pc"><rect id="pcr" x="0" y="0" width="1" height="1" rx="40"/></clipPath><clipPath id="lc"><rect id="lcr" x="0" y="0" width="1" height="1" rx="26"/></clipPath></defs>`);
@@ -942,10 +949,19 @@ function artSvg(o){
   }
   // selo
   if(o.badge){
-    const bs=Math.round(54*k),bw=artW(o.badge.toUpperCase(),bs,true)+88*k,bh=Math.round(98*k),bx=(W-bw)/2;
-    E.push(`<rect x="${bx+6}" y="${y+8}" width="${bw}" height="${bh}" rx="${bh/2}" fill="#000" fill-opacity=".22"/><rect x="${bx}" y="${y}" width="${bw}" height="${bh}" rx="${bh/2}" fill="${th.badge}" stroke="#ffffff" stroke-width="${6*k}"/>`);
-    T(o.badge.toUpperCase(),W/2,y+bh/2+bs*.35,bs,{bold:1,color:th.badgeT,anchor:'m'});
-    y+=bh+Math.round(34*k);
+    const bt=o.badge.toUpperCase();
+    if(o.bstyle==='solto'){
+      let bs=Math.round(86*k);while(artW(bt,bs,true)>W-120&&bs>30)bs-=3;const bh=Math.round(bs*1.25);
+      T(bt,W/2+4,y+bh*.78+6,bs,{bold:1,color:'#000000',op:.3,anchor:'m'});
+      T(bt,W/2,y+bh*.78,bs,{bold:1,color:th.badge,anchor:'m',stroke:th.badgeT,sw:Math.round(10*k)});
+      y+=bh+Math.round(26*k);
+    }else{
+      let bs=Math.round(54*k);while(artW(bt,bs,true)+88*k>W-80&&bs>26)bs-=3;
+      const bw=artW(bt,bs,true)+88*k,bh=Math.round(98*k),bx=(W-bw)/2;
+      E.push(`<rect x="${bx+6}" y="${y+8}" width="${bw}" height="${bh}" rx="${bh/2}" fill="#000" fill-opacity=".22"/><rect x="${bx}" y="${y}" width="${bw}" height="${bh}" rx="${bh/2}" fill="${th.badge}" stroke="#ffffff" stroke-width="${6*k}"/>`);
+      T(bt,W/2,y+bh/2+bs*.35,bs,{bold:1,color:th.badgeT,anchor:'m'});
+      y+=bh+Math.round(34*k);
+    }
   }
   // rodapé (altura fixa) e bloco de preço (altura variável) definem a altura da foto
   const footH=o.showFoot?Math.round(190*k):Math.round(50*k),M=60,CW=W-2*M;
@@ -961,9 +977,14 @@ function artSvg(o){
   let ph=H-footH-y-below-30*k;ph=Math.max(feed?300:420,Math.min(ph,feed?560:820));
   // cartão da foto
   const cx=M+10,cw=W-2*cx;
+  if(o.nop){
+    if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/>`);
+    else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:th.sub,anchor:'m'});
+  }else{
   E.push(`<rect x="${cx+8}" y="${y+14}" width="${cw}" height="${ph}" rx="44" fill="#000" fill-opacity=".25"/><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44" fill="#ffffff"/>`);
   if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet" clip-path="url(#pcp)"/>`)}
   else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
+  }
   y+=ph+Math.round(30*k);
   // nome
   nl.forEach((l,i)=>{y+=nLH;T(l,W/2,y-nameS*.2,nameS,{bold:1,anchor:'m'})});
@@ -993,7 +1014,7 @@ function artSvg(o){
 }
 
 /* ---- tela da aba "Arte do produto" ---- */
-let artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
+let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
 const artCache=new Map();
 async function artBlobData(blob,max){
   const u=URL.createObjectURL(blob);
@@ -1010,9 +1031,37 @@ async function artUrlData(url,max){
   const r=await fetch(url);if(!r.ok)throw new Error('http');
   const d=await artBlobData(await r.blob(),max);artCache.set(url,d);return d;
 }
+const artBadge=()=>{const v=artVal('badge');return v==='__d'?artVal('badget').trim():v};
+const ART_COLS=[['text','Texto'],['price','Preço'],['accent','Título/faixa'],['badge','Selo'],['badgeT','Letra do selo']];
+function artCols(){const o={};ART_COLS.forEach(([k])=>{const e=$('#a_c_'+k);if(e&&e.dataset.s)o[k]=e.value});return o}
+function artColReset(){document.querySelectorAll('.artc').forEach(e=>delete e.dataset.s);artRender()}
+async function artCutRun(){
+  const g=++artCutGen,src=artPhoto;if(!src){artCut=null;artRender();return}
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src});
+    const w=img.width,h=img.height,cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.drawImage(img,0,0);
+    const id=cx.getImageData(0,0,w,h),d=id.data,tol=+artVal('tol')||35;
+    const cs=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([x,y])=>{const i=(y*w+x)*4;return[d[i],d[i+1],d[i+2]]});
+    const ref=[0,1,2].map(c=>cs.reduce((a,v)=>a+v[c],0)/4);
+    const dist=i=>Math.hypot(d[i]-ref[0],d[i+1]-ref[1],d[i+2]-ref[2]);
+    const bg=new Uint8Array(w*h),q=new Int32Array(w*h);let qh=0,qt=0;
+    const push=p=>{if(!bg[p]&&dist(p*4)<tol){bg[p]=1;q[qt++]=p}};
+    for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+    while(qh<qt){const p=q[qh++],x=p%w;if(x>0)push(p-1);if(x<w-1)push(p+1);if(p>=w)push(p-w);if(p<w*(h-1))push(p+w)}
+    for(let p=0;p<w*h;p++){
+      if(bg[p]){d[p*4+3]=0;continue}
+      const x=p%w,near=(x>0&&bg[p-1])||(x<w-1&&bg[p+1])||(p>=w&&bg[p-w])||(p<w*(h-1)&&bg[p+w]);
+      if(near){const e=dist(p*4);if(e<tol*2.4)d[p*4+3]=Math.max(0,Math.min(255,Math.round((e-tol)/(tol*1.4)*255)))}
+    }
+    cx.putImageData(id,0,0);
+    if(g===artCutGen)artCut=cv.toDataURL('image/png');
+  }catch(e){if(g===artCutGen)artCut=null}
+  if(g===artCutGen)artRender();
+}
+function artNopRefresh(){artCut=null;const e=$('#a_nop');if(e&&e.checked)artCutRun();else artRender()}
 const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
 function artCaption(){
-  const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artVal('badge');
+  const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artBadge();
   const pid=artVal('p'),tt=artVal('ttl').trim(),sb=artVal('sub').trim(),L=[...(tt?[`*${tt}*`+(sb?' - '+sb:''),'']:[]),`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
   [artVal('l1'),artVal('l2'),artVal('valid')].map(s=>s.trim()).filter(Boolean).forEach(s=>L.push(s));
   L.push('','Chame no WhatsApp: https://wa.me/'+waNum());
@@ -1022,12 +1071,15 @@ function artCaption(){
 function artOpts(){
   const co=CO(),addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artVal('badge'),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
-    co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
+    co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
 function artRender(){
   const o=artOpts(),box=$('#artv');if(!box)return;
+  {const bt=$('#a_badget');if(bt)bt.parentNode.style.display=artVal('badge')==='__d'?'':'none';
+   const th=ART_OCC[artOcc]?ART_OCC[artOcc].th:(ART_TH[artTheme]||ART_TH.azul);
+   ART_COLS.forEach(([k])=>{const e=$('#a_c_'+k);if(e&&!e.dataset.s)e.value=/^#[0-9a-f]{6}$/i.test(th[k]||'')?th[k]:'#000000'})}
   box.innerHTML=artSvg(o);
   if(!artCapDirty&&$('#a_cap'))$('#a_cap').value=artCaption();
   document.querySelectorAll('.thb').forEach(b=>b.classList.toggle('on',b.dataset.th===artTheme&&!artOcc));
@@ -1079,12 +1131,12 @@ async function artLoadPhoto(){
   if(!u){st.textContent=p?'Este produto não tem foto cadastrada. Envie uma foto abaixo.':'';return}
   st.className='sm';st.textContent='Carregando a foto...';
   try{artPhoto=await artUrlData(u,1100);st.textContent=''}catch(e){st.className='sm bad';st.textContent='Não consegui carregar a foto (o site dela pode bloquear). Envie uma foto do aparelho abaixo.'}
-  artRender();
+  artNopRefresh();
 }
 async function artUpload(inp){
   const f=inp.files[0];if(!f)return;
   try{artPhoto=await artBlobData(f,1100);$('#a_st').textContent=''}catch(e){alert('Não consegui ler essa imagem.')}
-  artRender();
+  artNopRefresh();
 }
 function artPick(){
   const p=db.products.find(x=>x.id===artVal('p'));if(!p)return;
@@ -1110,7 +1162,11 @@ async function vArte(){
   <div class="f"><div class="w"><label>Buscar produto</label><input id="a_q" placeholder="Digite parte do nome" oninput="artFilter()"></div>
   <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
   <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
-  <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}</select></div>
+  <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
+  <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
+  <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
+  <div><label>Fonte (letra)</label><select id="a_font" onchange="artRender()">${ART_FONTS.map(([n,v])=>`<option value="${esc(v)}">${n}</option>`).join('')}</select></div>
+  <div class="w"><label>Cores das letras</label><div class="row" style="margin:0;align-items:center">${ART_COLS.map(([k,n])=>`<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="color" class="artc" id="a_c_${k}" style="width:42px;height:34px;padding:0" oninput="this.dataset.s=1;artRender()"> ${n}</label>`).join('')}<button type="button" class="btn g s" onclick="artColReset()">Voltar às cores do estilo</button></div><div class="sm">A fonte depende das letras instaladas no aparelho; a imagem baixada sai igual ao que você vê aqui.</div></div>
   <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artSetTheme('${k}')">${t.n}</button>`).join('')}</div></div>
   <div class="w"><label>Data especial</label><div class="row" style="margin:0 0 6px">${artDates(new Date()).slice(0,3).map(([id,d])=>`<button type="button" class="btn s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n} · ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</button>`).join('')}<span class="sm" style="align-self:center">próximas datas</span></div>
   <div class="row" style="margin:0">${ART_OCC_ORDER.map(id=>`<button type="button" class="btn g s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n}</button>`).join('')}<button type="button" class="btn g s" onclick="artSetOcc('')">Sem data</button></div></div>
@@ -1125,6 +1181,8 @@ async function vArte(){
   <div><label>Foto do produto</label><select id="a_ph" onchange="artLoadPhoto()"></select></div>
   <div><label>Usar outra foto</label><input type="file" accept="image/*" onchange="artUpload(this)"></div>
   <div class="w sm" id="a_st" role="status"></div>
+  <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_nop" style="width:auto" onchange="artNopRefresh()"> Produto direto na arte (sem painel branco, remove o fundo claro da foto)</label>
+  <label style="margin-top:6px">Força da remoção do fundo</label><input type="range" id="a_tol" min="10" max="90" value="35" onchange="artNopRefresh()"><div class="sm">Funciona melhor com foto de fundo liso e claro. Se cortar demais o produto, diminua; se sobrar fundo, aumente.</div></div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label>
   <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label></div>
   <div class="w"><label>Legenda do status (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
