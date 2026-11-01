@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.5.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.5.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -306,7 +306,7 @@ function list(){
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}${safeUrl(p.video_url)?'<span class="vidb" title="Tem vídeo">▶ vídeo</span>':''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
-   <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div>${p.stock>0?`<a class="btn wa cwa" target="_blank" rel="noopener" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" href="https://wa.me/${wa()}?text=${encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?')}">Chamar no WhatsApp</a>`:''}</div></div>`}).join('')||EMPTY;
+   <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div>${p.stock>0?`<a class="btn wa cwa" target="_blank" rel="noopener" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" href="https://wa.me/${wa()}?text=${encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:',false,true)+'\n\nAinda está disponível?')}">Chamar no WhatsApp</a>`:''}</div></div>`}).join('')||EMPTY;
   fab();
 }
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none';document.body.classList.toggle('hasbag',n>0)}
@@ -315,14 +315,15 @@ function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacol
 // foto reduzida (JPEG até 800 px, leve) para o WhatsApp mostrar a prévia da imagem no chat
 const waImg=u=>u?'https://wsrv.nl/?url='+encodeURIComponent(u)+'&w=800&h=800&fit=inside&we&bg=white&output=jpg&q=80':'';
 const pageUrl=id=>location.origin+location.pathname+'#p='+id;
-function productText(p,head,noPhoto){
-  const l=[head,'','*'+p.name+'*'];
+function productText(p,head,noPhoto,pf){
+  const ph0=(p.photos||[])[0];
+  const l=pf&&ph0?[head,'',waImg(ph0),'','*'+p.name+'*']:[head,'','*'+p.name+'*']; // pf: foto logo no começo, para o WhatsApp mostrar a prévia da imagem
   if(p.internal_code)l.push('Cód. '+p.internal_code);
   if(p.category)l.push(p.category);
   const d=(p.description||'').trim();if(d)l.push(d.length>220?d.slice(0,217)+'...':d);
   const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
   const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
-  l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto)l.push('Foto: '+waImg(ph));
+  l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto&&!pf)l.push('Foto: '+waImg(ph));
   l.push('Ver no catálogo: '+pageUrl(p.id));
   return l.join('\n');
 }
@@ -331,13 +332,6 @@ async function prefetchShare(p){
   shareFile=null;const u=(p.photos||[])[0];if(!u)return;
   try{const b=await(await fetch(u)).blob();if(!/^image\//.test(b.type))return;
     shareFile=new File([b],'produto.'+(b.type.split('/')[1]||'jpg').replace('jpeg','jpg'),{type:b.type})}catch(e){}
-}
-function chamarFoto(id){
-  const p=prod(id),t=productText(p,'Olá, MultMix! Tenho interesse neste produto:',true)+'\n\nAinda está disponível?';
-  if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
-    navigator.share({files:[shareFile],text:t}).catch(e=>{if(!e||e.name!=='AbortError')window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?'),'_blank','noopener')});return;
-  }
-  window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?'),'_blank','noopener');
 }
 function shareProduct(id){
   const p=prod(id),nm=CO.trade_name||'MultMix',head='Olha este produto da '+nm+':';
@@ -381,7 +375,7 @@ function detail(id){
   gal=ph;gi=0;prefetchShare(p);
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
   const msgW=encodeURIComponent(productText(p,'Olá, MultMix! Quero ser avisado quando este produto chegar:'));
-  const msg=encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?');
+  const msg=encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:',false,true)+'\n\nAinda está disponível?');
   modal(`<div class="two"><div><div class="main" id="mi" role="button" tabindex="0" aria-label="Ampliar foto" onclick="if(!event.target.closest('.ar'))openLb()" onkeydown="if(event.key==='Enter')openLb()" style="cursor:zoom-in;${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"><span class="zm">⤢ Ampliar</span>${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
    <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
    <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${p.internal_code?`<span class="tag">Cód. ${esc(p.internal_code)}</span>`:''} ${out?'<span class="tag">Indisponível</span>':''}
@@ -390,7 +384,7 @@ function detail(id){
    ${promoPct(p)?`<p class="sm"><b style="color:#d92d20">${String(promoPct(p)).replace('.',',')}% OFF</b>${promoEnd(p)}</p>`:''}<div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${promoPct(p)?`<s class="old">${R(t==='crediario'?price0(p,t)/m:price0(p,t))}</s> `:''}${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
    ${safeUrl(p.video_url)||safeUrl(p.site_url)?`<div class="row lnks">${safeUrl(p.video_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.video_url))}">▶ Ver vídeo${isYT(safeUrl(p.video_url))?' no YouTube':''}</a>`:''}${safeUrl(p.site_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.site_url))}">Site do fabricante</a>`:''}</div>`:''}
    <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
-   ${out?`<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msgW}">Avisar quando chegar</a>`:`<button class="btn wa" onclick="chamarFoto('${id}')">Chamar no WhatsApp</button>`}
+   ${out?`<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msgW}">Avisar quando chegar</a>`:`<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msg}">Chamar no WhatsApp</a>`}
    <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
