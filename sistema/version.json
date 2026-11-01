@@ -1,5 +1,5 @@
 {
- "version": "1.37.1",
- "date": "2026-10-28",
- "notes": "Lembrete mensal no sino para enviar o pacote do contador."
+ "version": "1.38.0",
+ "date": "2026-11-01",
+ "notes": "Código interno do produto por faixa de categoria."
 }
