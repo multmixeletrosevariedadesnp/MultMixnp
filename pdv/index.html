@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.1.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.2.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -298,7 +298,7 @@ function cliPick(i){const c=(window.CLIS||[])[i];if(!c)return;selCli=c.id;$('#c_
 
 function pdvList(){
   const k=norm($('#p_q').value),d=digits($('#p_q').value);
-  return P.filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
+  return P.filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
     .sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
 }
 function pdvSearch(){
@@ -369,7 +369,7 @@ function pdvMsg(t,ok){const e=$('#p_msg');if(e){e.textContent=t;e.className='sm 
 function pdvCode(raw){
   let v=String(raw||'').trim(),q=1;const m=v.match(/^(\d{1,3})\s*[*xX]\s*(.+)$/);if(m){q=+m[1];v=m[2].trim()}
   const d=digits(v),ex=d.length>=6&&P.find(p=>p.ean===d);
-  if(!ex){const k=norm(v),l=k?P.filter(p=>norm([p.name,p.category,p.supplier_code].join(' ')).includes(k)):[];
+  if(!ex){const k=norm(v),l=k?P.filter(p=>norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)):[];
     if(l.length===1&&v.length>=2)return pdvAdd(l[0],q);
     if(d.length>=6){const t='Código '+d+' não cadastrado. Chame o administrador.';pdvMsg(t,false);return t}
     pdvMsg(l.length?'Vários produtos encontrados. Toque no que deseja ou digite mais letras.':'Nenhum produto encontrado.',false);return null}
