@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.3.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.3.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -105,7 +105,7 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.hid{display:none!important}.art .box{margin-top:0}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
-@media(max-width:900px){.art{grid-template-columns:1fr}.artp{position:static;max-width:360px;margin:0 auto}}
+@media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:36vh;margin:0 auto}}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
 
 /* PDV: produtos à esquerda, carrinho à direita (no celular, um abaixo do outro) */
@@ -575,6 +575,52 @@ function artFilter(){
   if(l.length)artPick();
 }
 /* ---- vendedor: dados, foto/avatar e cartão de visita ---- */
+/* ---- avatar a partir da foto (filtros no aparelho, sem enviar nada) ---- */
+let SELORIG=null;
+const SELOK=()=>'pdv_vendorig_'+(ME&&ME.id);
+function avBlur(src,w,h,r){
+  const t=new Float32Array(w*h*3),o=new Uint8ClampedArray(src.length),n=2*r+1;
+  for(let y=0;y<h;y++)for(let c=0;c<3;c++){let sum=0;for(let x=-r;x<=r;x++)sum+=src[(y*w+Math.min(w-1,Math.max(0,x)))*4+c];
+    for(let x=0;x<w;x++){t[(y*w+x)*3+c]=sum/n;sum+=src[(y*w+Math.min(w-1,x+r+1))*4+c]-src[(y*w+Math.max(0,x-r))*4+c]}}
+  for(let x=0;x<w;x++)for(let c=0;c<3;c++){let sum=0;for(let y=-r;y<=r;y++)sum+=t[(Math.min(h-1,Math.max(0,y))*w+x)*3+c];
+    for(let y=0;y<h;y++){o[(y*w+x)*4+c]=sum/n;o[(y*w+x)*4+3]=255;sum+=t[(Math.min(h-1,y+r+1)*w+x)*3+c]-t[(Math.max(0,y-r)*w+x)*3+c]}}
+  return o;
+}
+async function avGen(){
+  const src=SELORIG||SELPH;if(!src)return alert('Envie primeiro a sua foto.');
+  const st=artVal('avs'),bgOn=!!($('#a_avbg')||{}).checked,bg=artVal('avc')||'#ffc21a',N=420;
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src}).catch(()=>null);if(!img)return alert('Não consegui ler a foto.');
+  const cv=document.createElement('canvas');cv.width=cv.height=N;const cx=cv.getContext('2d'),sz=Math.min(img.width,img.height);
+  cx.drawImage(img,(img.width-sz)/2,(img.height-sz)*.25,sz,sz,0,0,N,N);
+  const id=cx.getImageData(0,0,N,N),d=id.data,orig=new Uint8ClampedArray(d);
+  let mask=null;
+  if(bgOn){ // fundo = área parecida com os cantos, ligada às bordas
+    const cs=[[0,0],[N-1,0],[0,N-1],[N-1,N-1]].map(([x,y])=>{const i=(y*N+x)*4;return[d[i],d[i+1],d[i+2]]}),ref=[0,1,2].map(c=>cs.reduce((a,v)=>a+v[c],0)/4);
+    const dist=p=>Math.hypot(d[p*4]-ref[0],d[p*4+1]-ref[1],d[p*4+2]-ref[2]);mask=new Uint8Array(N*N);const q=new Int32Array(N*N);let qh=0,qt=0;
+    const push=p=>{if(!mask[p]&&dist(p)<48){mask[p]=1;q[qt++]=p}};
+    for(let x=0;x<N;x++){push(x);push((N-1)*N+x)}for(let y=0;y<N;y++){push(y*N);push(y*N+N-1)}
+    while(qh<qt){const p=q[qh++],x=p%N;if(x>0)push(p-1);if(x<N-1)push(p+1);if(p>=N)push(p-N);if(p<N*(N-1))push(p+N)}
+  }
+  const lum=i=>.299*d[i]+.587*d[i+1]+.114*d[i+2];
+  if(st==='cartoon'){
+    let b=orig;for(let k=0;k<3;k++)b=avBlur(b,N,N,3);
+    const L=new Float32Array(N*N);for(let p=0;p<N*N;p++)L[p]=.299*b[p*4]+.587*b[p*4+1]+.114*b[p*4+2];
+    const e=avBlur(orig,N,N,1);const G=new Float32Array(N*N);for(let p=0;p<N*N;p++)G[p]=.299*e[p*4]+.587*e[p*4+1]+.114*e[p*4+2];
+    for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const p=y*N+x,gx=G[p+1]-G[p-1]+(G[p-N+1]-G[p-N-1]+G[p+N+1]-G[p+N-1])/2,gy=G[p+N]-G[p-N]+(G[p+N-1]-G[p-N-1]+G[p+N+1]-G[p-N+1])/2,m=Math.hypot(gx,gy);
+      const i=p*4,lv=48;for(let c=0;c<3;c++){const v=Math.round(b[i+c]/lv)*lv;d[i+c]=Math.min(255,v*1.08+6)}
+      if(m>34){const k=Math.min(1,(m-34)/40);for(let c=0;c<3;c++)d[i+c]=d[i+c]*(1-k)+28*k}}
+  }else if(st==='sketch'){
+    const g=new Uint8ClampedArray(orig.length);for(let p=0;p<N*N;p++){const v=lum(p*4);g[p*4]=g[p*4+1]=g[p*4+2]=255-v;g[p*4+3]=255}
+    const bl=avBlur(g,N,N,9);for(let p=0;p<N*N;p++){const v=lum(p*4),dv=Math.min(255,v*255/(255-bl[p*4]+1)),o=Math.max(0,Math.min(255,dv*.95));d[p*4]=o;d[p*4+1]=o*.98;d[p*4+2]=o*.94}
+  }else{ // pop-art: 3 cores pela claridade
+    const A=[[20,24,70],[230,57,70],[255,212,0]];
+    for(let p=0;p<N*N;p++){const v=lum(p*4)/255,k=v<.38?0:v<.7?1:2;d[p*4]=A[k][0];d[p*4+1]=A[k][1];d[p*4+2]=A[k][2]}
+  }
+  if(mask){const h=bg.replace('#',''),c=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));for(let p=0;p<N*N;p++)if(mask[p]){d[p*4]=c[0];d[p*4+1]=c[1];d[p*4+2]=c[2]}}
+  cx.putImageData(id,0,0);SELPH=cv.toDataURL('image/jpeg',.9);try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender();
+}
+function avBack(){if(SELORIG){SELPH=SELORIG;try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}}
+
 let MODE='art',SELPH=null;
 const SELK=()=>'pdv_vend_'+(ME&&ME.id),SELPK=()=>'pdv_vendfoto_'+(ME&&ME.id);
 const SEL=()=>{const d=LS.get(SELK(),{});return{name:(d.name!=null?d.name:(ME&&ME.name)||'').trim(),role:(d.role!=null?d.role:'Consultor de vendas').trim(),phone:digits(d.phone||''),extra:(d.extra||'').trim()}};
@@ -582,8 +628,8 @@ const fmtTel=v=>{let d=digits(v);if(d.length>=12&&d.startsWith('55'))d=d.slice(2
 const waNum=()=>{const d=SEL().phone||digits((CO||{}).whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):''};
 const logoIcon=()=>(CO&&CO.logo_url)||'logo-icon.png';
 function selSave(){LS.set(SELK(),{name:artVal('vn'),role:artVal('vr'),phone:artVal('vp'),extra:artVal('ve')});artRender()}
-async function selFoto(inp){const f=inp.files[0];if(!f)return;try{SELPH=await artBlobData(f,500);try{localStorage.setItem(SELPK(),SELPH)}catch(e){}}catch(e){alert('Não consegui ler essa imagem.')}artRender()}
-function selFotoDel(){SELPH=null;try{localStorage.removeItem(SELPK())}catch(e){}artRender()}
+async function selFoto(inp){const f=inp.files[0];if(!f)return;try{SELPH=SELORIG=await artBlobData(f,600);try{localStorage.setItem(SELPK(),SELPH);localStorage.setItem(SELOK(),SELORIG)}catch(e){}}catch(e){alert('Não consegui ler essa imagem.')}artRender()}
+function selFotoDel(){SELPH=SELORIG=null;try{localStorage.removeItem(SELPK());localStorage.removeItem(SELOK())}catch(e){}artRender()}
 const artSel=()=>{const s=SEL();return s.name||s.phone?{...s,photo:SELPH}:null};
 function artAvatar(cx,cy,r,sel,th,F,id){
   const ini=(sel.name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
@@ -645,7 +691,9 @@ async function vArte(){
 <div class="box" style="max-width:none;margin-bottom:14px"><h2 style="margin-top:0">Meus dados</h2><p class="sm">Usados no rodapé da arte e no seu cartão de visita. Ficam salvos só neste aparelho.</p>
 <div class="f"><div><label>Meu nome</label><input id="a_vn" value="${esc(SEL().name)}" oninput="selSave()"></div><div><label>Cargo</label><input id="a_vr" value="${esc(SEL().role)}" oninput="selSave()"></div>
 <div><label>Meu WhatsApp (com DDD)</label><input id="a_vp" inputmode="tel" placeholder="(93) 99999-9999" value="${esc(fmtTel(SEL().phone))}" oninput="selSave()"></div><div><label>Linha extra (Instagram, site...)</label><input id="a_ve" value="${esc(SEL().extra)}" oninput="selSave()"></div>
-<div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button></div></div></div></div>
+<div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button></div></div>
+<div class="w"><label>Criar avatar a partir da foto (efeito de desenho feito no aparelho)</label><div class="row" style="margin:0"><select id="a_avs" style="max-width:210px"><option value="cartoon">Desenho (cartoon)</option><option value="sketch">Esboço a lápis</option><option value="pop">Pop-art</option></select>
+<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="a_avbg" style="width:auto"> Trocar o fundo por</label><input type="color" id="a_avc" value="#ffc21a" style="width:42px;height:34px;padding:0"><button type="button" class="btn s" onclick="avGen()">Criar avatar</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div><div class="sm">Não é desenho feito por IA: é um filtro sobre a sua foto. Troca de fundo funciona melhor com parede lisa.</div></div></div></div>
 <div class="box" style="max-width:none"><div class="row" style="margin:0 0 10px"><button type="button" class="btn modb on" data-m="art" onclick="artMode('art')">Arte de oferta</button><button type="button" class="btn g modb" data-m="card" onclick="artMode('card')">Meu cartão de visita</button></div>
 <h2 style="margin-top:0" class="mA">Arte do produto</h2><p class="sm mA">Gere a imagem da oferta e publique no Status do seu WhatsApp. O WhatsApp não permite publicar sozinho: toque em <b>Enviar para o WhatsApp</b>, escolha o WhatsApp e depois <b>Meu status</b>.</p><p class="sm mC hid">Cartão com sua foto, nome e WhatsApp. Horizontal serve para imprimir (9 x 5 cm) e vertical para o Status.</p>
 <div class="f">
@@ -679,12 +727,12 @@ async function vArte(){
 </div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label></div>
 <div style="display:contents" class="mA"><div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label><label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_selfoot" style="width:auto" checked onchange="artRender()"> Mostrar minha foto, nome e WhatsApp no rodapé</label></div></div>
-  <div class="w"><label>Legenda (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div></div>
+  <div class="w"><label>Legenda (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
   <div class="row"><button class="btn" onclick="artShare()">Enviar pelo WhatsApp</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
   <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
-</div></div>
+</div>
 <div class="artp"><div id="artv"></div></div></div>`;
-  try{SELPH=localStorage.getItem(SELPK())||null}catch(e){SELPH=null}
+  try{SELPH=localStorage.getItem(SELPK())||null;SELORIG=localStorage.getItem(SELOK())||null}catch(e){SELPH=SELORIG=null}
   MODE='art';artFilter();
   try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
   artRender();
