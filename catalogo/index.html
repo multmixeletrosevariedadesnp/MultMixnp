@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.5.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.5.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -325,6 +325,13 @@ async function prefetchShare(p){
   try{const b=await(await fetch(u)).blob();if(!/^image\//.test(b.type))return;
     shareFile=new File([b],'produto.'+(b.type.split('/')[1]||'jpg').replace('jpeg','jpg'),{type:b.type})}catch(e){}
 }
+function chamarFoto(id){
+  const p=prod(id),t=productText(p,'Olá, MultMix! Tenho interesse neste produto:',true)+'\n\nAinda está disponível?';
+  if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
+    navigator.share({files:[shareFile],text:t}).catch(e=>{if(!e||e.name!=='AbortError')window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?'),'_blank','noopener')});return;
+  }
+  window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:')+'\n\nAinda está disponível?'),'_blank','noopener');
+}
 function shareProduct(id){
   const p=prod(id),nm=CO.trade_name||'MultMix',head='Olha este produto da '+nm+':';
   if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
@@ -377,7 +384,8 @@ function detail(id){
    ${safeUrl(p.video_url)||safeUrl(p.site_url)?`<div class="row lnks">${safeUrl(p.video_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.video_url))}">▶ Ver vídeo${isYT(safeUrl(p.video_url))?' no YouTube':''}</a>`:''}${safeUrl(p.site_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.site_url))}">Site do fabricante</a>`:''}</div>`:''}
    <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a>
-   <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div></div></div>
+   ${out||!(navigator.canShare&&ph[0])?'':`<button class="btn wa" onclick="chamarFoto('${id}')" title="Abre o compartilhamento com a foto: escolha o WhatsApp e o contato da loja">Chamar com a foto</button>`}
+   <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div>${out||!(navigator.canShare&&ph[0])?'':'<p class="sm">“Chamar com a foto” anexa a foto: escolha o WhatsApp e depois o contato da loja.</p>'}</div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 
