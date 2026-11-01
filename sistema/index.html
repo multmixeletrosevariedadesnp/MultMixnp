@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.39.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.40.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -976,7 +976,8 @@ function artSvg(o){
   const below=18*k+nl.length*nLH+(hasOld?oldS+26*k:10*k)+ps*.78+22*k+(lines.length?lines.length*lLH+10*k:0)+(o.valid?vS+30*k:0);
   let ph=H-footH-y-below-30*k;ph=Math.max(feed?300:420,Math.min(ph,feed?560:820));
   // cartão da foto
-  const cx=M+10,cw=W-2*cx;
+  const yTop=y,phF=ph,mas=o.mascot;let cx=M+10,cw=W-2*cx;
+  if(mas){const mw=Math.min(W*.46,phF*mas.ar),x0=Math.round(20+mw*.97+6),av=W-30-x0;cw=Math.min(av,Math.round(phF*.8));cx=Math.round(x0+(av-cw)*.3);y=yTop+Math.round(phF*.1);ph=Math.round(phF*.74)}
   if(o.nop){
     if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/>`);
     else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:th.sub,anchor:'m'});
@@ -985,6 +986,8 @@ function artSvg(o){
   if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet" clip-path="url(#pcp)"/>`)}
   else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
   }
+  if(mas){y=yTop;ph=phF;const mw=Math.min(W*.46,phF*mas.ar),mh=mw/mas.ar;
+    E.push(`<ellipse cx="${(20+mw*.45).toFixed(0)}" cy="${(yTop+phF-4).toFixed(0)}" rx="${(mw*.36).toFixed(0)}" ry="14" fill="#000" fill-opacity=".25"/><image href="${mas.img}" xlink:href="${mas.img}" x="20" y="${(yTop+phF-mh).toFixed(0)}" width="${mw.toFixed(0)}" height="${mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`)}
   y+=ph+Math.round(30*k);
   // nome
   nl.forEach((l,i)=>{y+=nLH;T(l,W/2,y-nameS*.2,nameS,{bold:1,anchor:'m'})});
@@ -1014,6 +1017,12 @@ function artSvg(o){
 }
 
 /* ---- tela da aba "Arte do produto" ---- */
+const ART_MAS={1:{f:'mascote1.png',ar:450/1159},2:{f:'mascote2.png',ar:578/1180}},ART_MASD={};
+async function artMasLoad(){
+  const id=artVal('mas');
+  if(id&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
+  artRender();
+}
 let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
 const artCache=new Map();
 async function artBlobData(blob,max){
@@ -1071,7 +1080,7 @@ function artCaption(){
 function artOpts(){
   const co=CO(),addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{img:ART_MASD[artVal('mas')],ar:ART_MAS[artVal('mas')].ar}:null,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
     co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
@@ -1183,6 +1192,7 @@ async function vArte(){
   <div class="w sm" id="a_st" role="status"></div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_nop" style="width:auto" onchange="artNopRefresh()"> Produto direto na arte (sem painel branco, remove o fundo claro da foto)</label>
   <label style="margin-top:6px">Força da remoção do fundo</label><input type="range" id="a_tol" min="10" max="90" value="35" onchange="artNopRefresh()"><div class="sm">Funciona melhor com foto de fundo liso e claro. Se cortar demais o produto, diminua; se sobrar fundo, aumente.</div></div>
+  <div class="w"><label>Mascote MultMix apresentando o produto</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote: mulher</option><option value="2">Mascote: homem</option></select><div class="sm">O mascote aparece ao lado do produto, como se estivesse apresentando a oferta. Só entra na arte se você escolher aqui.</div></div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label>
   <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label></div>
   <div class="w"><label>Legenda do status (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
