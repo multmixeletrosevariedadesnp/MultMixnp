@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.5.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.5.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -97,6 +97,11 @@ s.old{color:var(--mut);font-size:13px;font-weight:500}
 .ibtn{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer}.ibtn[hidden]{display:none}.ibtn+#zap{margin-left:0}
 .cash.ask{font-size:14px;font-weight:700}
 #top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:52px;height:52px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
+#wafab{position:fixed;right:16px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:10;width:52px;height:52px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+#wafab svg{width:30px;height:30px}
+body.hasbag #wafab{bottom:calc(146px + env(safe-area-inset-bottom,0px))}
+body.instbar-on #wafab{bottom:calc(160px + env(safe-area-inset-bottom,0px))}
+body.instbar-on.hasbag #wafab{bottom:calc(226px + env(safe-area-inset-bottom,0px))}
 #top.on{opacity:1;pointer-events:auto;transform:none}
 body.hasbag #top{bottom:calc(82px + env(safe-area-inset-bottom,0px))}
 body.instbar-on #fab{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
@@ -148,6 +153,7 @@ body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))
   <div class="grid" id="grid"></div>
 </main>
 <button class="btn" id="fab" onclick="bagView()"></button>
+<a id="wafab" target="_blank" rel="noopener" aria-label="Chamar a loja no WhatsApp" title="Chamar a loja no WhatsApp"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill="#fff" d="M16 3C8.8 3 3 8.7 3 15.8c0 2.5.7 4.8 2 6.8L3 29l6.6-1.9c1.9 1 4 1.6 6.4 1.6 7.2 0 13-5.7 13-12.8S23.2 3 16 3zm0 23.3c-2.1 0-4.1-.6-5.8-1.6l-.4-.2-3.9 1.1 1.1-3.8-.3-.4A10.4 10.4 0 0 1 5.6 16C5.6 10.2 10.2 5.6 16 5.6S26.4 10.2 26.4 16 21.8 26.3 16 26.3zm5.7-7.7c-.3-.2-1.9-.9-2.2-1-.3-.1-.5-.2-.7.2s-.8 1-1 1.2c-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-1-2.3c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.4 1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 1.8.8 2.5.9 3.4.7.6-.1 1.9-.8 2.2-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.3z"/></svg></a>
 <footer id="ft">Preços sujeitos a alteração e disponibilidade em estoque.</footer>
 <div class="appv"><button type="button" data-appver></button> · <button type="button" data-appforce></button></div>
 <div id="modal"></div>
@@ -245,9 +251,10 @@ const opts=()=>Object.keys(NAMES).filter(t=>bag.every(i=>has(prod(i.id),t)));
 const NAMES={avista:'À vista',cartao:'Cartão',crediario:'Carnê'};
 let CO={};
 const wa=()=>{const d=(CO.whatsapp||'').replace(/\D/g,'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):CFG.WHATS};
-$('#zap').href='https://wa.me/'+wa();
+const zapSet=()=>{$('#zap').href='https://wa.me/'+wa();$('#wafab').href='https://wa.me/'+wa()+'?text='+encodeURIComponent('Olá! Vim pelo catálogo.')};
+zapSet();
 function brand(){
-  $('#zap').href='https://wa.me/'+wa();
+  zapSet();
   if(CO.logo_url)$('#hlogo').src=CO.logo_url;
   const nm=CO.trade_name||CO.legal_name;if(nm)document.title=nm+' · Catálogo';
   const ad=[CO.street&&`${CO.street}${CO.number?', '+CO.number:''}${CO.district?' - '+CO.district:''}`,CO.city&&`${CO.city}${CO.uf?'/'+CO.uf:''}`].filter(Boolean).join(' · ');
@@ -383,9 +390,8 @@ function detail(id){
    ${promoPct(p)?`<p class="sm"><b style="color:#d92d20">${String(promoPct(p)).replace('.',',')}% OFF</b>${promoEnd(p)}</p>`:''}<div class="prices">${vis(p).map((t,i)=>`<div class="pr${i?'':' k'}"><span>${t==='avista'?'À vista':t==='cartao'?'Cartão':'Carnê até '+m+'x'}</span><b>${promoPct(p)?`<s class="old">${R(t==='crediario'?price0(p,t)/m:price0(p,t))}</s> `:''}${t==='crediario'?R(price(p,t)/m):R(price(p,t))}</b></div>`).join('')||'<div class="pr"><span>Consulte o preço no WhatsApp</span></div>'}</div>
    ${safeUrl(p.video_url)||safeUrl(p.site_url)?`<div class="row lnks">${safeUrl(p.video_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.video_url))}">▶ Ver vídeo${isYT(safeUrl(p.video_url))?' no YouTube':''}</a>`:''}${safeUrl(p.site_url)?`<a class="btn g" target="_blank" rel="noopener noreferrer" href="${esc(safeUrl(p.site_url))}">Site do fabricante</a>`:''}</div>`:''}
    <div class="row">${out?'':`<button class="btn" ${!vis(p).length?'disabled':''} onclick="add('${id}')">Adicionar à sacola</button>`}
-   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${out?msgW:msg}">${out?'Avisar quando chegar':'Chamar no WhatsApp'}</a>
-   ${out||!(navigator.canShare&&ph[0])?'':`<button class="btn wa" onclick="chamarFoto('${id}')" title="Abre o compartilhamento com a foto: escolha o WhatsApp e o contato da loja">Chamar com a foto</button>`}
-   <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div>${out||!(navigator.canShare&&ph[0])?'':'<p class="sm">“Chamar com a foto” anexa a foto: escolha o WhatsApp e depois o contato da loja.</p>'}</div></div>
+   ${out?`<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${msgW}">Avisar quando chegar</a>`:`<button class="btn wa" onclick="chamarFoto('${id}')">Chamar no WhatsApp</button>`}
+   <button class="btn g" onclick="shareProduct('${id}')">Compartilhar</button></div></div></div>
    ${(p.specs||[]).length?`<h3>Especificações</h3><table>${p.specs.map(s=>`<tr><th>${esc(s.k)}</th><td>${esc(s.v)}</td></tr>`).join('')}</table>`:''}`);
 }
 
