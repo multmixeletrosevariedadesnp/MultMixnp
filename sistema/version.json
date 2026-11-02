@@ -1,5 +1,5 @@
 {
- "version": "1.43.0",
+ "version": "1.44.0",
  "date": "2026-11-02",
- "notes": "Tamanho da foto do produto e posição horizontal do mascote."
+ "notes": "Foto do produto: tamanho 30-180% e posição."
 }
