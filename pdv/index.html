@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.8.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.10.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -103,9 +103,8 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 .art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
 .artp{position:sticky;top:12px}
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.adv>summary{cursor:pointer;font-weight:600;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}.adv[open]>summary{margin-bottom:4px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.hid{display:none!important}.art .box{margin-top:0}
-.car{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}.carv svg{width:150px;height:auto;display:block;background:var(--line);border-radius:12px}.carc label{font-size:13px;color:var(--mut);display:block}.cksw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}.cksw[data-k="camisa"][data-v="7"]{background:linear-gradient(135deg,#16255a 62%,#ffc21a 62%)!important}.cksw.on{outline:3px solid var(--pri);outline-offset:1px}
-@media(max-width:560px){.car{grid-template-columns:1fr}.carv svg{margin:0 auto}}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:36vh;margin:0 auto}}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
@@ -459,9 +458,35 @@ function artMasImg(id,hpx){
   if(!ART_MASV[k+'?']){ART_MASV[k+'?']=1;artMasShrink(id,b).then(u=>{ART_MASV[k]=u;artRender()}).catch(()=>{})}
   return src;
 }
+const MASK=()=>'pdv_mascote_'+(ME&&ME.id);
+function masUiSync(){const v=artVal('mas'),a=$('#a_masbox'),c=$('#a_masctl');if(a)a.classList.toggle('hid',v!=='3');if(c)c.classList.toggle('hid',!(v&&ART_MASD[v]))}
+function masSet(url,w,h){ART_MAS[3]={f:'',ar:w/h,h};ART_MASD[3]=url;Object.keys(ART_MASV).forEach(k=>{if(k.indexOf('3:')===0)delete ART_MASV[k]})}
+async function masUp(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  try{
+    const src=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=src});
+    const k=Math.min(1,1400/img.height,1000/img.width),w=Math.max(1,Math.round(img.width*k)),h=Math.max(1,Math.round(img.height*k));
+    let c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(img,0,0,w,h);
+    // corta as bordas transparentes para o tamanho e a posição ficarem previsíveis
+    const d=x.getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
+    for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++)if(d[(yy*w+xx)*4+3]>8){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(yy<y0)y0=yy;if(yy>y1)y1=yy}
+    let cw=w,ch=h;
+    if(x1>=x0&&y1>=y0&&(x1-x0+1<w||y1-y0+1<h)){cw=x1-x0+1;ch=y1-y0+1;const c2=document.createElement('canvas');c2.width=cw;c2.height=ch;c2.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,cw,ch);c=c2}
+    const url=c.toDataURL('image/png');masSet(url,cw,ch);
+    try{localStorage.setItem(MASK(),url)}catch(e){alert('O mascote vai ser usado agora, mas não coube na memória do aparelho para ficar salvo. Se fechar o PDV, envie de novo.')}
+    const s=$('#a_mas');if(s)s.value='3';masUiSync();artRender();
+  }catch(e){alert('Não consegui abrir essa imagem. Tente um arquivo PNG ou JPG.')}
+  inp.value='';
+}
+function masDel(){delete ART_MASD[3];delete ART_MAS[3];try{localStorage.removeItem(MASK())}catch(e){}const s=$('#a_mas');if(s)s.value='';masUiSync();artRender()}
+async function masRestore(){
+  try{const u=localStorage.getItem(MASK());if(!u)return;
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=u});masSet(u,img.width,img.height)}catch(e){}
+}
 async function artMasLoad(){
-  const id=artVal('mas');
-  if(id&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
+  const id=artVal('mas');masUiSync();
+  if(id&&id!=='3'&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
   artRender();
 }
 let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
@@ -606,104 +631,6 @@ function artFilter(){
 }
 /* ---- vendedor: dados, foto/avatar e cartão de visita ---- */
 
-/* ---- avatar caricatura (personagem desenhado, escolhido a partir da sua foto) ---- */
-const CAR_PELE=['#ffdbb4','#f1c27d','#e0ac69','#c68642','#8d5524','#5c3a1e'],CAR_CAB=['#1b1b1b','#3b2417','#6b4423','#a9712f','#d9b36c','#9a9a9a','#b5391c','#7a3b1e'],CAR_CAM=['#00539f','#d92d20','#1f9d55','#1d2939','#ffffff','#ffc21a','#7a3fb8','#16255a'],CAR_OLH=['#3a2a1e','#1b1b1b','#2e7d4f','#3a78c2','#7a5a2e'];
-const CAR_EST=[['curto','Curto'],['social','Social (risca)'],['topete','Topete / franja lateral'],['ondulado','Ondulado'],['longo','Longo liso'],['black','Cacheado / black'],['coque','Coque'],['rabo','Rabo de cavalo'],['raspado','Raspado'],['careca','Careca']];
-const CAR_DEF={pele:1,estilo:'topete',cor:7,barba:'nao',oculos:false,camisa:7,corpo:'corpo',olho:0,expr:'sorriso',pose:'joia',fundo:'loja'};
-let CAR=Object.assign({},CAR_DEF,LS.get('pdv_car',{}));
-const carSave=()=>LS.set('pdv_car',CAR);
-const carDark=(h,f)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.slice(i,i+2),16)*f))).toString(16).padStart(2,'0')).join('');
-function carSvg(c,logo){
-  const sk=CAR_PELE[c.pele],sd=carDark(sk,.8),sl=carDark(sk,1.08),hc=CAR_CAB[c.cor],hd=carDark(hc,.7),hl=carDark(hc,1.5),cam=CAR_CAM[c.camisa],uni=c.camisa===7,lg=cam==='#ffffff'?'#d0d5dd':carDark(cam,.78),ol=CAR_OLH[c.olho||0];
-  const pants=uni?'#1f2a44':'#26324a',L=[],D=[];
-  D.push(`<radialGradient id="kskin" cx=".42" cy=".34" r=".8"><stop offset="0" stop-color="${sl}"/><stop offset=".6" stop-color="${sk}"/><stop offset="1" stop-color="${sd}"/></radialGradient>`);
-  D.push(`<linearGradient id="kshirt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${carDark(cam,1.12)}"/><stop offset="1" stop-color="${carDark(cam,.82)}"/></linearGradient>`);
-  D.push(`<radialGradient id="kiris" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="${carDark(ol,1.7)}"/><stop offset="1" stop-color="${ol}"/></radialGradient>`);
-  D.push(`<linearGradient id="kbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a4aa6"/><stop offset="1" stop-color="#06285f"/></linearGradient><clipPath id="kclip"><rect width="400" height="700" rx="30"/></clipPath>`);
-  if(c.fundo==='loja'){
-    L.push(`<g clip-path="url(#kclip)"><rect width="400" height="700" fill="url(#kbg)"/><circle cx="330" cy="120" r="150" fill="#ffffff" fill-opacity=".06"/>`
-      +`<rect x="0" y="300" width="400" height="14" fill="#ffc21a"/><rect x="0" y="520" width="400" height="14" fill="#ffc21a"/>`
-      +`<rect x="20" y="214" width="46" height="86" rx="8" fill="#1d2939"/><rect x="26" y="228" width="34" height="22" rx="4" fill="#3d4a63"/><rect x="316" y="236" width="70" height="64" rx="6" fill="#b9c2d0"/><rect x="324" y="244" width="40" height="46" rx="3" fill="#2a3547"/><circle cx="376" cy="262" r="5" fill="#ffc21a"/>`
-      +`<rect x="30" y="436" width="40" height="84" rx="8" fill="#d92d20"/><rect x="36" y="420" width="28" height="22" rx="4" fill="#e9eef6" fill-opacity=".85"/><rect x="318" y="430" width="68" height="90" rx="6" fill="#1d2939"/><rect x="324" y="438" width="56" height="42" rx="3" fill="#3a8fe0"/>`
-      +`</g>`);
-  }
-  L.push(`<ellipse cx="200" cy="676" rx="118" ry="15" fill="#000" fill-opacity=".22"/>`);
-  if(c.estilo==='longo')L.push(`<path d="M100 190 C84 330 98 376 140 386 L260 386 C302 376 316 330 300 190Z" fill="${hc}"/>`);
-  if(c.estilo==='rabo')L.push(`<path d="M270 130 C346 150 356 262 312 324 C300 272 290 200 262 170Z" fill="${hc}"/>`);
-  if(c.estilo==='black')L.push(`<g fill="${hc}"><circle cx="118" cy="150" r="46"/><circle cx="160" cy="98" r="52"/><circle cx="215" cy="88" r="54"/><circle cx="268" cy="108" r="50"/><circle cx="292" cy="160" r="44"/></g>`);
-  // pernas
-  L.push(`<rect x="122" y="470" width="74" height="176" rx="18" fill="${pants}"/><rect x="204" y="470" width="74" height="176" rx="18" fill="${pants}"/><path d="M200 480 L200 640" stroke="#000" stroke-opacity=".25" stroke-width="3"/><ellipse cx="150" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="250" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="140" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/><ellipse cx="240" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/>`);
-  const sleeve=(pts)=>`<polyline points="${pts}" fill="none" stroke="${lg}" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pts}" fill="none" stroke="url(#kshirt)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>`;
-  // braço esquerdo (do desenho) sempre para baixo
-  L.push(sleeve('92,356 90,446')+`<rect x="68" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="92" cy="490" r="25" fill="url(#kskin)"/>`);
-  // tronco
-  L.push(`<path d="M110 352 C110 330 142 322 200 322 C258 322 290 330 290 352 L294 492 C294 507 282 514 268 514 L132 514 C118 514 106 507 106 492Z" fill="url(#kshirt)"/><path d="M150 380 C150 440 150 480 152 512 M250 380 C250 440 250 480 248 512" stroke="#000" stroke-opacity=".08" stroke-width="10" fill="none"/>`);
-  if(uni){
-    L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M150 326 L196 388 L172 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/><path d="M250 326 L204 388 L228 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/>`
-      +`<path d="M200 388 L200 512" stroke="#0d1838" stroke-width="3"/><circle cx="200" cy="430" r="4" fill="#9fb0d8"/><circle cx="200" cy="470" r="4" fill="#9fb0d8"/>`
-      +(logo?`<rect x="224" y="400" width="52" height="52" rx="8" fill="#16255a"/><image href="${logo}" xlink:href="${logo}" x="226" y="402" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>`:`<text x="250" y="436" text-anchor="middle" font-family="Arial" font-weight="700" font-size="28" fill="#ffc21a">MM</text>`));
-  }else L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M166 322 L200 386 L234 322" fill="none" stroke="${lg}" stroke-width="8" stroke-linejoin="round"/>`);
-  // braço direito (pose)
-  const hand=(x,y)=>`<circle cx="${x}" cy="${y}" r="28" fill="url(#kskin)"/>`;
-  if(c.pose==='joia')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,330)+`<rect x="342" y="262" width="22" height="58" rx="11" fill="url(#kskin)"/><path d="M332 326 q22 6 44 0 M334 340 q20 6 40 0" stroke="${sd}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
-  else if(c.pose==='acenar')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,326)+[[332,276,-18],[347,268,-4],[362,272,10],[375,288,24]].map(([x,y,r])=>`<rect x="${x-8}" y="${y-6}" width="16" height="44" rx="8" fill="url(#kskin)" transform="rotate(${r} ${x} ${y+30})"/>`).join(''));
-  else L.push(sleeve('308,356 310,446')+`<rect x="286" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="308" cy="490" r="25" fill="url(#kskin)"/>`);
-  // pescoço, sombra, orelhas, cabeça
-  L.push(`<rect x="172" y="286" width="56" height="52" rx="14" fill="${sd}"/><ellipse cx="104" cy="216" rx="17" ry="27" fill="${sk}"/><ellipse cx="296" cy="216" rx="17" ry="27" fill="${sk}"/><path d="M104 206 q-6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/><path d="M296 206 q6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/>`);
-  L.push(`<path d="M102 202 C102 122 150 94 200 94 C250 94 298 122 298 202 C298 272 252 320 200 320 C148 320 102 272 102 202Z" fill="url(#kskin)"/>`);
-  if(c.barba==='barba')L.push(`<path d="M102 206 C102 296 150 328 200 328 C250 328 298 296 298 206 C290 262 246 272 200 272 C154 272 110 262 102 206Z" fill="${hc}"/><path d="M130 300 C160 318 240 318 270 300" stroke="${hl}" stroke-opacity=".25" stroke-width="5" fill="none"/>`);
-  if(c.barba==='cavanhaque')L.push(`<path d="M170 292 C178 326 222 326 230 292 C216 302 184 302 170 292Z" fill="${hc}"/>`);
-  L.push(`<ellipse cx="138" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/><ellipse cx="262" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/>`);
-  // olhos
-  const eye=x=>`<ellipse cx="${x}" cy="208" rx="24" ry="17" fill="#fff"/><circle cx="${x}" cy="209" r="12" fill="url(#kiris)"/><circle cx="${x}" cy="209" r="5.5" fill="#0b0b0b"/><circle cx="${x+4}" cy="204" r="3.8" fill="#fff"/><path d="M${x-26} 207 Q${x} 186 ${x+26} 207" fill="none" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/><path d="M${x-18} 222 Q${x} 230 ${x+18} 222" fill="none" stroke="${sd}" stroke-width="3" stroke-linecap="round"/>`;
-  L.push(eye(158)+eye(242));
-  const bc=c.estilo==='careca'||c.estilo==='raspado'?carDark(hc,.9):hc;
-  L.push(`<path d="M126 178 Q158 156 190 174" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/><path d="M210 174 Q242 156 274 178" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/>`);
-  L.push(`<path d="M200 214 C187 246 184 254 198 259 C210 261 216 256 214 249" fill="none" stroke="${sd}" stroke-width="6" stroke-linecap="round"/><circle cx="190" cy="258" r="2.6" fill="${carDark(sk,.55)}"/><circle cx="210" cy="258" r="2.6" fill="${carDark(sk,.55)}"/>`);
-  if(c.barba==='bigode'||c.barba==='barba'||c.barba==='cavanhaque')L.push(`<path d="M148 270 C168 254 190 264 200 268 C210 264 232 254 252 270 C232 280 210 275 200 275 C190 275 168 280 148 270Z" fill="${hc}"/>`);
-  if(c.expr==='aberto')L.push(`<path d="M162 282 Q200 326 238 282 Q200 292 162 282Z" fill="#fff" stroke="#7a2e2e" stroke-width="5" stroke-linejoin="round"/><path d="M178 300 Q200 316 222 300 Q200 296 178 300Z" fill="#c4545a"/>`);
-  else if(c.expr==='serio')L.push(`<path d="M170 284 Q200 290 230 282" fill="none" stroke="#7a2e2e" stroke-width="6" stroke-linecap="round"/>`);
-  else L.push(`<path d="M166 280 Q200 304 234 280" fill="none" stroke="#9c3b3b" stroke-width="7" stroke-linecap="round"/><path d="M174 285 Q200 301 226 285" fill="none" stroke="#c45a5a" stroke-width="3" stroke-linecap="round" stroke-opacity=".6"/>`);
-  // cabelo da frente
-  const sheen=`<path d="M140 120 C170 100 220 98 262 116" fill="none" stroke="${hl}" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
-  if(c.estilo==='curto')L.push(`<path d="M102 202 C92 100 150 74 200 74 C250 74 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
-  if(c.estilo==='social')L.push(`<path d="M102 202 C90 98 150 72 204 74 C256 76 310 100 298 202 C292 162 270 130 230 124 C190 142 140 134 118 160 C110 170 104 186 102 202Z" fill="${hc}"/>${sheen}`);
-  if(c.estilo==='topete')L.push(`<path d="M100 206 C86 98 150 66 206 68 C264 70 312 104 300 206 C298 168 284 136 256 118 C228 150 164 150 126 176 C108 188 102 196 100 206Z" fill="${hc}"/><path d="M150 140 C196 150 250 132 290 118 C268 152 218 168 148 172Z" fill="${hd}" fill-opacity=".55"/><path d="M130 110 C170 84 232 84 276 108" fill="none" stroke="${hl}" stroke-opacity=".4" stroke-width="9" stroke-linecap="round"/><path d="M180 100 C200 112 232 112 262 104" fill="none" stroke="${hd}" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/>`);
-  if(c.estilo==='ondulado')L.push(`<path d="M102 204 C92 100 150 78 200 78 C250 78 308 100 298 204 C288 156 252 132 200 132 C148 132 112 156 102 204Z" fill="${hc}"/><g fill="${hc}"><circle cx="114" cy="150" r="24"/><circle cx="140" cy="108" r="28"/><circle cx="188" cy="86" r="30"/><circle cx="240" cy="92" r="30"/><circle cx="278" cy="126" r="26"/><circle cx="290" cy="170" r="20"/></g>${sheen}`);
-  if(c.estilo==='longo')L.push(`<path d="M100 216 C84 100 150 68 200 70 C252 68 316 100 300 216 C292 160 264 120 214 118 C170 130 130 152 100 216Z" fill="${hc}"/>${sheen}`);
-  if(c.estilo==='coque')L.push(`<circle cx="200" cy="56" r="40" fill="${hc}"/><path d="M102 202 C92 100 150 80 200 80 C250 80 308 100 298 202 C288 154 252 130 200 130 C148 130 112 154 102 202Z" fill="${hc}"/>${sheen}`);
-  if(c.estilo==='rabo')L.push(`<path d="M102 202 C92 100 150 76 200 76 C250 76 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
-  if(c.estilo==='black')L.push(`<path d="M106 198 C110 150 150 130 200 130 C250 130 290 150 294 198 C282 162 250 146 200 146 C150 146 118 162 106 198Z" fill="${hc}"/>`);
-  if(c.estilo==='raspado')L.push(`<path d="M102 202 C96 110 150 90 200 90 C250 90 304 110 298 202 C290 156 252 130 200 130 C148 130 110 156 102 202Z" fill="${hc}" fill-opacity=".5"/>`);
-  if(c.oculos)L.push(`<g fill="#ffffff" fill-opacity=".16" stroke="#1d2939" stroke-width="7"><circle cx="158" cy="209" r="38"/><circle cx="242" cy="209" r="38"/></g><path d="M196 207 L204 207" stroke="#1d2939" stroke-width="7"/><path d="M120 205 L103 200 M280 205 L297 200" stroke="#1d2939" stroke-width="7" stroke-linecap="round"/><path d="M138 192 q10 -10 24 -8" stroke="#fff" stroke-opacity=".5" stroke-width="5" fill="none" stroke-linecap="round"/>`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 700" width="400" height="700"><defs>${D.join('')}</defs>${L.join('')}</svg>`;
-}
-async function carPng(){
-  const url=URL.createObjectURL(new Blob([carSvg(CAR,artLogo)],{type:'image/svg+xml;charset=utf-8'}));
-  try{const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=url});
-    const cv=document.createElement('canvas');cv.width=600;cv.height=1050;cv.getContext('2d').drawImage(img,0,0,600,1050);return cv.toDataURL('image/png')}
-  finally{URL.revokeObjectURL(url)}
-}
-function carPaint(){
-  const e=$('#a_carv');if(e)e.innerHTML=carSvg(CAR,artLogo);
-  document.querySelectorAll('.cksw').forEach(b=>b.classList.toggle('on',String(CAR[b.dataset.k])===b.dataset.v));
-}
-function carSet(k,v){CAR[k]=(k==='pele'||k==='cor'||k==='camisa'||k==='olho')?+v:(k==='oculos'?!!v:v);carSave();carPaint()}
-async function carUse(){
-  try{SELPH=await carPng();setKind(CAR.corpo==='busto'?'busto':'corpo');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}catch(e){alert('Não consegui montar o avatar neste navegador.')}
-}
-async function carSuggest(){
-  const src=SELORIG;if(!src)return alert('Envie primeiro a sua foto (acima), depois toque em "Sugerir pela foto".');
-  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src}).catch(()=>null);if(!img)return;
-  const N=100,cv=document.createElement('canvas');cv.width=cv.height=N;const cx=cv.getContext('2d'),sz=Math.min(img.width,img.height);cx.drawImage(img,(img.width-sz)/2,(img.height-sz)*.25,sz,sz,0,0,N,N);
-  const avg=(x0,y0,x1,y1)=>{const d=cx.getImageData(x0,y0,x1-x0,y1-y0).data,a=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4){a[0]+=d[i];a[1]+=d[i+1];a[2]+=d[i+2];n++}return a.map(v=>v/n)};
-  const near=(c,pal)=>{let b=0,bd=1e9;pal.forEach((h,i)=>{const r=[1,3,5].map(j=>parseInt(h.slice(j,j+2),16)),dd=Math.hypot(r[0]-c[0],r[1]-c[1],r[2]-c[2]);if(dd<bd){bd=dd;b=i}});return b};
-  CAR.pele=near(avg(40,42,60,62),CAR_PELE);
-  const top=avg(34,6,66,18),bg=avg(0,0,8,8),dist=Math.hypot(top[0]-bg[0],top[1]-bg[1],top[2]-bg[2]);
-  CAR.cor=near(top,CAR_CAB);if(dist<28)CAR.estilo=CAR.estilo==='careca'?'curto':CAR.estilo;
-  carSave();carPaint();carRefreshUi();
-}
-function carRefreshUi(){['expr','pose','fundo'].forEach(k=>{const x=$('#a_c'+k);if(x)x.value=CAR[k]});const e=$('#a_cest');if(e)e.value=CAR.estilo;const b=$('#a_cbar');if(b)b.value=CAR.barba;const o=$('#a_cocu');if(o)o.checked=CAR.oculos;const c=$('#a_ccor');if(c)c.value=CAR.corpo}
 
 /* ---- avatar a partir da foto (filtros no aparelho, sem enviar nada) ---- */
 let SELORIG=null;
@@ -781,10 +708,12 @@ function cardSvg(o){
   const logoBox=(x,y,s)=>{if(!o.showLogo||!o.logo)return;E.push(`<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x}" y="${y}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet" clip-path="url(#lcp)"/>`)};
   const pill=(cx,y,w,h,fs)=>{E.push(`<rect x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="#25d366"/>`);T('WhatsApp',cx,y+h/2+fs*.35,fs,{bold:1,color:'#ffffff',anchor:'m'})};
   const tel=fmtTel(sel.phone);
+  const mas=o.mascot;let mc=null;
+  if(mas){const mh=Math.min((V?H*.24:H*.5)*(mas.z||1),mas.h),mw0=mh*mas.ar;mc={mh,mw:mw0,x:Math.max(0,Math.min(W-mw0,W-mw0-(V?10:24)+(mas.dx||0))),y:Math.max(0,Math.min(H-mh,(V?H-230-mh+40:H-mh-14)+(mas.dy||0)))};mc.img=artMasImg(mas.id,mh)}
   if(!V){
     E.push(`<rect x="0" y="0" width="16" height="${H}" fill="${th.accent}"/>`);
     if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="40" y="40" width="330" height="520" rx="28"/></clipPath><rect x="32" y="32" width="346" height="536" rx="34" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="40" y="40" width="330" height="520" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'));
-    const x0=410,mw=W-x0-60;
+    const x0=410,mw=W-x0-60-(mc?Math.round(mc.mw*.85):0);
     let [nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo?110:0),66,true,34);T(nm,x0,185,ns,{bold:1});
     if(sel.role)T(artFit(sel.role,mw,34,false),x0,236,34,{color:th.sub});
     E.push(`<rect x="${x0}" y="262" width="120" height="8" rx="4" fill="${th.accent}"/>`);
@@ -807,12 +736,13 @@ function cardSvg(o){
     if(o.co.addr)T(artFit(o.co.addr,mw,34,false),W/2,H-110,34,{anchor:'m',color:th.footT,op:.9});
     T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:th.footT});
   }
+  if(mc&&mc.img)E.push(`<ellipse cx="${(mc.x+mc.mw*.5).toFixed(0)}" cy="${(mc.y+mc.mh-4).toFixed(0)}" rx="${(mc.mw*.36).toFixed(0)}" ry="10" fill="#000" fill-opacity=".25"/><image href="${mc.img}" xlink:href="${mc.img}" x="${mc.x.toFixed(0)}" y="${mc.y.toFixed(0)}" width="${mc.mw.toFixed(0)}" height="${mc.mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`);
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
 }
 function cardOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
   const s=SEL();
-  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo')};
+  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
 }
 function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
 const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
@@ -826,32 +756,34 @@ async function vArte(){
 <div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button><select id="a_sfmt" style="max-width:230px" onchange="SELFMT=this.value;LS.set('pdv_selfmt',SELFMT);artRender()"><option value="circ">Foto em círculo no cartão</option><option value="ret">Foto em retrato (inteira) no cartão</option></select></div></div>
 <div class="w"><label>Criar avatar a partir da foto (efeito de desenho feito no aparelho)</label><div class="row" style="margin:0"><select id="a_avs" style="max-width:210px"><option value="cartoon">Desenho (cartoon)</option><option value="sketch">Esboço a lápis</option><option value="pop">Pop-art</option></select>
 <label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="a_avbg" style="width:auto"> Trocar o fundo por</label><input type="color" id="a_avc" value="#ffc21a" style="width:42px;height:34px;padding:0"><button type="button" class="btn s" onclick="avGen()">Criar avatar</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div><div class="sm">Não é desenho feito por IA: é um filtro sobre a sua foto. Troca de fundo funciona melhor com parede lisa.</div></div>
-<div class="w"><label>Caricatura: personagem com o seu rosto (escolha os traços; o desenho é feito aqui, não por IA)</label>
-<div class="car"><div id="a_carv" class="carv"></div><div class="carc">
-<div class="row" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="carSuggest()">Sugerir pele e cabelo pela minha foto</button></div>
-<label>Pele</label><div class="row" style="margin:0 0 6px">${CAR_PELE.map((h,i)=>`<button type="button" class="cksw" data-k="pele" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('pele',${i})"></button>`).join('')}</div>
-<label>Cabelo (estilo)</label><select id="a_cest" onchange="carSet('estilo',this.value)">${CAR_EST.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select>
-<label style="margin-top:6px">Cor do cabelo</label><div class="row" style="margin:0 0 6px">${CAR_CAB.map((h,i)=>`<button type="button" class="cksw" data-k="cor" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('cor',${i})"></button>`).join('')}</div>
-<label>Barba</label><select id="a_cbar" onchange="carSet('barba',this.value)"><option value="nao">Sem barba</option><option value="barba">Barba</option><option value="bigode">Bigode</option><option value="cavanhaque">Cavanhaque</option></select>
-<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:6px"><input type="checkbox" id="a_cocu" style="width:auto" onchange="carSet('oculos',this.checked)"> Óculos</label>
-<label style="margin-top:6px">Camisa</label><div class="row" style="margin:0 0 6px">${CAR_CAM.map((h,i)=>`<button type="button" class="cksw" data-k="camisa" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('camisa',${i})"></button>`).join('')}</div>
-<label>Cor dos olhos</label><div class="row" style="margin:0 0 6px">${CAR_OLH.map((h,i)=>`<button type="button" class="cksw" data-k="olho" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('olho',${i})"></button>`).join('')}</div>
-<label>Expressão</label><select id="a_cexpr" onchange="carSet('expr',this.value)"><option value="sorriso">Sorriso</option><option value="aberto">Sorriso aberto</option><option value="serio">Sério</option></select>
-<label style="margin-top:6px">Pose</label><select id="a_cpose" onchange="carSet('pose',this.value)"><option value="joia">Joinha</option><option value="acenar">Acenando</option><option value="normal">Braços para baixo</option></select>
-<label style="margin-top:6px">Fundo</label><select id="a_cfundo" onchange="carSet('fundo',this.value)"><option value="loja">Loja MultMix (azul com prateleiras)</option><option value="nenhum">Sem fundo</option></select>
-<label style="margin-top:6px">Tamanho no cartão</label><select id="a_ccor" onchange="carSet('corpo',this.value)"><option value="corpo">Corpo inteiro</option><option value="busto">Só rosto e ombros (em círculo)</option></select>
-<div class="row"><button type="button" class="btn s" onclick="carUse()">Usar esta caricatura no cartão</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div></div></div></div></div></div>
+</div></div>
 <div class="box" style="max-width:none"><div class="row" style="margin:0 0 10px"><button type="button" class="btn modb on" data-m="art" onclick="artMode('art')">Arte de oferta</button><button type="button" class="btn g modb" data-m="card" onclick="artMode('card')">Meu cartão de visita</button></div>
 <h2 style="margin-top:0" class="mA">Arte do produto</h2><p class="sm mA">Gere a imagem da oferta e publique no Status do seu WhatsApp. O WhatsApp não permite publicar sozinho: toque em <b>Enviar para o WhatsApp</b>, escolha o WhatsApp e depois <b>Meu status</b>.</p><p class="sm mC hid">Cartão com sua foto, nome e WhatsApp. Horizontal serve para imprimir (9 x 5 cm) e vertical para o Status.</p>
-<div class="f">
 <div style="display:contents" class="mA">  <div class="w"><label>Buscar produto</label><input id="a_q" placeholder="Digite parte do nome" oninput="artFilter()"></div>
   <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
   <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
   <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
   <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
-  <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
+  <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
+  <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
+  <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
 </div>
 <div style="display:contents" class="mC hid"><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
+  <div class="w"><label>Mascote (na arte e, se quiser, no cartão)</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote MultMix: mulher</option><option value="2">Mascote MultMix: homem</option><option value="3">Meu mascote (enviar imagem pronta)</option></select>
+  <div id="a_masbox" class="hid" style="margin-top:6px"><input type="file" accept="image/*" onchange="masUp(this)"><div class="sm">Envie o mascote já pronto, de preferência PNG com fundo transparente. Ele fica salvo neste aparelho. <button type="button" class="btn g s" onclick="masDel()">Remover o meu mascote</button></div></div>
+  <div id="a_masctl" class="hid">
+  <div class="mA">  <label style="margin-top:8px">Tamanho do mascote: <b id="a_masv">100%</b></label><input type="range" id="a_masz" min="50" max="140" value="100" oninput="$('#a_masv').textContent=this.value+'%';artRender()"><div class="sm">Até 140%, que é o limite em que a imagem continua nítida (acima disso ela borraria). Ao diminuir, o produto ganha mais espaço.</div>
+  <label style="margin-top:8px">Altura do mascote: <b id="a_masyv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artMasY(-20)">▲ Subir</button><input type="range" id="a_masy" min="-500" max="300" step="10" value="0" style="flex:1;min-width:140px" oninput="artMasYSet(this.value)"><button type="button" class="btn g s" onclick="artMasY(20)">▼ Descer</button><button type="button" class="btn g s" onclick="artMasYSet(0)">Padrão</button></div></div>
+  <div class="mC hid"><label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="a_cmon" style="width:auto" onchange="artRender()"> Mostrar o mascote no cartão</label>
+  <label style="margin-top:8px">Tamanho no cartão: <b id="a_cmzv">100%</b></label><input type="range" id="a_cmz" min="50" max="150" value="100" oninput="$('#a_cmzv').textContent=this.value+'%';artRender()">
+  <label style="margin-top:8px">Esquerda / direita</label><input type="range" id="a_cmx" min="-500" max="300" step="10" value="0" oninput="artRender()">
+  <label style="margin-top:8px">Subir / descer</label><input type="range" id="a_cmy" min="-400" max="200" step="10" value="0" oninput="artRender()"></div>
+  </div></div>
+  <div class="w"><div class="row" style="margin:0 0 6px"><button class="btn" onclick="artShare()">Enviar pelo WhatsApp</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div><p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
+<details class="w adv"><summary>Ajustes avançados (fonte, cores, data especial, foto, fundo, selo...)</summary><div class="f" style="margin-top:10px">
+<div style="display:contents" class="mA">
+  <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
+</div>
   <div><label>Fonte (letra)</label><select id="a_font" onchange="artRender()">${ART_FONTS.map(([n,v])=>`<option value="${esc(v)}">${n}</option>`).join('')}</select></div>
   <div class="w"><label>Cores das letras</label><div class="row" style="margin:0;align-items:center">${ART_COLS.map(([k,n])=>`<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="color" class="artc" id="a_c_${k}" style="width:42px;height:34px;padding:0" oninput="this.dataset.s=1;artRender()"> ${n}</label>`).join('')}<button type="button" class="btn g s" onclick="artColReset()">Voltar às cores do estilo</button></div><div class="sm">A fonte depende das letras instaladas no aparelho; a imagem baixada sai igual ao que você vê aqui.</div></div>
   <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artSetTheme('${k}')">${t.n}</button>`).join('')}</div></div>
@@ -860,9 +792,6 @@ async function vArte(){
   <div class="row" style="margin:0">${ART_OCC_ORDER.map(id=>`<button type="button" class="btn g s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n}</button>`).join('')}<button type="button" class="btn g s" onclick="artSetOcc('')">Sem data</button></div></div>
   <div class="w"><label>Título da data (opcional)</label><input id="a_ttl" placeholder="Ex.: BLACK FRIDAY" oninput="artRender()"></div>
   <div class="w"><label>Subtítulo (opcional)</label><input id="a_sub" oninput="artRender()"></div>
-  <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
-  <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
-  <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
   <div class="w"><label>Condição 1 (opcional)</label><input id="a_l1" oninput="artRender()"></div>
   <div class="w"><label>Condição 2 (opcional)</label><input id="a_l2" oninput="artRender()"></div>
   <div class="w"><label>Validade (opcional)</label><input id="a_valid" value="Válido enquanto durar o estoque" oninput="artRender()"></div>
@@ -871,19 +800,15 @@ async function vArte(){
   <div class="w sm" id="a_st" role="status"></div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_nop" style="width:auto" onchange="artNopRefresh()"> Produto direto na arte (sem painel branco, remove o fundo claro da foto)</label>
   <label style="margin-top:6px">Força da remoção do fundo</label><input type="range" id="a_tol" min="10" max="90" value="35" onchange="artNopRefresh()"><div class="sm">Funciona melhor com foto de fundo liso e claro. Se cortar demais o produto, diminua; se sobrar fundo, aumente.</div></div>
-  <div class="w"><label>Mascote MultMix apresentando o produto</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote: mulher</option><option value="2">Mascote: homem</option></select><div class="sm">O mascote aparece ao lado do produto, como se estivesse apresentando a oferta. Só entra na arte se você escolher aqui.</div>
-  <label style="margin-top:8px">Tamanho do mascote: <b id="a_masv">100%</b></label><input type="range" id="a_masz" min="50" max="140" value="100" oninput="$('#a_masv').textContent=this.value+'%';artRender()"><div class="sm">Até 140%, que é o limite em que a imagem continua nítida (acima disso ela borraria). Ao diminuir, o produto ganha mais espaço.</div>
-  <label style="margin-top:8px">Altura do mascote: <b id="a_masyv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artMasY(-20)">▲ Subir</button><input type="range" id="a_masy" min="-500" max="300" step="10" value="0" style="flex:1;min-width:140px" oninput="artMasYSet(this.value)"><button type="button" class="btn g s" onclick="artMasY(20)">▼ Descer</button><button type="button" class="btn g s" onclick="artMasYSet(0)">Padrão</button></div></div>
 </div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label></div>
 <div style="display:contents" class="mA"><div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label><label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_selfoot" style="width:auto" checked onchange="artRender()"> Mostrar minha foto, nome e WhatsApp no rodapé</label></div></div>
-  <div class="w"><label>Legenda (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
-  <div class="row"><button class="btn" onclick="artShare()">Enviar pelo WhatsApp</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
-  <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
-</div>
+  <div class="w"><label>Legenda (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div>
+</div></details>
+</div></div>
 <div class="artp"><div id="artv"></div></div></div>`;
   try{SELPH=localStorage.getItem(SELPK())||null;SELORIG=localStorage.getItem(SELOK())||null;SELKIND=localStorage.getItem(SELKK())||'foto'}catch(e){SELPH=SELORIG=null}
-  MODE='art';{const x=$('#a_sfmt');if(x)x.value=SELFMT}carRefreshUi();carPaint();artFilter();
+  MODE='art';{const x=$('#a_sfmt');if(x)x.value=SELFMT}await masRestore();artFilter();
   try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
   artRender();
 }
