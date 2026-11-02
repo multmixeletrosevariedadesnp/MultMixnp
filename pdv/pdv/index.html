@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>window.APP_VERSION='1.8.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
+:root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Bricolage Grotesque",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;display:flex;align-items:center;gap:14px;padding:12px 18px;flex-wrap:wrap}
+header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.5px}
+header h1 span{background:var(--tag);color:#101828;padding:0 6px;border-radius:6px;margin-left:2px}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav button{background:transparent;border:0;color:#fff;opacity:.75;font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
+nav button.on{opacity:1;background:rgba(255,255,255,.18)}
+main{max-width:1100px;margin:0 auto;padding:18px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%}
+.bar input{flex:1;min-width:200px;width:auto}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:5px 14px;border-radius:99px;cursor:pointer;font:inherit}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
+.card:focus-visible,button:focus-visible{outline:3px solid var(--tag);outline-offset:2px}
+.ph{aspect-ratio:4/3;background:var(--line) center/cover no-repeat;display:grid;place-items:center;color:var(--mut)}
+.cb{padding:12px 14px 14px}.cb h3{margin:0 0 6px;font-size:16px;line-height:1.25}
+.cash{display:inline-block;background:var(--tag);color:#101828;font-weight:800;font-size:20px;padding:1px 9px;border-radius:7px}
+.sm{color:var(--mut);font-size:13px;margin-top:6px}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.s{padding:4px 10px;font-size:13px}
+#modal{position:fixed;inset:0;background:rgba(10,14,28,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px;z-index:20}
+#modal.open{display:flex}
+.box{background:var(--card);border-radius:16px;max-width:820px;width:100%;padding:20px;position:relative}
+.x{position:absolute;right:12px;top:10px;font-size:24px;background:none;border:0;color:var(--mut);cursor:pointer}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.main{aspect-ratio:1;background:var(--line) center/contain no-repeat;border-radius:12px}
+.th{display:flex;gap:6px;margin-top:8px}.th div{width:56px;height:56px;border-radius:8px;background:var(--line) center/cover;cursor:pointer;border:2px solid transparent}
+.th .on{border-color:var(--pri)}
+.prices{display:grid;gap:8px;margin:14px 0}
+.pr{display:flex;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.pr b{font-size:18px}.pr.k{background:var(--tag);color:#101828;border-color:var(--tag)}
+table{width:100%;border-collapse:collapse}td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px}
+.f label{font-size:13px;color:var(--mut);display:block}.w{grid-column:1/-1}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.sync{font-size:12px;opacity:.85}
+@media print{header,.noprint{display:none}}
+
+:root{--brand:#00468f;--pri:#00539f;--tag:#ffc21a}
+@media(prefers-color-scheme:dark){:root{--pri:#2b78d6}}
+header{background:linear-gradient(135deg,#002e68,var(--brand))}
+header h1{color:#e9eef6}
+header h1 span{background:none;color:var(--tag);padding:0;margin:0}
+.lg{width:44px;height:44px;border-radius:10px}
+#master{position:fixed;inset:0;background:rgba(10,14,28,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+#master.open{display:flex}
+.ibtn{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+.ibtn[hidden]{display:none}
+.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.brand{display:flex;align-items:center;gap:10px}header h1{margin:0}
+nav{display:flex;gap:4px;order:3;width:100%;margin:0;overflow-x:auto;flex-wrap:nowrap}
+nav button{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#fff}
+nav .grp{display:none}nav .out{opacity:.85}
+.sync{font-size:12px;opacity:.8}
+.bdg{background:var(--tag);color:#101828;border-radius:99px;padding:0 7px;font-size:12px;margin-left:2px}
+body.out header{display:none}
+.login{position:fixed;inset:0;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(160deg,#001f4d,#00468f 60%,#00539f);z-index:30}
+.lbox{background:var(--card);border-radius:20px;padding:28px 26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.llogo{display:block;width:min(240px,70%);max-height:240px;object-fit:contain;margin:0 auto 14px;border-radius:24px}
+.lbox h2{margin:0;text-align:center}.lbox p.sm{text-align:center;margin:2px 0 14px}
+.lbox label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.pwd{display:flex;gap:8px}
+@media(min-width:900px){
+ body.in{display:grid;grid-template-columns:240px minmax(0,1fr)}
+ body.in header{position:sticky;top:0;align-self:start;height:100vh;flex-direction:column;align-items:stretch;flex-wrap:nowrap;padding:18px 12px;gap:6px;overflow-y:auto}
+ .brand{padding:2px 8px 16px}
+ nav{flex-direction:column;order:0;overflow:visible}
+ nav button{padding:10px 12px;width:100%;text-align:left}
+ nav .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;padding:12px 12px 4px}
+ nav button.on{box-shadow:inset 3px 0 0 var(--tag)}
+ nav .out{margin-top:14px;border-top:1px solid rgba(255,255,255,.2);border-radius:0}
+ .sync{margin-top:auto;padding:0 8px}
+ main{width:100%}
+}
+nav button{transition:background .15s,opacity .15s,transform .15s,box-shadow .15s}
+nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacity:1}
+@media(hover:hover){
+ nav button:hover{opacity:1;background:rgba(255,255,255,.16);box-shadow:inset 3px 0 0 rgba(255,255,255,.55)}
+ nav button:hover .ic{color:var(--tag)}
+ nav button.on:hover{background:rgba(255,255,255,.26);box-shadow:inset 3px 0 0 var(--tag)}
+ nav button:active{transform:scale(.98)}
+}
+.pres{display:grid;gap:6px;margin:8px 0 12px}.pri{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer;font:inherit}.pri:hover,.pri:focus{border-color:var(--pri);outline:none}.pri img,.pri .pno{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--line);flex:none;display:grid;place-items:center;color:var(--mut);font-size:11px}.pri .pn{flex:1;min-width:0}.pri .pn b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pri .pv{text-align:right;white-space:nowrap}.pri .pv b{font-size:1.05em}.cthumb{width:36px;height:36px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px;background:var(--line)}.cs{margin:-4px 0 10px}.cs button{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:6px;color:var(--ink);font:inherit;cursor:pointer}.cs button:hover{border-color:var(--pri)}.cs small{color:var(--mut)}
+.art{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+.artp{position:sticky;top:12px}
+#artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}.hid{display:none!important}.art .box{margin-top:0}
+.car{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}.carv svg{width:150px;height:auto;display:block;background:var(--line);border-radius:12px}.carc label{font-size:13px;color:var(--mut);display:block}.cksw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}.cksw[data-k="camisa"][data-v="7"]{background:linear-gradient(135deg,#16255a 62%,#ffc21a 62%)!important}.cksw.on{outline:3px solid var(--pri);outline-offset:1px}
+@media(max-width:560px){.car{grid-template-columns:1fr}.carv svg{margin:0 auto}}
+.thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+@media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:36vh;margin:0 auto}}
+.appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
+
+/* PDV: produtos à esquerda, carrinho à direita (no celular, um abaixo do outro) */
+.pdv{display:grid;gap:14px;align-items:start}
+@media(min-width:900px){.pdv{grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr)}.pdvr{position:sticky;top:18px;max-height:calc(100vh - 36px);overflow:auto}.pbar{display:none!important}}
+.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.pdv .box{max-width:none}.pdv h2{margin:0 0 12px}
+.psr{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.pq{flex:1 1 220px}.pqq{width:78px}.psr .btn{height:42px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:12px}
+.pgh{grid-column:1/-1;margin:4px 2px}
+.pcard{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;min-width:0}
+.pcard:hover,.pcard:focus-visible{border-color:var(--pri)}.pcard.off{opacity:.65}
+.pcard img,.pcard .pno{width:48px;height:48px;border-radius:9px;object-fit:cover;flex:none;background:var(--line);font-size:10px;color:var(--mut);display:grid;place-items:center;text-align:center}
+.pcard .pt{display:flex;flex-direction:column;min-width:0;flex:1}.pn2{font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .pp{display:flex;flex-direction:column;align-items:flex-end;flex:none}.pcard .pp>b{font-size:15px}.offt{color:var(--bad)}.low{color:#b54708}
+.citems{display:grid;gap:8px;margin-bottom:10px}
+.citem{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto 26px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.cthumb{width:44px;height:44px;border-radius:9px;object-fit:cover;background:var(--line);display:grid;place-items:center;color:var(--mut)}
+.cn{min-width:0;display:flex;flex-direction:column}.cn b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.stp{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}.stp button{border:0;background:var(--card);color:var(--ink);width:32px;height:32px;font-size:18px;cursor:pointer}.stp span{min-width:26px;text-align:center;font-weight:700}
+.lt{min-width:76px;text-align:right}.rx{border:0;background:none;color:var(--mut);font-size:20px;cursor:pointer;line-height:1}.rx:hover{color:var(--bad)}
+.cempty{text-align:center;padding:22px 8px;color:var(--mut);border:1px dashed var(--line);border-radius:12px;margin:0 0 10px}
+.ctot{display:flex;justify-content:space-between;align-items:flex-end;margin:6px 0 14px;padding:10px 12px;border-radius:12px;background:var(--bg)}.ctot>div{display:flex;flex-direction:column;align-items:flex-end}.ctot b{font-size:26px;line-height:1.1}
+.pay,.cli{margin-top:6px}.fin{width:100%;margin-top:12px;padding:14px;font-size:17px}
+.pbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.15)}
+.pbar>div{display:flex;flex-direction:column}.pbar b{font-size:17px}
+@media(max-width:899px){main{padding-bottom:86px}.citem{grid-template-columns:40px minmax(0,1fr) auto 26px}.citem .lt{grid-column:2;text-align:left;grid-row:2}.citem .stp{grid-row:2;grid-column:3}.citem .rx{grid-row:1;grid-column:4}}
+body:not(.in) .pbar{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span> PDV</h1></div>
+  <nav id="nav"></nav>
+  <button class="ibtn" data-install hidden>Instalar app</button>
+  <span class="sync" id="sync"></span>
+  <button type="button" class="appv" data-appver></button>
+  <button type="button" class="appv" data-appforce></button>
+</header>
+<main id="app"></main>
+<div id="modal"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ========= MultMix PDV: app do vendedor (independente do sistema) =========
+   O vendedor só enxerga produtos SEM custo, vende e vê as próprias vendas/comissão.
+   Preço, vendedor e comissão da venda são definidos pelo servidor (função pdv_sell no Supabase, supabase-v26.sql). */
+const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4'};
+const sb=supabase.createClient(CFG.URL,CFG.KEY);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString();
+const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const digits=v=>String(v||'').replace(/\D/g,'');
+const fmtD=iso=>String(iso||'').slice(0,10).split('-').reverse().join('/');
+const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let ME=LS.get('pdv_me',null),P=LS.get('pdv_prod',[]),Q=LS.get('pdv_q',[]),FAIL=LS.get('pdv_fail',[]),CO=LS.get('pdv_co',{}),MY=[],COM=0,view='login',cart=[],selCli=null,loginMsg='';
+const saveQ=()=>{LS.set('pdv_q',Q);LS.set('pdv_fail',FAIL)};
+const mine=()=>Q.filter(s=>s._by===(ME&&ME.id)),setSync=t=>{const e=$('#sync');if(e)e.textContent=t};
+
+/* ----- entrar / sair ----- */
+function vLogin(){
+  document.body.className='out';$('#nav').innerHTML='';
+  $('#app').innerHTML=`<div class="login"><form class="lbox" onsubmit="login(event)"><img src="logo-icon.png" alt="MultMix" class="llogo">
+  <h2>PDV · Vendedor</h2><p class="sm">Entre com seu e-mail e senha.</p>
+  <label for="em">E-mail</label><input id="em" type="email" autocomplete="username" required>
+  <label for="pw">Senha</label><div class="pwd"><input id="pw" type="password" autocomplete="current-password" required>
+  <button type="button" class="btn g s" onclick="const p=$('#pw');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'Mostrar':'Ocultar'">Mostrar</button></div>
+  <button class="btn" id="lb" style="width:100%;margin-top:16px">Entrar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em">${esc(loginMsg)}</p></form></div>`;
+  setTimeout(()=>$('#em')&&$('#em').focus(),50);
+}
+async function login(e){
+  e.preventDefault();const b=$('#lb'),er=$('#err');b.disabled=true;er.textContent='';
+  const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+  b.disabled=false;
+  if(error){er.textContent=/fetch|network/i.test(error.message)?'Sem internet. Conecte-se para entrar.':'E-mail ou senha incorretos.';return}
+  if(await mfaNeeded())return vMfa();
+  await start();
+}
+async function mfaNeeded(){try{const{data}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();return !!(data&&data.nextLevel==='aal2'&&data.currentLevel!=='aal2')}catch(e){return false}}
+function vMfa(){
+  $('#app').innerHTML=`<div class="login"><form class="lbox" onsubmit="mfaLogin(event)"><img src="logo-icon.png" alt="MultMix" class="llogo"><h2>Verificação em 2 etapas</h2>
+  <p class="sm">Digite o código de 6 dígitos do aplicativo autenticador.</p><input id="mf" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+  <button class="btn" id="mb" style="width:100%;margin-top:16px">Confirmar</button><p id="err" class="bad" role="alert" style="text-align:center;min-height:1.4em"></p>
+  <button type="button" class="btn g s" onclick="logout(true)">Voltar</button></form></div>`;setTimeout(()=>$('#mf')&&$('#mf').focus(),50);
+}
+async function mfaLogin(e){
+  e.preventDefault();const er=$('#err');er.textContent='';
+  try{const{data:f}=await sb.auth.mfa.listFactors(),t=(f.totp||[]).find(x=>x.status==='verified');if(!t)throw new Error('Nenhum autenticador cadastrado.');
+    const{error}=await sb.auth.mfa.challengeAndVerify({factorId:t.id,code:$('#mf').value.trim()});if(error)throw error;await start()}
+  catch(x){er.textContent='Código incorreto ou expirado.'}
+}
+async function logout(force){
+  if(!force&&mine().length&&!confirm('Há '+mine().length+' venda(s) ainda não enviada(s). Elas ficam guardadas neste aparelho e serão enviadas quando você entrar de novo com a internet. Sair mesmo assim?'))return;
+  try{await sb.auth.signOut()}catch(e){}
+  ME=null;LS.set('pdv_me',null);P=[];LS.set('pdv_prod',[]);cart=[];MY=[];view='login';loginMsg='';render();
+}
+async function start(){
+  const{data,error}=await sb.rpc('pdv_eu');
+  if(error||!data||!data[0]){loginMsg=error&&!/fetch|network/i.test(error.message)?'Seu usuário não tem acesso ao PDV. Fale com o administrador.':'Não foi possível validar seu acesso. Tente de novo.';try{await sb.auth.signOut()}catch(e){}ME=null;view='login';return render()}
+  ME=data[0];LS.set('pdv_me',ME);view='venda';render();sync();
+}
+
+/* ----- sincronização: envia as vendas guardadas e atualiza produtos ----- */
+let syncing=false,lastSync=0;
+async function sync(){
+  if(syncing||!ME)return;syncing=true;setSync('sincronizando…');
+  try{
+    for(let i=0;i<Q.length;){
+      const s=Q[i];if(s._by!==ME.id){i++;continue}
+      const{data,error}=await sb.rpc('pdv_sell',{p:s});
+      if(error){if(error.code==='P0001'){FAIL.push({s,msg:error.message,at:now(),rep:false});Q.splice(i,1);saveQ();continue}throw error}
+      Q.splice(i,1);saveQ();
+    }
+    const r1=await sb.rpc('pdv_catalogo');if(r1.error)throw r1.error;
+    P=r1.data||[];mine().forEach(s=>(s.items||[]).forEach(it=>{const p=P.find(x=>x.id===it.id);if(p)p.stock=(+p.stock||0)-it.qty}));LS.set('pdv_prod',P);
+    for(const f of FAIL){if(f.rep||f.s._by!==ME.id)continue;const{error:er}=await sb.rpc('pdv_reportar',{p_kind:'venda_recusada',p_ref:String(f.s.id),p_detail:f.msg,p_payload:{pay_type:f.s.pay_type,items:f.s.items,created_at:f.s.created_at,customer:f.s.customer&&f.s.customer.name}});if(!er){f.rep=true;saveQ()}}
+    await loadCx();
+    const r2=await sb.rpc('pdv_eu');if(r2.error&&/Sem permiss/i.test(r2.error.message)){loginMsg='Seu acesso foi desativado. Fale com o administrador.';syncing=false;return logout(true)}
+    if(r2.data&&r2.data[0]){ME=r2.data[0];LS.set('pdv_me',ME)}
+    const r3=await sb.from('company').select('*').eq('id',1).maybeSingle();if(r3.data){CO=r3.data;LS.set('pdv_co',CO)}
+    await loadMine();lastSync=Date.now();
+    setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSync('offline · '+mine().length+' pendente(s)')}
+  syncing=false;
+  if(view==='venda'){pdvSearch();cartView()}else if(view==='minhas')vMin();
+}
+async function loadMine(){
+  const mo=new Date();mo.setDate(1);mo.setHours(0,0,0,0);
+  const[a,b]=await Promise.all([sb.rpc('pdv_minhas_vendas',{p_from:mo.toISOString()}),sb.rpc('pdv_minha_comissao',{p_month:ld(now()).slice(0,7)})]);
+  if(!a.error)MY=a.data||[];if(!b.error)COM=+b.data||0;
+}
+addEventListener('online',()=>sync());
+setInterval(()=>{if(ME&&navigator.onLine!==false&&Date.now()-lastSync>60000)sync()},20000);
+
+const HW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const BW=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+/* ========= Arte do produto: gerador de imagem (SVG) ========= */
+const ART_TH={
+  azul:{n:'Azul MultMix',a:'#00539f',b:'#002b63',text:'#ffffff',sub:'#cfe0f7',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  amarelo:{n:'Amarelo oferta',a:'#ffd24d',b:'#ffb300',text:'#101828',sub:'#4b3b00',accent:'#d92d20',price:'#00468f',badge:'#d92d20',badgeT:'#ffffff',shape:'#ffffff',foot:'rgba(0,0,0,.14)',footT:'#101828'},
+  vermelho:{n:'Vermelho promoção',a:'#e53b2c',b:'#9c1a10',text:'#ffffff',sub:'#ffd9d4',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  escuro:{n:'Escuro premium',a:'#1d2939',b:'#0b111c',text:'#ffffff',sub:'#98a2b3',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(255,255,255,.08)',footT:'#ffffff'},
+  claro:{n:'Claro limpo',a:'#f8fafc',b:'#dfe5ee',text:'#101828',sub:'#475467',accent:'#00468f',price:'#00468f',badge:'#00468f',badgeT:'#ffffff',shape:'#00468f',foot:'rgba(0,70,143,.1)',footT:'#101828'}
+};
+const artX=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let ART_FONT='Arial,Helvetica,sans-serif',_artCx=null;const _artM=new Map();
+const ART_FONTS=[['Arial (padrão)','Arial,Helvetica,sans-serif'],['Verdana','Verdana,Geneva,sans-serif'],['Tahoma','Tahoma,Geneva,sans-serif'],['Trebuchet MS',"'Trebuchet MS',Helvetica,sans-serif"],['Arial Black',"'Arial Black',Gadget,sans-serif"],['Impact (forte e estreita)',"Impact,'Arial Narrow',sans-serif"],['Georgia (serifada)','Georgia,serif'],['Times New Roman','"Times New Roman",Times,serif'],['Palatino',"'Palatino Linotype',Palatino,serif"],['Comic Sans (divertida)',"'Comic Sans MS','Comic Sans',cursive"],['Courier New (máquina)',"'Courier New',monospace"]];
+const artW=(s,size,bold)=>{
+  if(!ART_FONT.startsWith('Arial,')){try{
+    const k=ART_FONT+(bold?'b':'n')+'|'+s;let w=_artM.get(k);
+    if(w==null){_artCx=_artCx||document.createElement('canvas').getContext('2d');_artCx.font=(bold?'700 ':'400 ')+'100px '+ART_FONT;w=_artCx.measureText(String(s)).width;if(_artM.size>4000)_artM.clear();_artM.set(k,w)}
+    return w*size/100}catch(e){}}
+  let w=0;for(const ch of String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'')){const c=ch.charCodeAt(0);w+=c>=32&&c<=126?(bold?BW:HW)[c-32]:556}return w*size/1000};
+function artWrap(s,maxW,size,bold){
+  const out=[];let cur='';
+  for(const word of String(s||'').split(/\s+/).filter(Boolean)){const t=cur?cur+' '+word:word;if(artW(t,size,bold)<=maxW)cur=t;else{if(cur)out.push(cur);cur=word}}
+  if(cur)out.push(cur);return out;
+}
+const artFit=(s,maxW,size,bold)=>{s=String(s||'');if(artW(s,size,bold)<=maxW)return s;while(s.length>1&&artW(s+'...',size,bold)>maxW)s=s.slice(0,-1);return s.trim()+'...'};
+const artBRL=n=>(+n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- datas especiais ---------- */
+const artRnd=seed=>{let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const artStar=(cx,cy,R,r,n)=>{const p=[];for(let i=0;i<n*2;i++){const a=Math.PI*i/n-Math.PI/2,d=i%2?r:R;p.push((cx+Math.cos(a)*d).toFixed(1)+','+(cy+Math.sin(a)*d).toFixed(1))}return p.join(' ')};
+const artHeart=(x,y,s)=>`M${x},${y+s*.62} C${x-s*1.15},${y-s*.1} ${x-s*.55},${y-s*.95} ${x},${y-s*.4} C${x+s*.55},${y-s*.95} ${x+s*1.15},${y-s*.1} ${x},${y+s*.62}Z`;
+const artRay=(cx,cy,r1,r2,n,col,w)=>{let o='';for(let i=0;i<n;i++){const a=Math.PI*2*i/n;o+=`<line x1="${(cx+Math.cos(a)*r1).toFixed(1)}" y1="${(cy+Math.sin(a)*r1).toFixed(1)}" x2="${(cx+Math.cos(a)*r2).toFixed(1)}" y2="${(cy+Math.sin(a)*r2).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`}return o};
+const artStripes=(y0,y1,W,c1,c2,op)=>{let o=`<rect x="0" y="${y0}" width="${W}" height="${y1-y0}" fill="${c2}" fill-opacity="${op}"/>`;for(let x=-(y1-y0);x<W+(y1-y0);x+=64)o+=`<polygon points="${x},${y1} ${x+(y1-y0)},${y0} ${x+(y1-y0)+32},${y0} ${x+32},${y1}" fill="${c1}" fill-opacity="${op}"/>`;return o};
+const ART_OCC={
+ natal:{n:'Natal',ttl:'FELIZ NATAL',sub:'Presentes com preço de Natal',th:{a:'#c8102e',b:'#6b0a1a',text:'#ffffff',sub:'#ffe3e3',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#7a0d1f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<80;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*9).toFixed(1)}" fill="#fff" fill-opacity="${(.18+r()*.5).toFixed(2)}"/>`);
+   for(let i=0;i<9;i++)E.push(`<polygon points="${artStar(r()*W,r()*H*.95,14+r()*20,5+r()*6,4)}" fill="#ffd54f" fill-opacity=".85"/>`);
+   let pts='';for(let t=0;t<=40;t++){pts+=`${(t*W/40).toFixed(0)},${(18+Math.sin(t/40*Math.PI*5)*10).toFixed(0)} `}
+   E.push(`<polyline points="${pts}" fill="none" stroke="#ffd54f" stroke-width="4"/>`);
+   for(let t=0;t<=20;t++){const x=t*W/20,y=18+Math.sin(t/20*Math.PI*5)*10;E.push(`<circle cx="${x.toFixed(0)}" cy="${(y+12).toFixed(0)}" r="10" fill="${['#ffd54f','#2e9e4f','#ffffff','#ff5a5f'][t%4]}"/>`)}}},
+ blackfriday:{n:'Black Friday',ttl:'BLACK FRIDAY',sub:'Os menores preços do ano',th:{a:'#1a1a1a',b:'#000000',text:'#ffffff',sub:'#d0d0d0',accent:'#ffd400',price:'#ffd400',badge:'#ffd400',badgeT:'#000000',shape:'#ffd400',foot:'rgba(255,212,0,.14)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(0,34,W,'#ffd400','#000',1));E.push(`<polygon points="0,${H*.5} ${W},${H*.38} ${W},${H*.46} 0,${H*.58}" fill="#ffd400" fill-opacity=".08"/>`);
+   for(let i=0;i<14;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(60+r()*90).toFixed(0)}" fill="#ffd400" fill-opacity=".06">%</text>`)}},
+ cybermonday:{n:'Cyber Monday',ttl:'CYBER MONDAY',sub:'Só hoje: preços de arrepiar',th:{a:'#0b1437',b:'#050a1f',text:'#ffffff',sub:'#9fb4ff',accent:'#00e5ff',price:'#00e5ff',badge:'#ff2bd6',badgeT:'#ffffff',shape:'#00e5ff',foot:'rgba(0,229,255,.12)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<14;i++){const y=r()*H;E.push(`<line x1="0" y1="${y.toFixed(0)}" x2="${W}" y2="${(y-180+r()*360).toFixed(0)}" stroke="${i%2?'#00e5ff':'#ff2bd6'}" stroke-opacity=".22" stroke-width="${(2+r()*4).toFixed(1)}"/>`)}
+   for(let i=0;i<40;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(1.5+r()*3).toFixed(1)}" fill="#00e5ff" fill-opacity=".6"/>`)}},
+ aniversario:{n:'Aniversário',ttl:'ANIVERSÁRIO',sub:'Parabéns pra nós, presente pra você',th:{a:'#8e24aa',b:'#3b0f6e',text:'#ffffff',sub:'#f3d9ff',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#3b0f6e',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffd54f','#ff6f91','#4dd0e1','#a5d6a7','#ffffff','#ffab40'];
+   for(let i=0;i<110;i++){const x=r()*W,y=r()*H,c=pal[Math.floor(r()*pal.length)],k=Math.floor(r()*3);
+    if(k===0)E.push(`<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${(8+r()*14).toFixed(0)}" height="${(5+r()*8).toFixed(0)}" fill="${c}" fill-opacity=".85" transform="rotate(${(r()*180).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})"/>`);
+    else if(k===1)E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(4+r()*7).toFixed(1)}" fill="${c}" fill-opacity=".85"/>`);
+    else E.push(`<polygon points="${artStar(x,y,10+r()*8,4,5)}" fill="${c}" fill-opacity=".85"/>`)}
+   [[52,H*.26,'#ff6f91'],[W-52,H*.33,'#4dd0e1'],[48,H*.58,'#ffd54f'],[W-48,H*.66,'#ff6f91']].forEach(([x,y,c])=>{E.push(`<path d="M${x},${y+86} q-8,60 12,120" fill="none" stroke="#ffffff" stroke-opacity=".6" stroke-width="3"/><ellipse cx="${x}" cy="${y}" rx="60" ry="76" fill="${c}" fill-opacity=".92"/><ellipse cx="${x-20}" cy="${y-26}" rx="14" ry="22" fill="#fff" fill-opacity=".35"/><polygon points="${x},${y+74} ${x-9},${y+92} ${x+9},${y+92}" fill="${c}"/>`)})}},
+ maes:{n:'Dia das Mães',ttl:'DIA DAS MÃES',sub:'O presente que ela merece',th:{a:'#f06292',b:'#ad1457',text:'#ffffff',sub:'#ffe3ee',accent:'#ffe082',price:'#fff0b3',badge:'#ffe082',badgeT:'#880e4f',shape:'#ffffff',foot:'rgba(0,0,0,.25)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<22;i++)E.push(`<path d="${artHeart(r()*W,r()*H,14+r()*34)}" fill="#fff" fill-opacity="${(.12+r()*.22).toFixed(2)}"/>`);
+   [[70,120],[W-70,H*.46],[90,H*.8],[W-90,H*.9]].forEach(([x,y])=>{for(let k=0;k<6;k++){const a=Math.PI*2*k/6;E.push(`<circle cx="${(x+Math.cos(a)*30).toFixed(0)}" cy="${(y+Math.sin(a)*30).toFixed(0)}" r="22" fill="#fff" fill-opacity=".28"/>`)}E.push(`<circle cx="${x}" cy="${y}" r="16" fill="#ffe082" fill-opacity=".8"/>`)})}},
+ pais:{n:'Dia dos Pais',ttl:'DIA DOS PAIS',sub:'Presenteie o seu herói',th:{a:'#1565c0',b:'#0a2a63',text:'#ffffff',sub:'#d3e5ff',accent:'#ffc21a',price:'#ffd95a',badge:'#ffc21a',badgeT:'#0a2a63',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(H*.1,H*.16,W,'#ffffff','#000',.06));E.push(artStripes(H*.7,H*.77,W,'#ffffff','#000',.05));
+   for(let i=0;i<26;i++)E.push(`<polygon points="${artStar(r()*W,r()*H,10+r()*18,4+r()*4,5)}" fill="#fff" fill-opacity="${(.1+r()*.25).toFixed(2)}"/>`)}},
+ criancas:{n:'Dia das Crianças',ttl:'DIA DAS CRIANÇAS',sub:'Alegria e diversão para a família',th:{a:'#29b6f6',b:'#5e35b1',text:'#ffffff',sub:'#e8f6ff',accent:'#ffeb3b',price:'#fff176',badge:'#ffeb3b',badgeT:'#4527a0',shape:'#ffffff',foot:'rgba(0,0,0,.25)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffeb3b','#ff5252','#69f0ae','#ff80ab','#ffffff','#ffab40'];
+   for(let i=0;i<70;i++){const edge=r()<.85,x=edge?(r()<.5?r()*110:W-r()*110):r()*W,y=edge?r()*H:(r()<.5?r()*130:H-r()*200),c=pal[Math.floor(r()*pal.length)],k=Math.floor(r()*3),s=12+r()*22;
+    if(k===0)E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(s/2).toFixed(0)}" fill="${c}" fill-opacity=".85"/>`);
+    else if(k===1)E.push(`<polygon points="${artStar(x,y,s,s*.45,5)}" fill="${c}" fill-opacity=".85"/>`);
+    else E.push(`<polygon points="${x},${y-s} ${x-s},${y+s*.8} ${x+s},${y+s*.8}" fill="${c}" fill-opacity=".85" transform="rotate(${(r()*60).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})"/>`)}}},
+ namorados:{n:'Dia dos Namorados',ttl:'DIA DOS NAMORADOS',sub:'Presenteie quem você ama',th:{a:'#e53935',b:'#7f0f1c',text:'#ffffff',sub:'#ffdede',accent:'#ffc2d1',price:'#ffe0e8',badge:'#ffffff',badgeT:'#b71c1c',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<20;i++)E.push(`<path d="${artHeart(r()*W,r()*H,16+r()*44)}" fill="${i%3?'#ffffff':'#ffc2d1'}" fill-opacity="${(.12+r()*.28).toFixed(2)}"/>`);
+   E.push(`<path d="${artHeart(W-120,H*.22,70)}" fill="#ffffff" fill-opacity=".18"/><path d="${artHeart(110,H*.58,60)}" fill="#ffffff" fill-opacity=".16"/>`)}},
+ pascoa:{n:'Páscoa',ttl:'FELIZ PÁSCOA',sub:'Ofertas para a sua Páscoa',th:{a:'#8e6bbf',b:'#4a2c7a',text:'#ffffff',sub:'#eadcff',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#3b1f66',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffd54f','#ff8fb1','#7fe0c8','#ffffff','#ffab40'];
+   for(let i=0;i<16;i++){const x=r()<.5?36+r()*60:W-36-r()*60,y=r()*H,c=pal[i%pal.length],s=22+r()*20,rot=(r()*50-25).toFixed(0);
+    E.push(`<g transform="rotate(${rot} ${x.toFixed(0)} ${y.toFixed(0)})" fill-opacity=".55"><ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${s}" ry="${(s*1.28).toFixed(0)}" fill="${c}"/><polyline points="${(x-s).toFixed(0)},${y.toFixed(0)} ${(x-s/2).toFixed(0)},${(y-s*.3).toFixed(0)} ${x.toFixed(0)},${y.toFixed(0)} ${(x+s/2).toFixed(0)},${(y-s*.3).toFixed(0)} ${(x+s).toFixed(0)},${y.toFixed(0)}" fill="none" stroke="#fff" stroke-width="5"/></g>`)}}},
+ anonovo:{n:'Ano Novo',ttl:'FELIZ ANO NOVO',sub:'Comece o ano com economia',th:{a:'#12234f',b:'#050b22',text:'#ffffff',sub:'#cdd8ff',accent:'#ffd54f',price:'#ffd54f',badge:'#ffd54f',badgeT:'#12234f',shape:'#ffd54f',foot:'rgba(255,213,79,.12)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{[[W*.07,H*.42],[W*.94,H*.27],[W*.92,H*.6]].forEach(([x,y],i)=>{E.push(artRay(x,y,20,58+i*8,16,'#ffd54f',5));E.push(artRay(x,y,72+i*8,100+i*8,16,'#fff',3));E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="9" fill="#ffd54f"/>`)});
+   for(let i=0;i<90;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*5).toFixed(1)}" fill="${['#ffd54f','#ffffff','#7fb2ff'][i%3]}" fill-opacity=".7"/>`)}},
+ consumidor:{n:'Dia do Consumidor',ttl:'DIA DO CONSUMIDOR',sub:'Descontos de verdade para você',th:{a:'#00539f',b:'#00254f',text:'#ffffff',sub:'#cfe0f7',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#00254f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(0,26,W,'#ffc21a','#000',.9));for(let i=0;i<16;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(60+r()*80).toFixed(0)}" fill="#ffffff" fill-opacity=".07">%</text>`)}},
+ relampago:{n:'Oferta relâmpago',ttl:'OFERTA RELÂMPAGO',sub:'Corra: por tempo limitado',th:{a:'#ffd400',b:'#ff9800',text:'#101828',sub:'#4b3300',accent:'#d50000',price:'#d50000',badge:'#d50000',badgeT:'#ffffff',shape:'#000000',foot:'rgba(0,0,0,.16)',footT:'#101828'},
+  deco:(E,W,H,th,r)=>{E.push(`<polygon points="${W*.62},${H*.04} ${W*.28},${H*.34} ${W*.46},${H*.34} ${W*.34},${H*.62} ${W*.74},${H*.26} ${W*.54},${H*.26}" fill="#fff" fill-opacity=".22"/>`);
+   E.push(`<polygon points="${W*.9},${H*.5} ${W*.7},${H*.7} ${W*.8},${H*.7} ${W*.72},${H*.88} ${W*.98},${H*.62} ${W*.86},${H*.62}" fill="#d50000" fill-opacity=".14"/>`);E.push(artStripes(0,28,W,'#d50000','#000',.85))}}
+};
+const ART_OCC_ORDER=['natal','blackfriday','cybermonday','aniversario','maes','pais','criancas','namorados','pascoa','anonovo','consumidor','relampago'];
+function artNth(y,m,wd,n){const d=new Date(y,m,1);const off=(wd-d.getDay()+7)%7;return new Date(y,m,1+off+(n-1)*7)}
+function artEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
+function artDates(from){
+  const out=[],y0=from.getFullYear();
+  for(const y of[y0,y0+1]){
+    const bf=artNth(y,10,5,4),cm=new Date(bf);cm.setDate(bf.getDate()+3);
+    out.push(['natal',new Date(y,11,25)],['blackfriday',bf],['cybermonday',cm],['maes',artNth(y,4,0,2)],['pais',artNth(y,7,0,2)],['criancas',new Date(y,9,12)],['namorados',new Date(y,5,12)],['pascoa',artEaster(y)],['anonovo',new Date(y+1,0,1)],['consumidor',new Date(y,2,15)]);
+  }
+  const t=new Date(from.getFullYear(),from.getMonth(),from.getDate());
+  return out.filter(([,d])=>d>=t).sort((a,b)=>a[1]-b[1]).filter((x,i,a)=>a.findIndex(z=>z[0]===x[0])===i);
+}
+function artSvg(o){
+  const oc=ART_OCC[o.occ],th=Object.assign({},oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),o.cols||{}),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
+  const F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
+  const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold);const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
+    E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.stroke?` stroke="${op.stroke}" stroke-width="${op.sw||6}" stroke-linejoin="round" paint-order="stroke"`:''}${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
+  // fundo
+  E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
+    <clipPath id="pc"><rect id="pcr" x="0" y="0" width="1" height="1" rx="40"/></clipPath><clipPath id="lc"><rect id="lcr" x="0" y="0" width="1" height="1" rx="26"/></clipPath></defs>`);
+  E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
+  E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
+  E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  if(oc)oc.deco(E,W,H,th,artRnd(o.occ.split('').reduce((h,c)=>h*31+c.charCodeAt(0),7)));
+  let y=Math.round(52*k);
+  // cabeçalho: logo + nome
+  if(o.showLogo&&(o.logo||o.co.name)){
+    const ls=Math.round(112*k),nameS=Math.round(46*k),gap=24,nw=artW(o.co.name,nameS,true),maxNW=W-2*60-(o.logo?ls+gap:0),nm=artFit(o.co.name,maxNW,nameS,true),w=artW(nm,nameS,true);
+    const tot=(o.logo?ls+gap:0)+w,x0=(W-tot)/2;
+    if(o.logo){E.push(`<rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x0}" y="${y}" width="${ls}" height="${ls}" rx="${ls*.24}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x0}" y="${y}" width="${ls}" height="${ls}" preserveAspectRatio="xMidYMid slice" clip-path="url(#lcp)"/>`)}
+    T(nm,x0+(o.logo?ls+gap:0),y+ls/2+nameS*.34,nameS,{bold:1});
+    y+=ls+Math.round(34*k);
+  }
+  // título da data especial
+  if(o.ttl){
+    let ts=Math.round(112*k);const tt=String(o.ttl).toUpperCase();while(artW(tt,ts,true)>W-100&&ts>44)ts-=4;
+    const tw=artW(tt,ts,true),tx=(W-tw)/2,ty=y+ts*.86;
+    T(tt,tx+5,ty+6,ts,{bold:1,color:'#000000',op:.28});T(tt,tx,ty,ts,{bold:1,color:th.accent});
+    y+=Math.round(ts*1.02);
+    if(o.sub){const ss=Math.round(42*k);T(artFit(o.sub,W-120,ss,false),W/2,y+ss*.8,ss,{anchor:'m',color:th.text});y+=Math.round(ss*1.5)}
+    y+=Math.round(10*k);
+  }
+  // selo
+  if(o.badge){
+    const bt=o.badge.toUpperCase();
+    if(o.bstyle==='solto'){
+      let bs=Math.round(86*k);while(artW(bt,bs,true)>W-120&&bs>30)bs-=3;const bh=Math.round(bs*1.25);
+      T(bt,W/2+4,y+bh*.78+6,bs,{bold:1,color:'#000000',op:.3,anchor:'m'});
+      T(bt,W/2,y+bh*.78,bs,{bold:1,color:th.badge,anchor:'m',stroke:th.badgeT,sw:Math.round(10*k)});
+      y+=bh+Math.round(26*k);
+    }else{
+      let bs=Math.round(54*k);while(artW(bt,bs,true)+88*k>W-80&&bs>26)bs-=3;
+      const bw=artW(bt,bs,true)+88*k,bh=Math.round(98*k),bx=(W-bw)/2;
+      E.push(`<rect x="${bx+6}" y="${y+8}" width="${bw}" height="${bh}" rx="${bh/2}" fill="#000" fill-opacity=".22"/><rect x="${bx}" y="${y}" width="${bw}" height="${bh}" rx="${bh/2}" fill="${th.badge}" stroke="#ffffff" stroke-width="${6*k}"/>`);
+      T(bt,W/2,y+bh/2+bs*.35,bs,{bold:1,color:th.badgeT,anchor:'m'});
+      y+=bh+Math.round(34*k);
+    }
+  }
+  // rodapé (altura fixa) e bloco de preço (altura variável) definem a altura da foto
+  const footH=o.showFoot?Math.round(190*k):Math.round(50*k),M=60,CW=W-2*M;
+  let nameS=Math.round(68*k),nl=artWrap(o.name,CW-20,nameS,true);
+  if(nl.length>2){nameS=Math.round(56*k);nl=artWrap(o.name,CW-20,nameS,true)}
+  if(nl.length>2){nl.length=2;nl[1]=artFit(nl[1]+' ...',CW-20,nameS,true)}
+  const nLH=Math.round(nameS*1.14),hasOld=+o.old>0,oldS=Math.round(44*k);
+  let ps=Math.round(190*k);const pint=Math.floor(+o.price).toLocaleString('pt-BR'),pcents=','+String(Math.round((+o.price-Math.floor(+o.price))*100)).padStart(2,'0');
+  const pw=s=>artW('R$',s*.34,true)+10+artW(pint,s,true)+artW(pcents,s*.44,true);
+  while(pw(ps)>CW&&ps>60)ps-=4;
+  const lines=(o.lines||[]).filter(Boolean),lS=Math.round(44*k),lLH=Math.round(60*k),vS=Math.round(30*k);
+  const below=18*k+nl.length*nLH+(hasOld?oldS+26*k:10*k)+ps*.78+22*k+(lines.length?lines.length*lLH+10*k:0)+(o.valid?vS+30*k:0);
+  let ph=H-footH-y-below-30*k;ph=Math.max(feed?300:420,Math.min(ph,feed?560:820));
+  // cartão da foto
+  const yTop=y,phF=ph,mas=o.mascot;let cx=M+10,cw=W-2*cx;
+  const masDim=()=>{let mh=Math.min(phF*(mas.z||1),mas.h),mw=mh*mas.ar;if(mw>W*.5){mw=W*.5;mh=mw/mas.ar}return{mw,mh}};
+  if(mas){const mw=masDim().mw,x0=Math.round(20+mw*.97+6),av=W-30-x0;cw=Math.min(av,Math.round(phF*.8));cx=Math.round(x0+(av-cw)*.3);y=yTop+Math.round(phF*.1);ph=Math.round(phF*.74)}
+  if(o.nop){
+    if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/>`);
+    else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:th.sub,anchor:'m'});
+  }else{
+  E.push(`<rect x="${cx+8}" y="${y+14}" width="${cw}" height="${ph}" rx="44" fill="#000" fill-opacity=".25"/><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44" fill="#ffffff"/>`);
+  if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet" clip-path="url(#pcp)"/>`)}
+  else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
+  }
+  if(mas){y=yTop;ph=phF;const{mw,mh}=masDim(),mimg=artMasImg(mas.id,mh),my=Math.max(6,Math.min(H-footH-mh-2,yTop+phF-mh+(mas.dy||0)));
+    E.push(`<ellipse cx="${(20+mw*.45).toFixed(0)}" cy="${(my+mh-4).toFixed(0)}" rx="${(mw*.36).toFixed(0)}" ry="14" fill="#000" fill-opacity=".25"/><image href="${mimg}" xlink:href="${mimg}" x="20" y="${my.toFixed(0)}" width="${mw.toFixed(0)}" height="${mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`)}
+  y+=ph+Math.round(30*k);
+  // nome
+  nl.forEach((l,i)=>{y+=nLH;T(l,W/2,y-nameS*.2,nameS,{bold:1,anchor:'m'})});
+  y+=Math.round(8*k);
+  // preço antigo
+  if(hasOld){const t='de R$ '+artBRL(o.old),w=artW(t,oldS,false);y+=oldS;T(t,W/2,y,oldS,{anchor:'m',color:th.sub});E.push(`<line x1="${W/2-w/2-4}" y1="${y-oldS*.3}" x2="${W/2+w/2+4}" y2="${y-oldS*.3}" stroke="${th.sub}" stroke-width="${Math.max(3,4*k)}"/>`);y+=Math.round(16*k)}
+  // preço principal
+  const small=ps*.34,cs=ps*.44,tw=pw(ps);let px=(W-tw)/2;y+=ps*.78;
+  const by=y;
+  T('R$',px,by-ps*.40,small,{bold:1,color:th.price});px+=artW('R$',small,true)+10;
+  px+=T(pint,px,by,ps,{bold:1,color:th.price});
+  T(pcents,px,by-ps*.40,cs,{bold:1,color:th.price});
+  y+=Math.round(22*k);
+  // condições
+  lines.forEach(l=>{y+=lLH;T(artFit(l,CW,lS,true),W/2,y-lS*.25,lS,{bold:1,anchor:'m'})});
+  if(lines.length)y+=Math.round(10*k);
+  if(o.valid){y+=Math.round(30*k);T(artFit(o.valid,CW,vS,false),W/2,y+vS*.7,vS,{anchor:'m',color:th.sub,italic:1})}
+  // rodapé
+  if(o.showFoot){
+    const fy=H-footH;E.push(`<rect x="0" y="${fy}" width="${W}" height="${footH}" fill="${th.foot}"/><rect x="0" y="${fy}" width="${W}" height="${Math.round(6*k)}" fill="${th.accent}"/>`);
+    const fs=Math.round(42*k),f2=Math.round(36*k),f3=Math.round(27*k),sl=o.sel,ar=Math.round(62*k);let fyy=fy+Math.round(62*k);
+    const fx=sl?(M+2*ar+36+W-M)/2:W/2,fw=sl?W-M-(M+2*ar+36):CW;
+    if(sl)E.push(artAvatar(M+ar+8,fy+footH/2+Math.round(4*k),ar,sl,th,F,'f'));
+    T(artFit(o.co.name,fw,fs,true),fx,fyy,fs,{bold:1,anchor:'m',color:th.footT});
+    if(sl&&sl.name){fyy+=Math.round(50*k);T(artFit(sl.name+(sl.role?' · '+sl.role:''),fw,f2,true),fx,fyy,f2,{bold:1,anchor:'m',color:th.footT})}
+    if(o.co.phone){fyy+=Math.round(50*k);T(artFit('WhatsApp '+o.co.phone,fw,f2,true),fx,fyy,f2,{bold:1,anchor:'m',color:th.footT})}
+    if(!sl&&o.co.addr){fyy+=Math.round(42*k);T(artFit(o.co.addr,CW,f3,false),W/2,fyy,f3,{anchor:'m',color:th.footT,op:.85})}
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
+}
+
+/* ---- tela da aba "Arte do produto" ---- */
+const ART_MAS={1:{f:'mascote1.png',ar:450/1159,h:1159},2:{f:'mascote2.png',ar:578/1180,h:1180}},ART_MASD={},ART_MASV={};
+// versões reduzidas e nítidas do mascote (redução em etapas, sem serrilhado); o original nunca é ampliado além do tamanho real
+function artMasYSet(v){const e=$('#a_masy');if(e)e.value=v;const t=$('#a_masyv');if(t)t.textContent=+v===0?'padrão':(+v<0?'subiu ':'desceu ')+Math.abs(+v)+' px';artRender()}
+function artMasY(d){artMasYSet(Math.max(-500,Math.min(300,(+artVal('masy')||0)+d)))}
+async function artMasShrink(id,hpx){
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=ART_MASD[id]});
+  let cur=img,w=img.width,h=img.height;
+  while(h/2>=hpx){const nw=Math.round(w/2),nh=Math.round(h/2),c=document.createElement('canvas');c.width=nw;c.height=nh;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(cur,0,0,nw,nh);cur=c;w=nw;h=nh}
+  const nh=Math.round(hpx),nw=Math.round(w*nh/h),c=document.createElement('canvas');c.width=nw;c.height=nh;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(cur,0,0,nw,nh);
+  return c.toDataURL('image/png');
+}
+function artMasImg(id,hpx){
+  const src=ART_MASD[id];if(!src)return '';
+  if(hpx>=ART_MAS[id].h*.75)return src;
+  const b=Math.max(160,Math.ceil(hpx/40)*40),k=id+':'+b;
+  if(ART_MASV[k])return ART_MASV[k];
+  if(!ART_MASV[k+'?']){ART_MASV[k+'?']=1;artMasShrink(id,b).then(u=>{ART_MASV[k]=u;artRender()}).catch(()=>{})}
+  return src;
+}
+async function artMasLoad(){
+  const id=artVal('mas');
+  if(id&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
+  artRender();
+}
+let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
+const artCache=new Map();
+async function artBlobData(blob,max){
+  const u=URL.createObjectURL(blob);
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('img'));i.src=u});
+    const k=Math.min(1,max/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+    cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0,cv.width,cv.height);
+    return cv.toDataURL('image/jpeg',.9);
+  }finally{URL.revokeObjectURL(u)}
+}
+async function artUrlData(url,max){
+  if(artCache.has(url))return artCache.get(url);
+  const r=await fetch(url);if(!r.ok)throw new Error('http');
+  const d=await artBlobData(await r.blob(),max);artCache.set(url,d);return d;
+}
+const artBadge=()=>{const v=artVal('badge');return v==='__d'?artVal('badget').trim():v};
+const ART_COLS=[['text','Texto'],['price','Preço'],['accent','Título/faixa'],['badge','Selo'],['badgeT','Letra do selo']];
+function artCols(){const o={};ART_COLS.forEach(([k])=>{const e=$('#a_c_'+k);if(e&&e.dataset.s)o[k]=e.value});return o}
+function artColReset(){document.querySelectorAll('.artc').forEach(e=>delete e.dataset.s);artRender()}
+async function artCutRun(){
+  const g=++artCutGen,src=artPhoto;if(!src){artCut=null;artRender();return}
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src});
+    const w=img.width,h=img.height,cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.drawImage(img,0,0);
+    const id=cx.getImageData(0,0,w,h),d=id.data,tol=+artVal('tol')||35;
+    const cs=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([x,y])=>{const i=(y*w+x)*4;return[d[i],d[i+1],d[i+2]]});
+    const ref=[0,1,2].map(c=>cs.reduce((a,v)=>a+v[c],0)/4);
+    const dist=i=>Math.hypot(d[i]-ref[0],d[i+1]-ref[1],d[i+2]-ref[2]);
+    const bg=new Uint8Array(w*h),q=new Int32Array(w*h);let qh=0,qt=0;
+    const push=p=>{if(!bg[p]&&dist(p*4)<tol){bg[p]=1;q[qt++]=p}};
+    for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+    while(qh<qt){const p=q[qh++],x=p%w;if(x>0)push(p-1);if(x<w-1)push(p+1);if(p>=w)push(p-w);if(p<w*(h-1))push(p+w)}
+    for(let p=0;p<w*h;p++){
+      if(bg[p]){d[p*4+3]=0;continue}
+      const x=p%w,near=(x>0&&bg[p-1])||(x<w-1&&bg[p+1])||(p>=w&&bg[p-w])||(p<w*(h-1)&&bg[p+w]);
+      if(near){const e=dist(p*4);if(e<tol*2.4)d[p*4+3]=Math.max(0,Math.min(255,Math.round((e-tol)/(tol*1.4)*255)))}
+    }
+    cx.putImageData(id,0,0);
+    if(g===artCutGen)artCut=cv.toDataURL('image/png');
+  }catch(e){if(g===artCutGen)artCut=null}
+  if(g===artCutGen)artRender();
+}
+function artNopRefresh(){artCut=null;const e=$('#a_nop');if(e&&e.checked)artCutRun();else artRender()}
+const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
+function artCaption(){
+  const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artBadge();
+  const pid=artVal('p'),tt=artVal('ttl').trim(),sb=artVal('sub').trim(),L=[...(tt?[`*${tt}*`+(sb?' - '+sb:''),'']:[]),`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
+  [artVal('l1'),artVal('l2'),artVal('valid')].map(s=>s.trim()).filter(Boolean).forEach(s=>L.push(s));
+  L.push('','Chame no WhatsApp: https://wa.me/'+waNum());
+  if(pid)L.push('Veja no catálogo: '+new URL('../catalogo/#p='+pid,location.href).href);
+  return L.join('\n');
+}
+function artOpts(){
+  const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
+  const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0}:null,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+    old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
+    co:{name:co.trade_name||co.legal_name||'MultMix',phone:fmtTel(SEL().phone)||co.whatsapp||co.phone||'',addr},sel:ck('selfoot')?artSel():null,photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
+}
+function artRender(){
+  const o=artOpts(),box=$('#artv');if(!box)return;
+  {const bt=$('#a_badget');if(bt)bt.parentNode.style.display=artVal('badge')==='__d'?'':'none';
+   const th=ART_OCC[artOcc]?ART_OCC[artOcc].th:(ART_TH[artTheme]||ART_TH.azul);
+   ART_COLS.forEach(([k])=>{const e=$('#a_c_'+k);if(e&&!e.dataset.s)e.value=/^#[0-9a-f]{6}$/i.test(th[k]||'')?th[k]:'#000000'})}
+  box.innerHTML=MODE==='card'?cardSvg(cardOpts()):artSvg(o);
+  if(!artCapDirty&&$('#a_cap'))$('#a_cap').value=MODE==='card'?cardCaption():artCaption();
+  document.querySelectorAll('.thb').forEach(b=>b.classList.toggle('on',b.dataset.th===artTheme&&!artOcc));
+  document.querySelectorAll('.occb').forEach(b=>b.classList.toggle('on',b.dataset.oc===artOcc));
+  artFile=null;clearTimeout(artTimer);artTimer=setTimeout(artPrep,500);
+}
+function artSetOcc(id){
+  artOcc=id;const o=ART_OCC[id],set=(k,v)=>{const e=$('#a_'+k);if(e)e.value=v};
+  if(o){set('ttl',o.ttl);set('sub',o.sub);set('badge','')}
+  artRender();
+}
+function artSetTheme(t){artTheme=t;artOcc='';artRender()}
+async function artRaster(){
+  const svg=curSvg(),mm=svg.match(/viewBox="0 0 (\d+) (\d+)"/),W=+mm[1],H=+mm[2];
+  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src=url});
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.getContext('2d').drawImage(img,0,0,W,H);
+    return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.92));
+  }finally{URL.revokeObjectURL(url)}
+}
+const artName=()=>MODE==='card'?'cartao-'+norm(SEL().name).replace(/ /g,'-').slice(0,32)+'.jpg':'arte-'+norm(artVal('name')).replace(/ /g,'-').slice(0,32)+'.jpg';
+async function artPrep(){
+  const g=++artGen;
+  try{const b=await artRaster();if(g===artGen)artFile=new File([b],artName(),{type:'image/jpeg'})}catch(e){artFile=null}
+}
+async function artDownload(){
+  try{
+    const b=artFile||await artRaster(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=artName();a.click();
+  }catch(e){alert('Não foi possível gerar a imagem neste navegador.')}
+}
+function artShare(){
+  if(!artFile)return alert('A imagem ainda está sendo preparada. Aguarde um segundo e toque de novo.');
+  if(navigator.canShare&&navigator.canShare({files:[artFile]})){
+    navigator.share({files:[artFile],text:artVal('cap')||artCaption()}).catch(e=>{if(!e||e.name!=='AbortError')alert('Não foi possível abrir o compartilhamento. Use "Baixar imagem".')});
+  }else{
+    artDownload();
+    alert('Este aparelho não permite enviar direto. A imagem foi baixada: abra o WhatsApp, vá em Status, toque em + e escolha a imagem. A legenda está no botão "Copiar legenda".');
+  }
+}
+function artCopy(){
+  const t=artVal('cap')||artCaption();
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>alert('Legenda copiada.')).catch(()=>{const e=$('#a_cap');if(e){e.select();document.execCommand('copy');alert('Legenda copiada.')}});
+}
+async function artLoadPhoto(){
+  const p=P.find(x=>x.id===artVal('p')),st=$('#a_st');if(!st)return;
+  artPhoto=null;artRender();
+  const u=p&&(p.photos||[])[+artVal('ph')||0];
+  if(!u){st.textContent=p?'Este produto não tem foto cadastrada. Envie uma foto abaixo.':'';return}
+  st.className='sm';st.textContent='Carregando a foto...';
+  try{artPhoto=await artUrlData(u,1100);st.textContent=''}catch(e){st.className='sm bad';st.textContent='Não consegui carregar a foto (o site dela pode bloquear). Envie uma foto do aparelho abaixo.'}
+  artNopRefresh();
+}
+async function artUpload(inp){
+  const f=inp.files[0];if(!f)return;
+  try{artPhoto=await artBlobData(f,1100);$('#a_st').textContent=''}catch(e){alert('Não consegui ler essa imagem.')}
+  artNopRefresh();
+}
+function artPick(){
+  const p=P.find(x=>x.id===artVal('p'));if(!p)return;
+  const set=(id,v)=>{const e=$('#a_'+id);if(e)e.value=v},m=p.max_inst||10;
+  const pc=promoAt(+p.price_cash,p),pr=promoPct(p);
+  set('name',p.name);set('price',pc.toFixed(2));set('old',pr?(+p.price_cash).toFixed(2):'');
+  set('l1',+p.price_credit>0?`ou ${m}x de R$ ${artBRL(promoAt(+p.price_credit,p)/m)} no carnê`:'');
+  set('l2',+p.price_card>0?`No cartão: R$ ${artBRL(promoAt(+p.price_card,p))}`:'');
+  const ph=$('#a_ph');if(ph)ph.innerHTML=(p.photos||[]).map((_,i)=>`<option value="${i}">Foto ${i+1}</option>`).join('')||'<option value="0">Sem foto</option>';
+  artCapDirty=false;artLoadPhoto();
+}
+function artFilter(){
+  const k=norm(artVal('q')),sel=$('#a_p');if(!sel)return;
+  const l=P.filter(p=>p.active!==false&&(!k||norm(p.name).includes(k))).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  sel.innerHTML=l.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')||'<option value="">Nenhum produto</option>';
+  if(l.length)artPick();
+}
+/* ---- vendedor: dados, foto/avatar e cartão de visita ---- */
+
+/* ---- avatar caricatura (personagem desenhado, escolhido a partir da sua foto) ---- */
+const CAR_PELE=['#ffdbb4','#f1c27d','#e0ac69','#c68642','#8d5524','#5c3a1e'],CAR_CAB=['#1b1b1b','#3b2417','#6b4423','#a9712f','#d9b36c','#9a9a9a','#b5391c','#7a3b1e'],CAR_CAM=['#00539f','#d92d20','#1f9d55','#1d2939','#ffffff','#ffc21a','#7a3fb8','#16255a'],CAR_OLH=['#3a2a1e','#1b1b1b','#2e7d4f','#3a78c2','#7a5a2e'];
+const CAR_EST=[['curto','Curto'],['social','Social (risca)'],['topete','Topete / franja lateral'],['ondulado','Ondulado'],['longo','Longo liso'],['black','Cacheado / black'],['coque','Coque'],['rabo','Rabo de cavalo'],['raspado','Raspado'],['careca','Careca']];
+const CAR_DEF={pele:1,estilo:'topete',cor:7,barba:'nao',oculos:false,camisa:7,corpo:'corpo',olho:0,expr:'sorriso',pose:'joia',fundo:'loja'};
+let CAR=Object.assign({},CAR_DEF,LS.get('pdv_car',{}));
+const carSave=()=>LS.set('pdv_car',CAR);
+const carDark=(h,f)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.slice(i,i+2),16)*f))).toString(16).padStart(2,'0')).join('');
+function carSvg(c,logo){
+  const sk=CAR_PELE[c.pele],sd=carDark(sk,.8),sl=carDark(sk,1.08),hc=CAR_CAB[c.cor],hd=carDark(hc,.7),hl=carDark(hc,1.5),cam=CAR_CAM[c.camisa],uni=c.camisa===7,lg=cam==='#ffffff'?'#d0d5dd':carDark(cam,.78),ol=CAR_OLH[c.olho||0];
+  const pants=uni?'#1f2a44':'#26324a',L=[],D=[];
+  D.push(`<radialGradient id="kskin" cx=".42" cy=".34" r=".8"><stop offset="0" stop-color="${sl}"/><stop offset=".6" stop-color="${sk}"/><stop offset="1" stop-color="${sd}"/></radialGradient>`);
+  D.push(`<linearGradient id="kshirt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${carDark(cam,1.12)}"/><stop offset="1" stop-color="${carDark(cam,.82)}"/></linearGradient>`);
+  D.push(`<radialGradient id="kiris" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="${carDark(ol,1.7)}"/><stop offset="1" stop-color="${ol}"/></radialGradient>`);
+  D.push(`<linearGradient id="kbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a4aa6"/><stop offset="1" stop-color="#06285f"/></linearGradient><clipPath id="kclip"><rect width="400" height="700" rx="30"/></clipPath>`);
+  if(c.fundo==='loja'){
+    L.push(`<g clip-path="url(#kclip)"><rect width="400" height="700" fill="url(#kbg)"/><circle cx="330" cy="120" r="150" fill="#ffffff" fill-opacity=".06"/>`
+      +`<rect x="0" y="300" width="400" height="14" fill="#ffc21a"/><rect x="0" y="520" width="400" height="14" fill="#ffc21a"/>`
+      +`<rect x="20" y="214" width="46" height="86" rx="8" fill="#1d2939"/><rect x="26" y="228" width="34" height="22" rx="4" fill="#3d4a63"/><rect x="316" y="236" width="70" height="64" rx="6" fill="#b9c2d0"/><rect x="324" y="244" width="40" height="46" rx="3" fill="#2a3547"/><circle cx="376" cy="262" r="5" fill="#ffc21a"/>`
+      +`<rect x="30" y="436" width="40" height="84" rx="8" fill="#d92d20"/><rect x="36" y="420" width="28" height="22" rx="4" fill="#e9eef6" fill-opacity=".85"/><rect x="318" y="430" width="68" height="90" rx="6" fill="#1d2939"/><rect x="324" y="438" width="56" height="42" rx="3" fill="#3a8fe0"/>`
+      +`</g>`);
+  }
+  L.push(`<ellipse cx="200" cy="676" rx="118" ry="15" fill="#000" fill-opacity=".22"/>`);
+  if(c.estilo==='longo')L.push(`<path d="M100 190 C84 330 98 376 140 386 L260 386 C302 376 316 330 300 190Z" fill="${hc}"/>`);
+  if(c.estilo==='rabo')L.push(`<path d="M270 130 C346 150 356 262 312 324 C300 272 290 200 262 170Z" fill="${hc}"/>`);
+  if(c.estilo==='black')L.push(`<g fill="${hc}"><circle cx="118" cy="150" r="46"/><circle cx="160" cy="98" r="52"/><circle cx="215" cy="88" r="54"/><circle cx="268" cy="108" r="50"/><circle cx="292" cy="160" r="44"/></g>`);
+  // pernas
+  L.push(`<rect x="122" y="470" width="74" height="176" rx="18" fill="${pants}"/><rect x="204" y="470" width="74" height="176" rx="18" fill="${pants}"/><path d="M200 480 L200 640" stroke="#000" stroke-opacity=".25" stroke-width="3"/><ellipse cx="150" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="250" cy="652" rx="48" ry="21" fill="#111827"/><ellipse cx="140" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/><ellipse cx="240" cy="645" rx="20" ry="6" fill="#fff" fill-opacity=".14"/>`);
+  const sleeve=(pts)=>`<polyline points="${pts}" fill="none" stroke="${lg}" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pts}" fill="none" stroke="url(#kshirt)" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>`;
+  // braço esquerdo (do desenho) sempre para baixo
+  L.push(sleeve('92,356 90,446')+`<rect x="68" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="92" cy="490" r="25" fill="url(#kskin)"/>`);
+  // tronco
+  L.push(`<path d="M110 352 C110 330 142 322 200 322 C258 322 290 330 290 352 L294 492 C294 507 282 514 268 514 L132 514 C118 514 106 507 106 492Z" fill="url(#kshirt)"/><path d="M150 380 C150 440 150 480 152 512 M250 380 C250 440 250 480 248 512" stroke="#000" stroke-opacity=".08" stroke-width="10" fill="none"/>`);
+  if(uni){
+    L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M150 326 L196 388 L172 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/><path d="M250 326 L204 388 L228 322Z" fill="#16255a" stroke="#ffc21a" stroke-width="6" stroke-linejoin="round"/>`
+      +`<path d="M200 388 L200 512" stroke="#0d1838" stroke-width="3"/><circle cx="200" cy="430" r="4" fill="#9fb0d8"/><circle cx="200" cy="470" r="4" fill="#9fb0d8"/>`
+      +(logo?`<rect x="224" y="400" width="52" height="52" rx="8" fill="#16255a"/><image href="${logo}" xlink:href="${logo}" x="226" y="402" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>`:`<text x="250" y="436" text-anchor="middle" font-family="Arial" font-weight="700" font-size="28" fill="#ffc21a">MM</text>`));
+  }else L.push(`<path d="M176 322 L200 372 L224 322Z" fill="url(#kskin)"/><path d="M166 322 L200 386 L234 322" fill="none" stroke="${lg}" stroke-width="8" stroke-linejoin="round"/>`);
+  // braço direito (pose)
+  const hand=(x,y)=>`<circle cx="${x}" cy="${y}" r="28" fill="url(#kskin)"/>`;
+  if(c.pose==='joia')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,330)+`<rect x="342" y="262" width="22" height="58" rx="11" fill="url(#kskin)"/><path d="M332 326 q22 6 44 0 M334 340 q20 6 40 0" stroke="${sd}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
+  else if(c.pose==='acenar')L.push(sleeve('300,358 352,430 354,372')+`<rect x="340" y="352" width="30" height="24" fill="${sk}"/>`+hand(354,326)+[[332,276,-18],[347,268,-4],[362,272,10],[375,288,24]].map(([x,y,r])=>`<rect x="${x-8}" y="${y-6}" width="16" height="44" rx="8" fill="url(#kskin)" transform="rotate(${r} ${x} ${y+30})"/>`).join(''));
+  else L.push(sleeve('308,356 310,446')+`<rect x="286" y="440" width="48" height="12" rx="6" fill="${uni?'#ffc21a':lg}" fill-opacity="${uni?1:.5}"/><circle cx="308" cy="490" r="25" fill="url(#kskin)"/>`);
+  // pescoço, sombra, orelhas, cabeça
+  L.push(`<rect x="172" y="286" width="56" height="52" rx="14" fill="${sd}"/><ellipse cx="104" cy="216" rx="17" ry="27" fill="${sk}"/><ellipse cx="296" cy="216" rx="17" ry="27" fill="${sk}"/><path d="M104 206 q-6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/><path d="M296 206 q6 10 0 20" stroke="${sd}" stroke-width="4" fill="none"/>`);
+  L.push(`<path d="M102 202 C102 122 150 94 200 94 C250 94 298 122 298 202 C298 272 252 320 200 320 C148 320 102 272 102 202Z" fill="url(#kskin)"/>`);
+  if(c.barba==='barba')L.push(`<path d="M102 206 C102 296 150 328 200 328 C250 328 298 296 298 206 C290 262 246 272 200 272 C154 272 110 262 102 206Z" fill="${hc}"/><path d="M130 300 C160 318 240 318 270 300" stroke="${hl}" stroke-opacity=".25" stroke-width="5" fill="none"/>`);
+  if(c.barba==='cavanhaque')L.push(`<path d="M170 292 C178 326 222 326 230 292 C216 302 184 302 170 292Z" fill="${hc}"/>`);
+  L.push(`<ellipse cx="138" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/><ellipse cx="262" cy="250" rx="21" ry="15" fill="#ff7a7a" fill-opacity=".2"/>`);
+  // olhos
+  const eye=x=>`<ellipse cx="${x}" cy="208" rx="24" ry="17" fill="#fff"/><circle cx="${x}" cy="209" r="12" fill="url(#kiris)"/><circle cx="${x}" cy="209" r="5.5" fill="#0b0b0b"/><circle cx="${x+4}" cy="204" r="3.8" fill="#fff"/><path d="M${x-26} 207 Q${x} 186 ${x+26} 207" fill="none" stroke="#1b1b1b" stroke-width="5" stroke-linecap="round"/><path d="M${x-18} 222 Q${x} 230 ${x+18} 222" fill="none" stroke="${sd}" stroke-width="3" stroke-linecap="round"/>`;
+  L.push(eye(158)+eye(242));
+  const bc=c.estilo==='careca'||c.estilo==='raspado'?carDark(hc,.9):hc;
+  L.push(`<path d="M126 178 Q158 156 190 174" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/><path d="M210 174 Q242 156 274 178" fill="none" stroke="${bc}" stroke-width="11" stroke-linecap="round"/>`);
+  L.push(`<path d="M200 214 C187 246 184 254 198 259 C210 261 216 256 214 249" fill="none" stroke="${sd}" stroke-width="6" stroke-linecap="round"/><circle cx="190" cy="258" r="2.6" fill="${carDark(sk,.55)}"/><circle cx="210" cy="258" r="2.6" fill="${carDark(sk,.55)}"/>`);
+  if(c.barba==='bigode'||c.barba==='barba'||c.barba==='cavanhaque')L.push(`<path d="M148 270 C168 254 190 264 200 268 C210 264 232 254 252 270 C232 280 210 275 200 275 C190 275 168 280 148 270Z" fill="${hc}"/>`);
+  if(c.expr==='aberto')L.push(`<path d="M162 282 Q200 326 238 282 Q200 292 162 282Z" fill="#fff" stroke="#7a2e2e" stroke-width="5" stroke-linejoin="round"/><path d="M178 300 Q200 316 222 300 Q200 296 178 300Z" fill="#c4545a"/>`);
+  else if(c.expr==='serio')L.push(`<path d="M170 284 Q200 290 230 282" fill="none" stroke="#7a2e2e" stroke-width="6" stroke-linecap="round"/>`);
+  else L.push(`<path d="M166 280 Q200 304 234 280" fill="none" stroke="#9c3b3b" stroke-width="7" stroke-linecap="round"/><path d="M174 285 Q200 301 226 285" fill="none" stroke="#c45a5a" stroke-width="3" stroke-linecap="round" stroke-opacity=".6"/>`);
+  // cabelo da frente
+  const sheen=`<path d="M140 120 C170 100 220 98 262 116" fill="none" stroke="${hl}" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
+  if(c.estilo==='curto')L.push(`<path d="M102 202 C92 100 150 74 200 74 C250 74 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='social')L.push(`<path d="M102 202 C90 98 150 72 204 74 C256 76 310 100 298 202 C292 162 270 130 230 124 C190 142 140 134 118 160 C110 170 104 186 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='topete')L.push(`<path d="M100 206 C86 98 150 66 206 68 C264 70 312 104 300 206 C298 168 284 136 256 118 C228 150 164 150 126 176 C108 188 102 196 100 206Z" fill="${hc}"/><path d="M150 140 C196 150 250 132 290 118 C268 152 218 168 148 172Z" fill="${hd}" fill-opacity=".55"/><path d="M130 110 C170 84 232 84 276 108" fill="none" stroke="${hl}" stroke-opacity=".4" stroke-width="9" stroke-linecap="round"/><path d="M180 100 C200 112 232 112 262 104" fill="none" stroke="${hd}" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/>`);
+  if(c.estilo==='ondulado')L.push(`<path d="M102 204 C92 100 150 78 200 78 C250 78 308 100 298 204 C288 156 252 132 200 132 C148 132 112 156 102 204Z" fill="${hc}"/><g fill="${hc}"><circle cx="114" cy="150" r="24"/><circle cx="140" cy="108" r="28"/><circle cx="188" cy="86" r="30"/><circle cx="240" cy="92" r="30"/><circle cx="278" cy="126" r="26"/><circle cx="290" cy="170" r="20"/></g>${sheen}`);
+  if(c.estilo==='longo')L.push(`<path d="M100 216 C84 100 150 68 200 70 C252 68 316 100 300 216 C292 160 264 120 214 118 C170 130 130 152 100 216Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='coque')L.push(`<circle cx="200" cy="56" r="40" fill="${hc}"/><path d="M102 202 C92 100 150 80 200 80 C250 80 308 100 298 202 C288 154 252 130 200 130 C148 130 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='rabo')L.push(`<path d="M102 202 C92 100 150 76 200 76 C250 76 308 100 298 202 C288 154 252 128 200 128 C148 128 112 154 102 202Z" fill="${hc}"/>${sheen}`);
+  if(c.estilo==='black')L.push(`<path d="M106 198 C110 150 150 130 200 130 C250 130 290 150 294 198 C282 162 250 146 200 146 C150 146 118 162 106 198Z" fill="${hc}"/>`);
+  if(c.estilo==='raspado')L.push(`<path d="M102 202 C96 110 150 90 200 90 C250 90 304 110 298 202 C290 156 252 130 200 130 C148 130 110 156 102 202Z" fill="${hc}" fill-opacity=".5"/>`);
+  if(c.oculos)L.push(`<g fill="#ffffff" fill-opacity=".16" stroke="#1d2939" stroke-width="7"><circle cx="158" cy="209" r="38"/><circle cx="242" cy="209" r="38"/></g><path d="M196 207 L204 207" stroke="#1d2939" stroke-width="7"/><path d="M120 205 L103 200 M280 205 L297 200" stroke="#1d2939" stroke-width="7" stroke-linecap="round"/><path d="M138 192 q10 -10 24 -8" stroke="#fff" stroke-opacity=".5" stroke-width="5" fill="none" stroke-linecap="round"/>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 700" width="400" height="700"><defs>${D.join('')}</defs>${L.join('')}</svg>`;
+}
+async function carPng(){
+  const url=URL.createObjectURL(new Blob([carSvg(CAR,artLogo)],{type:'image/svg+xml;charset=utf-8'}));
+  try{const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=url});
+    const cv=document.createElement('canvas');cv.width=600;cv.height=1050;cv.getContext('2d').drawImage(img,0,0,600,1050);return cv.toDataURL('image/png')}
+  finally{URL.revokeObjectURL(url)}
+}
+function carPaint(){
+  const e=$('#a_carv');if(e)e.innerHTML=carSvg(CAR,artLogo);
+  document.querySelectorAll('.cksw').forEach(b=>b.classList.toggle('on',String(CAR[b.dataset.k])===b.dataset.v));
+}
+function carSet(k,v){CAR[k]=(k==='pele'||k==='cor'||k==='camisa'||k==='olho')?+v:(k==='oculos'?!!v:v);carSave();carPaint()}
+async function carUse(){
+  try{SELPH=await carPng();setKind(CAR.corpo==='busto'?'busto':'corpo');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}catch(e){alert('Não consegui montar o avatar neste navegador.')}
+}
+async function carSuggest(){
+  const src=SELORIG;if(!src)return alert('Envie primeiro a sua foto (acima), depois toque em "Sugerir pela foto".');
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src}).catch(()=>null);if(!img)return;
+  const N=100,cv=document.createElement('canvas');cv.width=cv.height=N;const cx=cv.getContext('2d'),sz=Math.min(img.width,img.height);cx.drawImage(img,(img.width-sz)/2,(img.height-sz)*.25,sz,sz,0,0,N,N);
+  const avg=(x0,y0,x1,y1)=>{const d=cx.getImageData(x0,y0,x1-x0,y1-y0).data,a=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4){a[0]+=d[i];a[1]+=d[i+1];a[2]+=d[i+2];n++}return a.map(v=>v/n)};
+  const near=(c,pal)=>{let b=0,bd=1e9;pal.forEach((h,i)=>{const r=[1,3,5].map(j=>parseInt(h.slice(j,j+2),16)),dd=Math.hypot(r[0]-c[0],r[1]-c[1],r[2]-c[2]);if(dd<bd){bd=dd;b=i}});return b};
+  CAR.pele=near(avg(40,42,60,62),CAR_PELE);
+  const top=avg(34,6,66,18),bg=avg(0,0,8,8),dist=Math.hypot(top[0]-bg[0],top[1]-bg[1],top[2]-bg[2]);
+  CAR.cor=near(top,CAR_CAB);if(dist<28)CAR.estilo=CAR.estilo==='careca'?'curto':CAR.estilo;
+  carSave();carPaint();carRefreshUi();
+}
+function carRefreshUi(){['expr','pose','fundo'].forEach(k=>{const x=$('#a_c'+k);if(x)x.value=CAR[k]});const e=$('#a_cest');if(e)e.value=CAR.estilo;const b=$('#a_cbar');if(b)b.value=CAR.barba;const o=$('#a_cocu');if(o)o.checked=CAR.oculos;const c=$('#a_ccor');if(c)c.value=CAR.corpo}
+
+/* ---- avatar a partir da foto (filtros no aparelho, sem enviar nada) ---- */
+let SELORIG=null;
+const SELOK=()=>'pdv_vendorig_'+(ME&&ME.id);
+function avBlur(src,w,h,r){
+  const t=new Float32Array(w*h*3),o=new Uint8ClampedArray(src.length),n=2*r+1;
+  for(let y=0;y<h;y++)for(let c=0;c<3;c++){let sum=0;for(let x=-r;x<=r;x++)sum+=src[(y*w+Math.min(w-1,Math.max(0,x)))*4+c];
+    for(let x=0;x<w;x++){t[(y*w+x)*3+c]=sum/n;sum+=src[(y*w+Math.min(w-1,x+r+1))*4+c]-src[(y*w+Math.max(0,x-r))*4+c]}}
+  for(let x=0;x<w;x++)for(let c=0;c<3;c++){let sum=0;for(let y=-r;y<=r;y++)sum+=t[(Math.min(h-1,Math.max(0,y))*w+x)*3+c];
+    for(let y=0;y<h;y++){o[(y*w+x)*4+c]=sum/n;o[(y*w+x)*4+3]=255;sum+=t[(Math.min(h-1,y+r+1)*w+x)*3+c]-t[(Math.max(0,y-r)*w+x)*3+c]}}
+  return o;
+}
+async function avGen(){
+  const src=SELORIG||SELPH;if(!src)return alert('Envie primeiro a sua foto.');
+  const st=artVal('avs'),bgOn=!!($('#a_avbg')||{}).checked,bg=artVal('avc')||'#ffc21a',N=420;
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=src}).catch(()=>null);if(!img)return alert('Não consegui ler a foto.');
+  const cv=document.createElement('canvas');cv.width=cv.height=N;const cx=cv.getContext('2d'),sz=Math.min(img.width,img.height);
+  cx.drawImage(img,(img.width-sz)/2,(img.height-sz)*.25,sz,sz,0,0,N,N);
+  const id=cx.getImageData(0,0,N,N),d=id.data,orig=new Uint8ClampedArray(d);
+  let mask=null;
+  if(bgOn){ // fundo = área parecida com os cantos, ligada às bordas
+    const cs=[[0,0],[N-1,0],[0,N-1],[N-1,N-1]].map(([x,y])=>{const i=(y*N+x)*4;return[d[i],d[i+1],d[i+2]]}),ref=[0,1,2].map(c=>cs.reduce((a,v)=>a+v[c],0)/4);
+    const dist=p=>Math.hypot(d[p*4]-ref[0],d[p*4+1]-ref[1],d[p*4+2]-ref[2]);mask=new Uint8Array(N*N);const q=new Int32Array(N*N);let qh=0,qt=0;
+    const push=p=>{if(!mask[p]&&dist(p)<48){mask[p]=1;q[qt++]=p}};
+    for(let x=0;x<N;x++){push(x);push((N-1)*N+x)}for(let y=0;y<N;y++){push(y*N);push(y*N+N-1)}
+    while(qh<qt){const p=q[qh++],x=p%N;if(x>0)push(p-1);if(x<N-1)push(p+1);if(p>=N)push(p-N);if(p<N*(N-1))push(p+N)}
+  }
+  const lum=i=>.299*d[i]+.587*d[i+1]+.114*d[i+2];
+  if(st==='cartoon'){
+    let b=orig;for(let k=0;k<3;k++)b=avBlur(b,N,N,3);
+    const L=new Float32Array(N*N);for(let p=0;p<N*N;p++)L[p]=.299*b[p*4]+.587*b[p*4+1]+.114*b[p*4+2];
+    const e=avBlur(orig,N,N,1);const G=new Float32Array(N*N);for(let p=0;p<N*N;p++)G[p]=.299*e[p*4]+.587*e[p*4+1]+.114*e[p*4+2];
+    for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const p=y*N+x,gx=G[p+1]-G[p-1]+(G[p-N+1]-G[p-N-1]+G[p+N+1]-G[p+N-1])/2,gy=G[p+N]-G[p-N]+(G[p+N-1]-G[p-N-1]+G[p+N+1]-G[p-N+1])/2,m=Math.hypot(gx,gy);
+      const i=p*4,lv=48;for(let c=0;c<3;c++){const v=Math.round(b[i+c]/lv)*lv;d[i+c]=Math.min(255,v*1.08+6)}
+      if(m>34){const k=Math.min(1,(m-34)/40);for(let c=0;c<3;c++)d[i+c]=d[i+c]*(1-k)+28*k}}
+  }else if(st==='sketch'){
+    const g=new Uint8ClampedArray(orig.length);for(let p=0;p<N*N;p++){const v=lum(p*4);g[p*4]=g[p*4+1]=g[p*4+2]=255-v;g[p*4+3]=255}
+    const bl=avBlur(g,N,N,9);for(let p=0;p<N*N;p++){const v=lum(p*4),dv=Math.min(255,v*255/(255-bl[p*4]+1)),o=Math.max(0,Math.min(255,dv*.95));d[p*4]=o;d[p*4+1]=o*.98;d[p*4+2]=o*.94}
+  }else{ // pop-art: 3 cores pela claridade
+    const A=[[20,24,70],[230,57,70],[255,212,0]];
+    for(let p=0;p<N*N;p++){const v=lum(p*4)/255,k=v<.38?0:v<.7?1:2;d[p*4]=A[k][0];d[p*4+1]=A[k][1];d[p*4+2]=A[k][2]}
+  }
+  if(mask){const h=bg.replace('#',''),c=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));for(let p=0;p<N*N;p++)if(mask[p]){d[p*4]=c[0];d[p*4+1]=c[1];d[p*4+2]=c[2]}}
+  cx.putImageData(id,0,0);SELPH=cv.toDataURL('image/jpeg',.9);setKind('foto');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender();
+}
+function avBack(){if(SELORIG){SELPH=SELORIG;setKind('foto');try{localStorage.setItem(SELPK(),SELPH)}catch(e){}artRender()}}
+
+let MODE='art',SELPH=null,SELKIND='foto',SELFMT=LS.get('pdv_selfmt','circ');
+const SELKK=()=>'pdv_vendkind_'+(ME&&ME.id),setKind=k=>{SELKIND=k;try{localStorage.setItem(SELKK(),k)}catch(e){}};
+const SELK=()=>'pdv_vend_'+(ME&&ME.id),SELPK=()=>'pdv_vendfoto_'+(ME&&ME.id);
+const SEL=()=>{const d=LS.get(SELK(),{});return{name:(d.name!=null?d.name:(ME&&ME.name)||'').trim(),role:(d.role!=null?d.role:'Consultor de vendas').trim(),phone:digits(d.phone||''),extra:(d.extra||'').trim()}};
+const fmtTel=v=>{let d=digits(v);if(d.length>=12&&d.startsWith('55'))d=d.slice(2);return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:d.length===10?`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`:d};
+const waNum=()=>{const d=SEL().phone||digits((CO||{}).whatsapp||'');return d?(d.length>=12&&d.startsWith('55')?d:'55'+d):''};
+const logoIcon=()=>(CO&&CO.logo_url)||'logo-icon.png';
+function selSave(){LS.set(SELK(),{name:artVal('vn'),role:artVal('vr'),phone:artVal('vp'),extra:artVal('ve')});artRender()}
+async function selFoto(inp){const f=inp.files[0];if(!f)return;try{SELPH=SELORIG=await artBlobData(f,600);setKind('foto');try{localStorage.setItem(SELPK(),SELPH);localStorage.setItem(SELOK(),SELORIG)}catch(e){}}catch(e){alert('Não consegui ler essa imagem.')}artRender()}
+function selFotoDel(){SELPH=SELORIG=null;setKind('foto');try{localStorage.removeItem(SELPK());localStorage.removeItem(SELOK())}catch(e){}artRender()}
+const artSel=()=>{const s=SEL();return s.name||s.phone?{...s,photo:SELPH,kind:SELKIND,fmt:SELFMT}:null};
+function artAvatar(cx,cy,r,sel,th,F,id){
+  const ini=(sel.name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+  let o=`<circle cx="${cx}" cy="${cy}" r="${r+Math.max(5,r*.07)}" fill="#ffffff"/>`;
+  if(sel.photo&&sel.kind&&sel.kind!=='foto')o+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${th.accent}"/><clipPath id="av${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath><image href="${sel.photo}" xlink:href="${sel.photo}" x="${cx-r}" y="${cy-r}" width="${2*r}" height="${2*r}" preserveAspectRatio="xMidYMin slice" clip-path="url(#av${id})"/>`;
+  else if(sel.photo)o+=`<clipPath id="av${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath><image href="${sel.photo}" xlink:href="${sel.photo}" x="${cx-r}" y="${cy-r}" width="${2*r}" height="${2*r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#av${id})"/>`;
+  else o+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${th.accent}"/><text x="${cx}" y="${cy+r*.36}" text-anchor="middle" font-family="${F.replace(/"/g,"'")}" font-weight="700" font-size="${Math.round(r*1.0)}" fill="${th.badgeT}">${artX(ini)}</text>`;
+  return o;
+}
+function cardSvg(o){
+  const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
+  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''};
+  const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold),x0=op.anchor==='m'?x-w/2:x;
+    E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
+  const fit=(s,maxW,size,bold,min)=>{while(artW(s,size,bold)>maxW&&size>min)size-=2;return[artFit(s,maxW,size,bold),size]};
+  E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#bg)"/>`);
+  E.push(`<circle cx="${W+40}" cy="${H*.15}" r="${H*.3}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-60" cy="${H*.9}" r="${H*.25}" fill="${th.shape}" fill-opacity=".06"/>`);
+  const logoBox=(x,y,s)=>{if(!o.showLogo||!o.logo)return;E.push(`<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x}" y="${y}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet" clip-path="url(#lcp)"/>`)};
+  const pill=(cx,y,w,h,fs)=>{E.push(`<rect x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="#25d366"/>`);T('WhatsApp',cx,y+h/2+fs*.35,fs,{bold:1,color:'#ffffff',anchor:'m'})};
+  const tel=fmtTel(sel.phone);
+  if(!V){
+    E.push(`<rect x="0" y="0" width="16" height="${H}" fill="${th.accent}"/>`);
+    if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="40" y="40" width="330" height="520" rx="28"/></clipPath><rect x="32" y="32" width="346" height="536" rx="34" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="40" y="40" width="330" height="520" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'));
+    const x0=410,mw=W-x0-60;
+    let [nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo?110:0),66,true,34);T(nm,x0,185,ns,{bold:1});
+    if(sel.role)T(artFit(sel.role,mw,34,false),x0,236,34,{color:th.sub});
+    E.push(`<rect x="${x0}" y="262" width="120" height="8" rx="4" fill="${th.accent}"/>`);
+    if(tel){pill(x0+95,298,190,52,28);const[t2,s2]=fit(tel,mw,62,true,34);T(t2,x0,424,s2,{bold:1,color:th.price})}
+    if(sel.extra)T(artFit(sel.extra,mw,30,false),x0,474,30,{color:th.text});
+    logoBox(W-92-40,36,92);
+    T(artFit(o.co.name,mw,30,true),x0,H-64,30,{bold:1});
+    if(o.co.addr)T(artFit(o.co.addr,mw,22,false),x0,H-30,22,{color:th.sub});
+  }else{
+    const mw=W-120;
+    logoBox(W/2-70,90,140);
+    T(artFit(o.co.name,mw,56,true),W/2,o.showLogo&&o.logo?300:170,56,{bold:1,anchor:'m'});
+    if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="${W/2-270}" y="330" width="540" height="770" rx="40"/></clipPath><rect x="${W/2-280}" y="320" width="560" height="790" rx="46" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-270}" y="330" width="540" height="770" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-200}" y="330" width="400" height="700" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(W/2,700,280,sel,th,F,'c'));
+    let [nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,1120,ns,{bold:1,anchor:'m'});
+    if(sel.role)T(artFit(sel.role,mw,56,false),W/2,1195,56,{anchor:'m',color:th.sub});
+    E.push(`<rect x="${W/2-80}" y="1240" width="160" height="10" rx="5" fill="${th.accent}"/>`);
+    if(tel){pill(W/2,1310,400,96,48);const[t2,s2]=fit(tel,mw,124,true,60);T(t2,W/2,1560,s2,{bold:1,anchor:'m',color:th.price})}
+    if(sel.extra)T(artFit(sel.extra,mw,52,false),W/2,1650,52,{anchor:'m'});
+    E.push(`<rect x="0" y="${H-230}" width="${W}" height="230" fill="${th.foot}"/><rect x="0" y="${H-230}" width="${W}" height="8" fill="${th.accent}"/>`);
+    if(o.co.addr)T(artFit(o.co.addr,mw,34,false),W/2,H-110,34,{anchor:'m',color:th.footT,op:.9});
+    T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:th.footT});
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
+}
+function cardOpts(){
+  const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
+  const s=SEL();
+  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo')};
+}
+function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
+const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
+function artMode(m){MODE=m;document.querySelectorAll('.mA').forEach(e=>e.classList.toggle('hid',m==='card'));document.querySelectorAll('.mC').forEach(e=>e.classList.toggle('hid',m!=='card'));
+  document.querySelectorAll('.modb').forEach(b=>b.classList.toggle('on',b.dataset.m===m));artCapDirty=false;artRender()}
+async function vArte(){
+  $('#app').innerHTML=`<div class="art"><div>
+<div class="box" style="max-width:none;margin-bottom:14px"><h2 style="margin-top:0">Meus dados</h2><p class="sm">Usados no rodapé da arte e no seu cartão de visita. Ficam salvos só neste aparelho.</p>
+<div class="f"><div><label>Meu nome</label><input id="a_vn" value="${esc(SEL().name)}" oninput="selSave()"></div><div><label>Cargo</label><input id="a_vr" value="${esc(SEL().role)}" oninput="selSave()"></div>
+<div><label>Meu WhatsApp (com DDD)</label><input id="a_vp" inputmode="tel" placeholder="(93) 99999-9999" value="${esc(fmtTel(SEL().phone))}" oninput="selSave()"></div><div><label>Linha extra (Instagram, site...)</label><input id="a_ve" value="${esc(SEL().extra)}" oninput="selSave()"></div>
+<div class="w"><label>Minha foto (sem foto, aparece um avatar com suas iniciais)</label><div class="row" style="margin:0"><input type="file" accept="image/*" style="max-width:320px" onchange="selFoto(this)"><button type="button" class="btn g s" onclick="selFotoDel()">Remover foto</button><select id="a_sfmt" style="max-width:230px" onchange="SELFMT=this.value;LS.set('pdv_selfmt',SELFMT);artRender()"><option value="circ">Foto em círculo no cartão</option><option value="ret">Foto em retrato (inteira) no cartão</option></select></div></div>
+<div class="w"><label>Criar avatar a partir da foto (efeito de desenho feito no aparelho)</label><div class="row" style="margin:0"><select id="a_avs" style="max-width:210px"><option value="cartoon">Desenho (cartoon)</option><option value="sketch">Esboço a lápis</option><option value="pop">Pop-art</option></select>
+<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="checkbox" id="a_avbg" style="width:auto"> Trocar o fundo por</label><input type="color" id="a_avc" value="#ffc21a" style="width:42px;height:34px;padding:0"><button type="button" class="btn s" onclick="avGen()">Criar avatar</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div><div class="sm">Não é desenho feito por IA: é um filtro sobre a sua foto. Troca de fundo funciona melhor com parede lisa.</div></div>
+<div class="w"><label>Caricatura: personagem com o seu rosto (escolha os traços; o desenho é feito aqui, não por IA)</label>
+<div class="car"><div id="a_carv" class="carv"></div><div class="carc">
+<div class="row" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="carSuggest()">Sugerir pele e cabelo pela minha foto</button></div>
+<label>Pele</label><div class="row" style="margin:0 0 6px">${CAR_PELE.map((h,i)=>`<button type="button" class="cksw" data-k="pele" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('pele',${i})"></button>`).join('')}</div>
+<label>Cabelo (estilo)</label><select id="a_cest" onchange="carSet('estilo',this.value)">${CAR_EST.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select>
+<label style="margin-top:6px">Cor do cabelo</label><div class="row" style="margin:0 0 6px">${CAR_CAB.map((h,i)=>`<button type="button" class="cksw" data-k="cor" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('cor',${i})"></button>`).join('')}</div>
+<label>Barba</label><select id="a_cbar" onchange="carSet('barba',this.value)"><option value="nao">Sem barba</option><option value="barba">Barba</option><option value="bigode">Bigode</option><option value="cavanhaque">Cavanhaque</option></select>
+<label style="display:flex;gap:6px;align-items:center;font-weight:400;margin-top:6px"><input type="checkbox" id="a_cocu" style="width:auto" onchange="carSet('oculos',this.checked)"> Óculos</label>
+<label style="margin-top:6px">Camisa</label><div class="row" style="margin:0 0 6px">${CAR_CAM.map((h,i)=>`<button type="button" class="cksw" data-k="camisa" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('camisa',${i})"></button>`).join('')}</div>
+<label>Cor dos olhos</label><div class="row" style="margin:0 0 6px">${CAR_OLH.map((h,i)=>`<button type="button" class="cksw" data-k="olho" data-v="${i}" title="${h}" style="background:${h}" onclick="carSet('olho',${i})"></button>`).join('')}</div>
+<label>Expressão</label><select id="a_cexpr" onchange="carSet('expr',this.value)"><option value="sorriso">Sorriso</option><option value="aberto">Sorriso aberto</option><option value="serio">Sério</option></select>
+<label style="margin-top:6px">Pose</label><select id="a_cpose" onchange="carSet('pose',this.value)"><option value="joia">Joinha</option><option value="acenar">Acenando</option><option value="normal">Braços para baixo</option></select>
+<label style="margin-top:6px">Fundo</label><select id="a_cfundo" onchange="carSet('fundo',this.value)"><option value="loja">Loja MultMix (azul com prateleiras)</option><option value="nenhum">Sem fundo</option></select>
+<label style="margin-top:6px">Tamanho no cartão</label><select id="a_ccor" onchange="carSet('corpo',this.value)"><option value="corpo">Corpo inteiro</option><option value="busto">Só rosto e ombros (em círculo)</option></select>
+<div class="row"><button type="button" class="btn s" onclick="carUse()">Usar esta caricatura no cartão</button><button type="button" class="btn g s" onclick="avBack()">Voltar à foto original</button></div></div></div></div></div></div>
+<div class="box" style="max-width:none"><div class="row" style="margin:0 0 10px"><button type="button" class="btn modb on" data-m="art" onclick="artMode('art')">Arte de oferta</button><button type="button" class="btn g modb" data-m="card" onclick="artMode('card')">Meu cartão de visita</button></div>
+<h2 style="margin-top:0" class="mA">Arte do produto</h2><p class="sm mA">Gere a imagem da oferta e publique no Status do seu WhatsApp. O WhatsApp não permite publicar sozinho: toque em <b>Enviar para o WhatsApp</b>, escolha o WhatsApp e depois <b>Meu status</b>.</p><p class="sm mC hid">Cartão com sua foto, nome e WhatsApp. Horizontal serve para imprimir (9 x 5 cm) e vertical para o Status.</p>
+<div class="f">
+<div style="display:contents" class="mA">  <div class="w"><label>Buscar produto</label><input id="a_q" placeholder="Digite parte do nome" oninput="artFilter()"></div>
+  <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
+  <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
+  <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
+  <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
+  <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
+</div>
+<div style="display:contents" class="mC hid"><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
+  <div><label>Fonte (letra)</label><select id="a_font" onchange="artRender()">${ART_FONTS.map(([n,v])=>`<option value="${esc(v)}">${n}</option>`).join('')}</select></div>
+  <div class="w"><label>Cores das letras</label><div class="row" style="margin:0;align-items:center">${ART_COLS.map(([k,n])=>`<label style="display:flex;gap:6px;align-items:center;font-weight:400"><input type="color" class="artc" id="a_c_${k}" style="width:42px;height:34px;padding:0" oninput="this.dataset.s=1;artRender()"> ${n}</label>`).join('')}<button type="button" class="btn g s" onclick="artColReset()">Voltar às cores do estilo</button></div><div class="sm">A fonte depende das letras instaladas no aparelho; a imagem baixada sai igual ao que você vê aqui.</div></div>
+  <div class="w"><label>Estilo</label><div class="row" style="margin:0">${Object.entries(ART_TH).map(([k,t])=>`<button type="button" class="btn g s thb" data-th="${k}" onclick="artSetTheme('${k}')">${t.n}</button>`).join('')}</div></div>
+<div style="display:contents" class="mA">
+  <div class="w"><label>Data especial</label><div class="row" style="margin:0 0 6px">${artDates(new Date()).slice(0,3).map(([id,d])=>`<button type="button" class="btn s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n} · ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</button>`).join('')}<span class="sm" style="align-self:center">próximas datas</span></div>
+  <div class="row" style="margin:0">${ART_OCC_ORDER.map(id=>`<button type="button" class="btn g s occb" data-oc="${id}" onclick="artSetOcc('${id}')">${ART_OCC[id].n}</button>`).join('')}<button type="button" class="btn g s" onclick="artSetOcc('')">Sem data</button></div></div>
+  <div class="w"><label>Título da data (opcional)</label><input id="a_ttl" placeholder="Ex.: BLACK FRIDAY" oninput="artRender()"></div>
+  <div class="w"><label>Subtítulo (opcional)</label><input id="a_sub" oninput="artRender()"></div>
+  <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
+  <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
+  <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
+  <div class="w"><label>Condição 1 (opcional)</label><input id="a_l1" oninput="artRender()"></div>
+  <div class="w"><label>Condição 2 (opcional)</label><input id="a_l2" oninput="artRender()"></div>
+  <div class="w"><label>Validade (opcional)</label><input id="a_valid" value="Válido enquanto durar o estoque" oninput="artRender()"></div>
+  <div><label>Foto do produto</label><select id="a_ph" onchange="artLoadPhoto()"></select></div>
+  <div><label>Usar outra foto</label><input type="file" accept="image/*" onchange="artUpload(this)"></div>
+  <div class="w sm" id="a_st" role="status"></div>
+  <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_nop" style="width:auto" onchange="artNopRefresh()"> Produto direto na arte (sem painel branco, remove o fundo claro da foto)</label>
+  <label style="margin-top:6px">Força da remoção do fundo</label><input type="range" id="a_tol" min="10" max="90" value="35" onchange="artNopRefresh()"><div class="sm">Funciona melhor com foto de fundo liso e claro. Se cortar demais o produto, diminua; se sobrar fundo, aumente.</div></div>
+  <div class="w"><label>Mascote MultMix apresentando o produto</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote: mulher</option><option value="2">Mascote: homem</option></select><div class="sm">O mascote aparece ao lado do produto, como se estivesse apresentando a oferta. Só entra na arte se você escolher aqui.</div>
+  <label style="margin-top:8px">Tamanho do mascote: <b id="a_masv">100%</b></label><input type="range" id="a_masz" min="50" max="140" value="100" oninput="$('#a_masv').textContent=this.value+'%';artRender()"><div class="sm">Até 140%, que é o limite em que a imagem continua nítida (acima disso ela borraria). Ao diminuir, o produto ganha mais espaço.</div>
+  <label style="margin-top:8px">Altura do mascote: <b id="a_masyv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artMasY(-20)">▲ Subir</button><input type="range" id="a_masy" min="-500" max="300" step="10" value="0" style="flex:1;min-width:140px" oninput="artMasYSet(this.value)"><button type="button" class="btn g s" onclick="artMasY(20)">▼ Descer</button><button type="button" class="btn g s" onclick="artMasYSet(0)">Padrão</button></div></div>
+</div>
+  <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label></div>
+<div style="display:contents" class="mA"><div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label><label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_selfoot" style="width:auto" checked onchange="artRender()"> Mostrar minha foto, nome e WhatsApp no rodapé</label></div></div>
+  <div class="w"><label>Legenda (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
+  <div class="row"><button class="btn" onclick="artShare()">Enviar pelo WhatsApp</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
+  <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
+</div>
+<div class="artp"><div id="artv"></div></div></div>`;
+  try{SELPH=localStorage.getItem(SELPK())||null;SELORIG=localStorage.getItem(SELOK())||null;SELKIND=localStorage.getItem(SELKK())||'foto'}catch(e){SELPH=SELORIG=null}
+  MODE='art';{const x=$('#a_sfmt');if(x)x.value=SELFMT}carRefreshUi();carPaint();artFilter();
+  try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
+  artRender();
+}
+
+/* ----- navegação ----- */
+function go(v){view=v;render()}
+const ICON={cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 001.6 1.6h7.7a2 2 0 002-1.5L21 8H6"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c.5-1 1.5-1.5 2.5-1.5 1.4 0 2.5.8 2.5 2s-1 1.7-2.5 2-2.5.8-2.5 2 1.1 2 2.5 2c1 0 2-.5 2.5-1.5"/>',img:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+function render(){
+  if(!ME||view==='login'){view='login';return vLogin()}
+  document.body.className='in';
+  const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,pend=mine().length+FAIL.filter(f=>f.s._by===ME.id).length;
+  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
+  ({venda:vPdv,caixa:vCx,minhas:vMin,arte:vArte}[view]||vPdv)();
+}
+
+/* ----- preço (só para mostrar; quem manda no preço é o servidor) ----- */
+const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Date(),h=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(p.promo_from&&h<String(p.promo_from).slice(0,10))return 0;if(p.promo_to&&h>String(p.promo_to).slice(0,10))return 0;return x};
+const promoAt=(v,p)=>{const x=promoPct(p);return x?+(v*(1-x/100)).toFixed(2):+v};
+const unit0=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
+const unit=(p,t)=>promoAt(+unit0(p,t),p);
+const pPhoto=p=>(p.photos&&p.photos[0])||'';
+const stockMin=()=>3,pdvNarrow=()=>matchMedia('(max-width:899px)').matches;
+const maxInst=()=>Math.max(1,Math.min(24,...cart.map(i=>(P.find(p=>p.id===i.id)||{}).max_inst||12)));
+
+function vPdv(){
+  selCli=null;const carne=!!(ME&&ME.can_carne);
+  $('#app').innerHTML=`<div class="pdv">
+  <section class="pdvl box" aria-label="Produtos"><h2>Nova venda</h2>
+   <div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
+    <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
+    <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
+   <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div>
+   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p></section>
+  <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
+   <div class="bar" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="holdSave()">Pausar venda</button><button type="button" class="btn g s" id="hbtn" onclick="holdList()">Em espera (0)</button></div>
+   <div id="cartv"></div>
+   <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option>${carne?'<option value="crediario">Carnê (crediário)</option>':''}</select></div>
+   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+   <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" min="0" value="0" oninput="cartView()"></div>
+   <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
+   <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
+   <div class="f"><div><label for="sd_v">Desconto da venda</label><div class="pwd"><select id="sd_m" onchange="sdSet()" style="max-width:90px"><option value="val">R$</option><option value="pct">%</option></select><input id="sd_v" type="number" step="0.01" min="0" value="0" inputmode="decimal" oninput="sdSet()"></div></div></div>
+   <div class="f cli"><div class="w"><label id="c_l">Cliente (opcional)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug()"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off"></div></div>
+   <div id="cs" class="cs" aria-live="polite"></div>
+   <button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></section>
+  </div>
+  <div class="pbar" id="pbar"><div><span class="sm">Carrinho</span><b id="pbt">R$ 0,00</b></div><button class="btn" onclick="document.getElementById('pdvcart').scrollIntoView({behavior:'smooth',block:'start'})">Ver carrinho</button></div>`;cartView();
+}
+/* busca de cliente para o carnê (precisa de internet; sem ela, digite os dados) */
+let cliT=null;
+function cliSug(){
+  clearTimeout(cliT);const v=$('#c_n').value.trim(),box=$('#cs');if(!box)return;
+  if(!ME.can_carne||v.length<3||navigator.onLine===false){box.innerHTML='';return}
+  cliT=setTimeout(async()=>{const{data,error}=await sb.rpc('pdv_find_customer',{q:v});if(error||!$('#cs'))return;
+    window.CLIS=data||[];$('#cs').innerHTML=window.CLIS.map((c,i)=>`<button type="button" class="btn g s" onclick="cliPick(${i})">${esc(c.name)}${c.cpf?' · '+esc(c.cpf):''}</button>`).join(' ')},300);
+}
+function cliPick(i){const c=(window.CLIS||[])[i];if(!c)return;selCli=c.id;$('#c_n').value=c.name;$('#c_c').value=c.cpf||'';$('#c_p').value=c.phone||'';$('#cs').innerHTML=''}
+
+function pdvList(){
+  const k=norm($('#p_q').value),d=digits($('#p_q').value);
+  return P.filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
+    .sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
+}
+function pdvSearch(){
+  if(!$('#p_res'))return;
+  const t=($('#s_t')||{}).value||'avista',qv=$('#p_q').value.trim();
+  if(!qv&&pdvNarrow()){$('#p_res').innerHTML='<p class="sm pgh">Digite o nome, escaneie ou use o leitor para achar um produto.</p>';return}
+  const l=pdvList();
+  $('#p_res').innerHTML=l.length?l.map(p=>{const st=+p.stock||0,pr=promoPct(p);return`<button type="button" class="pcard ${st>0?'':'off'}" onclick="pdvPick('${p.id}')">
+    ${pPhoto(p)?`<img src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=pno>sem foto</span>'">`:'<span class="pno">sem foto</span>'}
+    <span class="pt"><b class="pn2">${esc(p.name)}</b><span class="sm ${st>0?(st<=stockMin()?'low':''):'bad'}">${st>0?'Estoque '+st:'Sem estoque'}${p.category?' · '+esc(p.category):''}</span></span>
+    <span class="pp"><b>${R(unit(p,t))}</b>${pr?`<span class="sm"><s>${R(unit0(p,t))}</s> <b class="offt">-${pr}%</b></span>`:''}</span></button>`}).join('')
+    :(P.length?'<p class="sm pgh">Nenhum produto encontrado.</p>':'<p class="sm pgh">Nenhum produto carregado ainda. Conecte-se à internet para baixar a lista.</p>');
+}
+function pdvPick(id){addProd(id);const q=$('#p_q');q.value='';pdvSearch();if(!pdvNarrow())q.focus()}
+function addProd(id){
+  const q=Math.max(1,Math.round(+($('#s_q')||{}).value||1)),i=cart.find(x=>x.id===id);
+  i?i.qty+=q:cart.push({id,qty:q});
+  if($('#s_q'))$('#s_q').value=1;cartView();
+}
+/* ========= Leitor de código de barras (câmera) ========= */
+let scanStream=null,scanTimer=null,scanH5=null,scanLast={c:'',t:0};
+function scanStop(){
+  clearInterval(scanTimer);scanTimer=null;
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}
+  if(scanH5){const h=scanH5;scanH5=null;Promise.resolve().then(()=>h.stop()).then(()=>h.clear()).catch(()=>{})}
+}
+function scanOpen(cb,multi){
+  scanStop();
+  modal(`<h2>Escanear código de barras</h2><p class="sm">Aponte a câmera para o código de barras do produto.</p>
+  <div id="scanbox" style="background:#000;border-radius:12px;overflow:hidden;min-height:180px"><video id="scanv" playsinline muted style="width:100%;display:block"></video></div>
+  <p id="scanmsg" class="sm" role="status" aria-live="polite">Abrindo a câmera…</p><button class="btn g" onclick="closeM()">${multi?'Concluir':'Cancelar'}</button>`);
+  const got=code=>{
+    const n=Date.now();if(code===scanLast.c&&n-scanLast.t<2500)return;scanLast={c:code,t:n};
+    if(navigator.vibrate)navigator.vibrate(60);
+    const m=cb(code);
+    if(multi){const e=$('#scanmsg');if(e)e.textContent=m||'Lido: '+code}else closeM();
+  };
+  startScan(got);
+}
+const loadScript=u=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('script'));document.head.appendChild(e)});
+async function startScan(got){
+  const msg=t=>{const e=$('#scanmsg');if(e)e.textContent=t};
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return msg('Este navegador não permite usar a câmera. Digite o código no campo.');
+  try{
+    if('BarcodeDetector' in window){
+      const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+      const v=$('#scanv');if(!v){scanStop();return}
+      v.srcObject=scanStream;await v.play();msg('Procurando o código…');
+      scanTimer=setInterval(async()=>{try{const r=await det.detect(v);if(r.length)got(r[0].rawValue)}catch(e){}},250);
+      return;
+    }
+    // Sem leitor nativo (ex.: iPhone/Safari): usa a biblioteca html5-qrcode.
+    if(!window.Html5Qrcode)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js');
+    const F=window.Html5QrcodeSupportedFormats;
+    $('#scanbox').innerHTML='';
+    scanH5=new Html5Qrcode('scanbox',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128],verbose:false});
+    await scanH5.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:140}},got,()=>{});
+    msg('Procurando o código…');
+  }catch(e){
+    scanStop();
+    msg(e&&e.name==='NotAllowedError'?'Permita o uso da câmera no navegador para escanear.':e&&e.name==='NotFoundError'?'Nenhuma câmera encontrada neste aparelho.':'Não foi possível abrir a câmera. Digite o código no campo.');
+  }
+}
+let _au=null;
+function pdvBeep(ok){try{_au=_au||new(window.AudioContext||window.webkitAudioContext)();const o=_au.createOscillator(),g=_au.createGain();o.frequency.value=ok?1000:220;o.type=ok?'sine':'square';g.gain.value=.08;o.connect(g);g.connect(_au.destination);o.start();o.stop(_au.currentTime+(ok?.07:.25))}catch(e){}}
+function pdvMsg(t,ok){const e=$('#p_msg');if(e){e.textContent=t;e.className='sm pmsg '+(ok?'ok':'bad')}pdvBeep(ok)}
+function pdvCode(raw){
+  let v=String(raw||'').trim(),q=1;const m=v.match(/^(\d{1,3})\s*[*xX]\s*(.+)$/);if(m){q=+m[1];v=m[2].trim()}
+  const d=digits(v),ex=d.length>=6&&P.find(p=>p.ean===d);
+  if(!ex){const k=norm(v),l=k?P.filter(p=>norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)):[];
+    if(l.length===1&&v.length>=2)return pdvAdd(l[0],q);
+    if(d.length>=6){const t='Código '+d+' não cadastrado. Chame o administrador.';pdvMsg(t,false);return t}
+    pdvMsg(l.length?'Vários produtos encontrados. Toque no que deseja ou digite mais letras.':'Nenhum produto encontrado.',false);return null}
+  return pdvAdd(ex,q);
+}
+function pdvAdd(p,q){
+  const sq=$('#s_q');if(sq)sq.value=q;addProd(p.id);
+  const st=+p.stock||0,i=cart.find(x=>x.id===p.id),over=i&&i.qty>st;
+  const t='Adicionado: '+(q>1?q+' × ':'')+p.name+(over?' · atenção: estoque '+st:'');pdvMsg(t,!over);return t;
+}
+function pdvScanned(code){return pdvCode(code)||('Código '+digits(code)+' não cadastrado.')}
+function pdvEnter(){const r=pdvCode($('#p_q').value);if(r){$('#p_q').value='';pdvSearch()}$('#p_q').focus()}
+let _kb='',_kt=0;
+document.addEventListener('keydown',e=>{
+  if(view!=='venda'||!$('#p_q')||$('#modal').classList.contains('open'))return;
+  const k=e.key,tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(k==='F2'){e.preventDefault();$('#p_q').focus();$('#p_q').select()}
+  else if(k==='F4'){e.preventDefault();finish()}
+  else if(k==='F6'){e.preventDefault();$('#s_q').focus();$('#s_q').select()}
+  else if(k==='F8'){e.preventDefault();if(cart.length&&confirm('Limpar o carrinho?')){cart=[];cartView()}}
+  else if(!/INPUT|SELECT|TEXTAREA/.test(tag)&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    const n=Date.now();if(n-_kt>120)_kb='';_kt=n;
+    if(k==='Enter'){if(_kb.length>=6){e.preventDefault();pdvCode(_kb)}_kb=''}
+    else if(k.length===1&&/[0-9*xX]/.test(k))_kb+=k;else _kb='';
+  }
+});
+function cartQty(ix,d){const i=cart[ix];if(!i)return;i.qty+=d;if(i.qty<1)cart.splice(ix,1);cartView()}
+/* ----- cálculo do carrinho: espelha o servidor (desconto por item + desconto da venda rateado, preço unitário em centavos) ----- */
+const r2=x=>Math.round((+x+1e-9)*100)/100;
+let saleDisc={mode:'val',val:0};
+function cartCalc(t){
+  t=t||($('#s_t')&&$('#s_t').value)||'avista';
+  const L=cart.map(i=>{const p=P.find(x=>x.id===i.id)||{},u=unit(p,t),q=i.qty,ld=Math.min(Math.max(+i.disc||0,0),Math.max(u*q-0.01*q,0));return{i,p,q,u,net:u*q-ld,ld}});
+  const gross=L.reduce((a,l)=>a+l.u*l.q,0),sumnet=L.reduce((a,l)=>a+l.net,0);
+  let sd=saleDisc.mode==='pct'?sumnet*(+saleDisc.val||0)/100:(+saleDisc.val||0);
+  sd=r2(Math.min(Math.max(sd,0),Math.max(sumnet-0.01*L.length,0)));let rest=sd,tot=0;
+  L.forEach((l,k)=>{const share=k===L.length-1?rest:r2(sd*l.net/(sumnet||1));rest=r2(rest-share);l.un=Math.max(r2((l.net-share)/l.q),0.01);l.line=r2(l.un*l.q);tot+=l.line});
+  tot=r2(tot);return{L,gross:r2(gross),total:tot,disc:r2(gross-tot),sd}
+}
+const total=()=>cartCalc().total;
+function sdSet(){saleDisc={mode:$('#sd_m').value,val:+$('#sd_v').value||0};cartView()}
+function itemDisc(ix){
+  const i=cart[ix];if(!i)return;
+  modal(`<h2>Desconto no item</h2><p class="sm">${esc((P.find(p=>p.id===i.id)||{}).name||'')}</p>
+  <div class="f"><div><label>Tipo</label><select id="id_m"><option value="val">R$ (valor)</option><option value="pct">% (percentual)</option></select></div><div><label>Desconto</label><input id="id_v" type="number" step="0.01" min="0" value="${i.disc||''}" inputmode="decimal"></div></div>
+  <p class="sm">O desconto vale para todas as unidades deste item. Acima do limite livre, o administrador precisa autorizar ao finalizar.</p>
+  <div class="bar"><button class="btn" onclick="itemDiscOk(${ix})">Aplicar</button><button class="btn g" onclick="itemDiscClr(${ix})">Remover desconto</button></div>`);
+  setTimeout(()=>$('#id_v')&&$('#id_v').focus(),50);
+}
+function itemDiscOk(ix){
+  const i=cart[ix],t=$('#s_t').value,p=P.find(x=>x.id===i.id)||{},v=+$('#id_v').value||0,m=$('#id_m').value,base=unit(p,t)*i.qty;
+  i.disc=r2(m==='pct'?base*v/100:v);if(i.disc>=base)return alert('O desconto precisa ser menor que o valor do item.');
+  if(!(i.disc>0))delete i.disc;closeM();cartView();
+}
+function itemDiscClr(ix){delete cart[ix].disc;closeM();cartView()}
+function cartView(){
+  pdvSearch();
+  const t=$('#s_t').value,cc=cartCalc(t),tot=cc.total,e=+$('#s_e').value||0,n=+$('#s_n').value||1,un=cart.reduce((a,i)=>a+i.qty,0);
+  document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
+  $('#c_l').textContent=t==='crediario'?'Cliente do carnê (busque por nome, CPF ou telefone)':'Cliente (opcional)';
+  if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
+  if(t==='crediario'&&$('#s_n'))$('#s_n').max=maxInst();
+  const hb=$('#hbtn');if(hb)hb.textContent='Em espera ('+holdGet().length+')';
+  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cc.L.map((l,ix)=>{const p=l.p,i=l.i;if(!p.id)return'';const pr=promoPct(p);return`<div class="citem">
+    ${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=cthumb>·</span>'">`:'<span class="cthumb">·</span>'}
+    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(l.un)} un.${l.un<l.u-0.004?` <s>${R(l.u)}</s>`:pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''} · <button type="button" class="lk" onclick="itemDisc(${ix})">${i.disc?'desc. −'+R(i.disc):'desconto'}</button></span></div>
+    <div class="stp"><button type="button" aria-label="Diminuir" onclick="cartQty(${ix},-1)">−</button><span>${i.qty}</span><button type="button" aria-label="Aumentar" onclick="cartQty(${ix},1)">+</button></div>
+    <b class="lt">${R(l.line)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
+   :'<p class="cempty">Carrinho vazio.<br><span class="sm">Busque, toque num produto ou escaneie o código de barras.</span></p>')
+   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div>${cc.disc>0.004?`<span class="sm">Subtotal ${R(cc.gross)} · desconto −${R(cc.disc)}</span>`:''}<span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
+  const pb=$('#pbt');if(pb)pb.textContent=R(tot)+(un?` · ${un} ${un===1?'item':'itens'}`:'');
+  const bf=$('#btnfin');if(bf)bf.textContent=tot?'Finalizar venda · '+R(tot):'Finalizar venda';
+}
+
+/* ----- venda em espera (fica só neste aparelho, por vendedor) ----- */
+const holdKey=()=>'pdv_hold_'+(ME&&ME.id);
+const holdGet=()=>LS.get(holdKey(),[])||[];
+function holdSave(auto){
+  if(!cart.length)return auto?0:alert('O carrinho está vazio.');
+  const h=holdGet(),nm=($('#c_n')&&$('#c_n').value.trim())||'';
+  h.push({id:uid(),at:now(),label:nm||'Venda '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),cart:JSON.parse(JSON.stringify(cart)),sd:{...saleDisc},
+    f:{t:$('#s_t').value,m:$('#s_m').value,e:$('#s_e').value,n:$('#s_n').value,d:$('#s_d').value,cn:$('#c_n').value,cc:$('#c_c').value,cp:$('#c_p').value},cli:selCli});
+  LS.set(holdKey(),h);cart=[];saleDisc={mode:'val',val:0};if($('#sd_v')){$('#sd_v').value=0;$('#sd_m').value='val'}
+  ['c_n','c_c','c_p'].forEach(k=>{if($('#'+k))$('#'+k).value=''});selCli=null;
+  cartView();if(!auto)pdvMsg('Venda colocada em espera. Atenda o próximo cliente.',true);return 1;
+}
+function holdList(){
+  const h=holdGet();
+  modal(`<h2>Vendas em espera</h2>${h.length?h.map(x=>`<div class="citem" style="grid-template-columns:minmax(0,1fr) auto auto"><div class="cn"><b>${esc(x.label)}</b><span class="sm">${x.cart.reduce((a,i)=>a+i.qty,0)} itens · ${new Date(x.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>
+   <button class="btn s" onclick="holdResume('${x.id}')">Retomar</button><button class="btn g s" onclick="holdDel('${x.id}')">Descartar</button></div>`).join(''):'<p class="sm">Nenhuma venda em espera.</p>'}
+  <p class="sm">As vendas em espera ficam guardadas neste aparelho. Os preços são conferidos de novo ao finalizar.</p>`);
+}
+function holdResume(id){
+  const h=holdGet(),x=h.find(v=>v.id===id);if(!x)return;
+  if(cart.length)holdSave(true);
+  const rest=holdGet().filter(v=>v.id!==id);LS.set(holdKey(),rest);
+  cart=x.cart;saleDisc=x.sd||{mode:'val',val:0};
+  const f=x.f||{};$('#s_t').value=f.t||'avista';$('#s_m').value=f.m||'Dinheiro';$('#s_e').value=f.e||0;$('#s_n').value=f.n||6;if(f.d)$('#s_d').value=f.d;
+  $('#c_n').value=f.cn||'';$('#c_c').value=f.cc||'';$('#c_p').value=f.cp||'';selCli=x.cli||null;
+  $('#sd_m').value=saleDisc.mode;$('#sd_v').value=saleDisc.val||0;closeM();cartView();
+}
+function holdDel(id){if(!confirm('Descartar esta venda em espera?'))return;LS.set(holdKey(),holdGet().filter(v=>v.id!==id));holdList();cartView()}
+
+/* ----- autorização do administrador (e-mail e senha dele, numa sessão à parte; nada fica gravado) ----- */
+function askAdmin(valor){
+  return new Promise(res=>{
+    window.__askRes=res;
+    modal(`<h2>Autorização do administrador</h2><p>Desconto de <b>${R(valor)}</b> para <b>${esc(ME.name)}</b>.</p>
+    <form onsubmit="askAdminGo(event,${valor})"><label for="ad_e">E-mail do administrador</label><input id="ad_e" type="email" autocomplete="off" required>
+    <label for="ad_p">Senha do administrador</label><input id="ad_p" type="password" autocomplete="off" required>
+    <div id="ad_2" style="display:none"><label for="ad_c">Código do autenticador (2 etapas)</label><input id="ad_c" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+    <p id="ad_m" class="bad" role="alert" style="min-height:1.3em"></p><div class="bar"><button class="btn" id="ad_b">Autorizar</button><button type="button" class="btn g" onclick="askAdminX()">Cancelar</button></div></form>`);
+    setTimeout(()=>$('#ad_e')&&$('#ad_e').focus(),50);
+  });
+}
+function askAdminX(){closeM();const r=window.__askRes;window.__askRes=null;r&&r(null)}
+let adC=null;
+async function askAdminGo(ev,valor){
+  ev.preventDefault();const m=$('#ad_m'),b=$('#ad_b');m.textContent='';b.disabled=true;
+  try{
+    if(!adC){adC=supabase.createClient(CFG.URL,CFG.KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'mm-pdv-auth'}});
+      const{error}=await adC.auth.signInWithPassword({email:$('#ad_e').value.trim(),password:$('#ad_p').value});if(error){adC=null;throw new Error('E-mail ou senha do administrador incorretos.')}}
+    const{data:a}=await adC.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(a&&a.nextLevel==='aal2'&&a.currentLevel!=='aal2'){
+      const code=$('#ad_c').value.trim();$('#ad_2').style.display='';
+      if(!code){b.disabled=false;m.textContent='Digite o código do autenticador do administrador.';return}
+      const{data:f}=await adC.auth.mfa.listFactors(),t=(f.totp||[]).find(x=>x.status==='verified');
+      const{error}=await adC.auth.mfa.challengeAndVerify({factorId:t.id,code});if(error)throw new Error('Código incorreto.');
+    }
+    const{data,error}=await adC.rpc('pdv_autorizar_desconto',{p_seller:ME.id,p_value:valor});
+    if(error)throw new Error(/Somente o administrador/.test(error.message)?'Este usuário não é administrador.':error.message);
+    try{await adC.auth.signOut()}catch(e){}adC=null;closeM();const r=window.__askRes;window.__askRes=null;r&&r(data);
+  }catch(e){try{if(adC){await adC.auth.signOut()}}catch(x){}adC=null;m.textContent=e.message||'Não foi possível autorizar.';b.disabled=false}
+}
+
+let finishing=false;
+async function finish(){
+  if(finishing)return;
+  if(!cart.length)return alert('Adicione ao menos um produto.');
+  const t=s_t.value,cc=cartCalc(t),tot=cc.total,e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1,nm=c_n.value.trim(),cfg=ME.cfg||{};
+  if(t==='crediario'){
+    if(nm.length<2)return alert('Carnê exige o nome do cliente.');
+    if(e<0||e>=tot)return alert('A entrada precisa ser menor que o total.');
+    if(!(n>=1&&n<=maxInst()))return alert('Número de parcelas inválido. Máximo para estes itens: '+maxInst()+'.');
+    if(!s_d.value)return alert('Informe o 1º vencimento.');
+  }
+  if(cfg.exige_caixa&&ME.role!=='admin'&&!(CX&&CX.aberto))return alert('Abra o caixa (aba Caixa) antes de vender.');
+  const low=cart.filter(i=>(+(P.find(p=>p.id===i.id)||{}).stock||0)<i.qty).map(i=>P.find(p=>p.id===i.id).name);
+  if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
+  finishing=true;
+  try{
+    const free=+cfg.desc_livre_pct||0;let authId=null;
+    if(ME.role!=='admin'&&cc.disc>0.004&&cc.gross>0&&cc.disc/cc.gross*100>free+0.0001){
+      if(navigator.onLine===false)return alert('Desconto acima de '+free+'% precisa da autorização do administrador e de internet. Reduza o desconto ou conecte-se.');
+      authId=await askAdmin(cc.disc);if(!authId)return;
+    }
+    const sale={id:uid(),_by:ME.id,pay_type:t,method:s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
+      customer:nm?{id:selCli||null,name:nm,cpf:c_c.value.trim(),phone:c_p.value.trim()}:null,items:cart.map(i=>({id:i.id,qty:i.qty,disc_val:+i.disc||0}))};
+    const rec={...sale,seller:ME.name,total:tot,disc:cc.disc,lines:cc.L.map(l=>({name:l.p.name,qty:l.q,price:l.un}))};
+    Q.push(sale);saveQ();
+    cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
+    cart=[];saleDisc={mode:'val',val:0};window.lastRec=rec;
+    modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':s_m.value)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
+    <div class="f"><div class="w"><label>WhatsApp do cliente (para enviar o recibo)</label><input id="wa_n" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((rec.customer&&rec.customer.phone)||'')}"></div></div>
+    <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="reciboWa()">Enviar recibo no WhatsApp</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
+    sync();
+  }finally{finishing=false}
+}
+function modal(h){$('#modal').innerHTML=`<div class="box"><button class="x" aria-label="Fechar" onclick="closeM()">×</button>${h}</div>`;$('#modal').classList.add('open')}
+function closeM(){scanStop();$('#modal').classList.remove('open')}
+/* ----- recibo da venda pelo WhatsApp (texto; não vale como nota fiscal) ----- */
+function reciboTxt(r){
+  const c=CO||{},dt=new Date(r.created_at),R2=v=>R(v);
+  const pag=r.pay_type==='crediario'?`Carnê ${r.n_inst}x de ${R2(Math.round((r.total-(+r.entry||0))/r.n_inst*100)/100)}${+r.entry>0?' (entrada '+R2(r.entry)+')':''}${r.first_due?'\n1º vencimento: '+r.first_due.split('-').reverse().join('/'):''}`:r.method;
+  return`*${c.trade_name||c.legal_name||'MultMix'}*\nRecibo da venda ${String(r.id).slice(0,8).toUpperCase()}\n${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}\n\n`+
+    r.lines.map(l=>`${l.qty}x ${l.name} - ${R2(l.qty*l.price)}`).join('\n')+(r.disc>0.004?`\nDesconto: -${R2(r.disc)}`:'')+`\n\n*Total: ${R2(r.total)}*\nPagamento: ${pag}\n\nObrigado pela preferência!\n_Recibo para controle, sem valor fiscal. A nota fiscal é emitida separadamente._`;
+}
+function reciboWa(){
+  const r=window.lastRec;if(!r)return;
+  let d=String(($('#wa_n')&&$('#wa_n').value)||'').replace(/\D/g,'');
+  if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');
+  if(d.length<=11)d='55'+d;
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(reciboTxt(r)),'_blank','noopener');
+}
+/* ----- cupom não fiscal (só controle, não vale como nota) ----- */
+function cupomPrint(){
+  const r=window.lastRec;if(!r)return;const c=CO||{},dt=new Date(r.created_at);
+  const a=c.street?`${c.street}${c.number?', '+c.number:''}${c.district?' - '+c.district:''}, ${c.city||''}${c.uf?'/'+c.uf:''}`:'';
+  const html=`<!doctype html><meta charset="utf-8"><title>Cupom</title><style>@page{margin:3mm}body{font:12px/1.35 monospace;width:72mm;margin:0;color:#000}h1{font-size:14px;text-align:center;margin:0}.c{text-align:center}hr{border:0;border-top:1px dashed #000;margin:6px 0}table{width:100%;border-collapse:collapse}td:last-child{text-align:right}.t{font-size:15px;font-weight:bold}</style>
+  <h1>${esc(c.trade_name||c.legal_name||'MultMix')}</h1><div class="c">${esc([c.cnpj&&'CNPJ '+c.cnpj,a,c.phone].filter(Boolean).join(' · '))}</div><hr><div class="c"><b>CUPOM NÃO FISCAL</b><br>Apenas para controle</div><hr>
+  <div>Venda ${esc(String(r.id).slice(0,8).toUpperCase())}<br>${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<br>Vendedor: ${esc(r.seller)}${r.customer?'<br>Cliente: '+esc(r.customer.name):''}</div><hr>
+  <table>${r.lines.map(l=>`<tr><td colspan="2">${esc(l.name)}</td></tr><tr><td>${l.qty} x ${R(l.price)}</td><td>${R(l.qty*l.price)}</td></tr>`).join('')}</table><hr>
+  ${r.disc>0.004?`<table><tr><td>Desconto</td><td>-${R(r.disc)}</td></tr></table>`:''}<table><tr class="t"><td>TOTAL</td><td>${R(r.total)}</td></tr><tr><td>Pagamento</td><td>${esc(r.pay_type==='crediario'?'Carnê '+r.n_inst+'x':r.method)}</td></tr>${r.pay_type==='crediario'?`<tr><td>Entrada</td><td>${R(r.entry)}</td></tr>`:''}</table><hr><div class="c">Obrigado pela preferência!</div>`;
+  printHtml(html);
+}
+function printHtml(html){
+  if(window.mmDesk){mmDesk.print(html).then(r=>{if(!r.ok)alert('Não imprimiu: '+(r.error||'verifique a impressora em MultMix > Impressora do cupom'))});return}
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão.')}setTimeout(()=>fr.remove(),60000)},300)};
+}
+
+/* ----- minhas vendas e comissão ----- */
+function vMin(){
+  const mo=new Date().toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),ok=MY.filter(s=>!s.canceled_at),tot=ok.reduce((a,s)=>a+ +s.total,0),pend=mine(),fl=FAIL.filter(f=>f.s._by===ME.id);
+  $('#app').innerHTML=`<div class="prices"><div class="pr"><span>Minha comissão (${esc(mo)})</span><b>${R(COM)}</b></div><div class="pr"><span>Vendas no mês</span><b>${ok.length}</b></div><div class="pr"><span>Total vendido</span><b>${R(tot)}</b></div>
+   ${ME.commission_pct>0?`<div class="pr"><span>Minha taxa</span><b>${+ME.commission_pct}%</b></div>`:''}</div>
+  <p class="sm">A comissão é calculada pelo servidor. Vendas feitas sem internet só entram aqui depois de enviadas.</p>
+  ${pend.length?`<div class="box"><h3>Aguardando envio (${pend.length})</h3><p class="sm">Ficam guardadas neste aparelho e vão sozinhas quando houver internet.</p><button class="btn g s" onclick="sync()">Tentar enviar agora</button></div>`:''}
+  ${fl.length?`<div class="box"><h3 class="bad">Vendas recusadas pelo servidor (${fl.length})</h3>${fl.map(f=>`<p class="sm">${fmtD(f.s.created_at)} · ${esc(f.msg)}${f.rep?' · administrador avisado':''} <button class="btn g s" onclick="failDel('${f.s.id}')">Descartar</button></p>`).join('')}<p class="sm">Fale com o administrador antes de descartar.</p></div>`:''}
+  <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Itens</th><th style="text-align:right">Total</th><th></th></tr>
+  ${MY.length?MY.map(s=>`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtD(ld(s.created_at))}</td><td>${esc(s.customer||'—')}</td><td>${esc(s.pay_type==='crediario'?'Carnê':(s.method||'—'))}${s.canceled_at?' <span class="tag">cancelada</span>':''}</td><td>${(s.items||[]).reduce((a,i)=>a+ +i.qty,0)}</td><td style="text-align:right">${R(s.total)}${+s.discount>0?`<div class="sm">desconto ${R(s.discount)}</div>`:''}${+s.devolvido>0?`<div class="sm bad">devolvido ${R(s.devolvido)}</div>`:''}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="devOpen('${s.id}')">Devolver</button>`}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:14px">Nenhuma venda enviada neste mês.</td></tr>'}</table></div>`;
+}
+function failDel(id){if(!confirm('Descartar esta venda recusada? Ela não será registrada.'))return;const i=FAIL.findIndex(f=>f.s.id===id);if(i>=0)FAIL.splice(i,1);saveQ();render()}
+
+/* ----- caixa do vendedor (abrir, sangria, suprimento, fechar com conferência) ----- */
+let CX=LS.get('pdv_cx',null);
+async function loadCx(){const{data,error}=await sb.rpc('pdv_caixa_estado');if(!error&&data){CX=data;LS.set('pdv_cx',CX)}return !error}
+const mtxt=o=>Object.entries(o||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td style="text-align:right">${R(v)}</td></tr>`).join('')||'<tr><td colspan="2" class="sm">Nenhuma venda ainda.</td></tr>';
+async function vCx(){
+  $('#app').innerHTML='<p class="sm">Carregando o caixa…</p>';
+  if(navigator.onLine!==false)await loadCx();
+  paintCx();
+}
+function paintCx(){
+  const off=navigator.onLine===false,c=CX&&CX.aberto?CX:null;
+  if(!c){
+    $('#app').innerHTML=`<div class="box" style="max-width:520px"><h2>Caixa fechado</h2><p class="sm">Conte o dinheiro que está na gaveta e informe o valor inicial (troco). ${(ME.cfg||{}).exige_caixa?'<b>Para vender, o caixa precisa estar aberto.</b>':''}</p>
+    ${off?'<p class="bad">Sem internet: não dá para abrir o caixa agora.</p>':''}
+    <label for="cx_o">Valor inicial na gaveta (R$)</label><input id="cx_o" type="number" step="0.01" min="0" value="0" inputmode="decimal">
+    <div class="bar"><button class="btn" onclick="cxAbrir()" ${off?'disabled':''}>Abrir caixa</button></div></div>`;return;
+  }
+  const k=c.calc||{},rec=k.recebido||{},tot=Object.values(rec).reduce((a,b)=>a+ +b,0);
+  $('#app').innerHTML=`<div class="prices"><div class="pr"><span>Aberto desde</span><b>${new Date(c.aberto_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>
+   <div class="pr"><span>Valor inicial</span><b>${R(k.abertura)}</b></div><div class="pr"><span>Vendido neste caixa</span><b>${R(tot)}</b></div><div class="pr"><span>Retiradas (sangria)</span><b>${R(k.sangrias)}</b></div></div>
+  ${off?'<p class="bad">Sem internet: os números abaixo podem estar desatualizados e o caixa não pode ser fechado agora.</p>':''}
+  <div class="box"><h3>Recebido por forma de pagamento</h3><table>${mtxt(rec)}</table>
+   ${Object.keys(k.estornos||{}).length||Object.keys(k.devolucoes||{}).length?`<p class="sm">Devoluções e estornos já descontados: ${R(Object.values(k.estornos||{}).reduce((a,b)=>a+ +b,0)+Object.values(k.devolucoes||{}).reduce((a,b)=>a+ +b,0))}</p>`:''}
+   <p class="sm">Vendas feitas sem internet só aparecem aqui depois de enviadas.</p></div>
+  <div class="box"><h3>Retiradas e reforços</h3>${(c.movimentos||[]).length?`<table>${c.movimentos.map(m=>`<tr><td>${new Date(m.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${m.kind==='sangria'?'Sangria':'Suprimento'}</td><td>${esc(m.reason||'')}</td><td style="text-align:right">${m.kind==='sangria'?'−':'+'}${R(m.amount)}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum movimento.</p>'}
+   <div class="bar"><button class="btn g s" onclick="cxMov('sangria')" ${off?'disabled':''}>Sangria (retirar dinheiro)</button><button class="btn g s" onclick="cxMov('suprimento')" ${off?'disabled':''}>Suprimento (colocar troco)</button></div></div>
+  <div class="box"><h3>Fechar o caixa</h3><p class="sm">Conte o dinheiro da gaveta e digite o total. O sistema compara com o que deveria ter e registra a diferença para o administrador.</p>
+   <div class="f"><div><label for="cx_c">Dinheiro contado na gaveta (R$)</label><input id="cx_c" type="number" step="0.01" min="0" inputmode="decimal"></div><div class="w"><label for="cx_n">Observação (opcional)</label><input id="cx_n"></div></div>
+   <div class="bar"><button class="btn" onclick="cxFechar()" ${off?'disabled':''}>Fechar caixa</button></div></div>`;
+}
+async function cxAbrir(){
+  const v=+$('#cx_o').value;if(!(v>=0))return alert('Informe o valor inicial (pode ser zero).');
+  const{error}=await sb.rpc('pdv_caixa_abrir',{p_opening:v});if(error)return alert(error.message);
+  await loadCx();render();
+}
+function cxMov(kind){
+  modal(`<h2>${kind==='sangria'?'Sangria':'Suprimento'}</h2><p class="sm">${kind==='sangria'?'Retirada de dinheiro da gaveta (ex.: levar ao banco).':'Dinheiro colocado na gaveta (ex.: troco).'}</p>
+  <label for="mv_v">Valor (R$)</label><input id="mv_v" type="number" step="0.01" min="0.01" inputmode="decimal"><label for="mv_r">Motivo</label><input id="mv_r" placeholder="${kind==='sangria'?'Ex.: depósito no banco':'Ex.: troco'}">
+  <div class="bar"><button class="btn" onclick="cxMovGo('${kind}')">Registrar</button></div>`);
+}
+async function cxMovGo(kind){
+  const{error}=await sb.rpc('pdv_caixa_mov',{p_kind:kind,p_amount:+$('#mv_v').value,p_reason:$('#mv_r').value});
+  if(error)return alert(error.message);closeM();await loadCx();paintCx();
+}
+async function cxFechar(){
+  const v=$('#cx_c').value;if(v==='')return alert('Conte o dinheiro da gaveta e informe o valor.');
+  if(mine().length&&!confirm('Há '+mine().length+' venda(s) ainda não enviada(s). Elas não entram neste fechamento. Fechar assim mesmo?'))return;
+  if(!confirm('Fechar o caixa com R$ '+(+v).toFixed(2).replace('.',',')+' contados na gaveta?'))return;
+  const{data,error}=await sb.rpc('pdv_caixa_fechar',{p_counted:+v,p_note:$('#cx_n').value});if(error)return alert(error.message);
+  const d=+data.diferenca;window.lastFech={...data,seller:ME.name,at:now()};CX={aberto:false};LS.set('pdv_cx',CX);
+  modal(`<h2>Caixa fechado</h2><table><tr><td>Esperado na gaveta</td><td style="text-align:right">${R(data.esperado)}</td></tr><tr><td>Contado</td><td style="text-align:right">${R(data.contado)}</td></tr>
+  <tr><td><b>Diferença</b></td><td style="text-align:right"><b class="${Math.abs(d)<0.01?'ok':'bad'}">${Math.abs(d)<0.01?'Confere':(d<0?'Falta ':'Sobra ')+R(Math.abs(d))}</b></td></tr></table>
+  <p class="sm">${Math.abs(d)<0.01?'':'O administrador foi avisado da diferença.'}</p><div class="bar"><button class="btn" onclick="fechPrint()">Imprimir resumo</button><button class="btn g" onclick="closeM();render()">OK</button></div>`);
+}
+function fechPrint(){
+  const f=window.lastFech;if(!f)return;const c=f.calc||{},rec=c.recebido||{},co=CO||{};
+  printHtml(`<!doctype html><meta charset="utf-8"><title>Fechamento</title><style>@page{margin:3mm}body{font:12px/1.35 monospace;width:72mm;margin:0;color:#000}h1{font-size:14px;text-align:center;margin:0}.c{text-align:center}hr{border:0;border-top:1px dashed #000;margin:6px 0}table{width:100%;border-collapse:collapse}td:last-child{text-align:right}</style>
+  <h1>${esc(co.trade_name||co.legal_name||'MultMix')}</h1><div class="c"><b>FECHAMENTO DE CAIXA</b><br>${new Date(f.at).toLocaleString('pt-BR')}<br>Vendedor: ${esc(f.seller)}</div><hr>
+  <table><tr><td>Valor inicial</td><td>${R(c.abertura)}</td></tr>${Object.entries(rec).map(([k,v])=>`<tr><td>Vendas ${esc(k)}</td><td>${R(v)}</td></tr>`).join('')}
+  <tr><td>Suprimentos</td><td>${R(c.suprimentos)}</td></tr><tr><td>Sangrias</td><td>${R(c.sangrias)}</td></tr></table><hr>
+  <table><tr><td>Esperado (dinheiro)</td><td>${R(f.esperado)}</td></tr><tr><td>Contado</td><td>${R(f.contado)}</td></tr><tr><td><b>Diferença</b></td><td><b>${R(f.diferenca)}</b></td></tr></table><hr><div class="c">Assinatura: ____________________</div>`);
+}
+/* ----- troca e devolução ----- */
+function devOpen(id){
+  const s=MY.find(x=>x.id===id);if(!s)return;const cfg=ME.cfg||{},dias=+cfg.devolucao_dias||7;
+  if(s.pay_type==='crediario'&&ME.role!=='admin')return alert('Venda no carnê: procure o administrador para fazer a devolução.');
+  if(ME.role!=='admin'&&(Date.now()-new Date(s.created_at))/864e5>dias)return alert('Prazo de devolução vencido ('+dias+' dias). Procure o administrador.');
+  if(navigator.onLine===false)return alert('A devolução precisa de internet. Conecte-se e tente de novo.');
+  window.devSale=s;
+  modal(`<h2>Troca / devolução</h2><p class="sm">Venda de ${fmtD(ld(s.created_at))} · ${R(s.total)}${s.devolvido>0?' · já devolvido '+R(s.devolvido):''}</p>
+  ${s.fiscal_status==='emitida'?'<p class="bad">Atenção: já existe nota fiscal emitida. O administrador será avisado para tratar a nota.</p>':''}
+  <div id="dv_l">${(s.items||[]).map((i,k)=>`<div class="citem" style="grid-template-columns:minmax(0,1fr) 90px"><div class="cn"><b>${esc(i.name)}</b><span class="sm">${i.qty} × ${R(i.price)}</span></div><input type="number" min="0" max="${i.qty}" value="0" id="dv_${k}" inputmode="numeric" aria-label="Quantidade devolvida"></div>`).join('')}</div>
+  <div class="f"><div class="w"><label for="dv_r">Motivo</label><input id="dv_r" placeholder="Ex.: defeito, tamanho errado"></div>
+  <div><label for="dv_m">Devolver o valor em</label><select id="dv_m"><option>Dinheiro</option><option>Pix</option><option>Cartão</option><option value="Troca">Troca (sem devolver dinheiro)</option></select></div></div>
+  <p class="sm">Na troca, o produto volta ao estoque e você registra a nova venda normalmente.</p>
+  <div class="bar"><button class="btn" onclick="devSend()">Registrar</button></div>`);
+}
+async function devSend(){
+  const s=window.devSale,items=[];(s.items||[]).forEach((i,k)=>{const q=Math.round(+$('#dv_'+k).value||0);if(q>0)items.push({id:i.id,qty:Math.min(q,i.qty)})});
+  if(!items.length)return alert('Informe a quantidade de pelo menos um item.');
+  const m=$('#dv_m').value;
+  const{data,error}=await sb.rpc('pdv_devolucao',{p:{id:uid(),sale_id:s.id,items,reason:$('#dv_r').value,refund_method:m}});
+  if(error)return alert(error.message);
+  closeM();alert(m==='Troca'?'Troca registrada: o produto voltou ao estoque. Registre a nova venda.':'Devolução registrada: '+R(data.valor)+(data.venda_cancelada?' (venda cancelada)':'')+'.'+(data.fiscal_pendente?'\nO administrador foi avisado para tratar a nota fiscal.':''));
+  await sync();await loadMine();if(m==='Troca')go('venda');else render();
+}
+
+/* ----- início ----- */
+(async()=>{
+  try{const{data}=await sb.auth.getSession();
+    if(data&&data.session&&ME){if(await mfaNeeded()){view='login';vMfa();return}view='venda';render();sync();return}
+    if(data&&data.session&&!ME){await start();return}
+  }catch(e){}
+  if(ME&&navigator.onLine===false){view='venda';render();setSync('offline · '+mine().length+' pendente(s)');return}
+  ME=null;view='login';render();
+})();
+
+</script>
+<script src="pwa.js" defer></script>
+</body>
+</html>
