@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.12.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.12.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -462,7 +462,7 @@ function artMasImg(id,hpx){
   return src;
 }
 const MASK=()=>'pdv_mascote_'+(ME&&ME.id);
-function masUiSync(){const v=artVal('mas'),a=$('#a_masbox'),c=$('#a_masctl');if(a)a.classList.toggle('hid',v!=='3');if(c)c.classList.toggle('hid',!(v&&ART_MASD[v]))}
+function masUiSync(){const v=artVal('mas'),a=$('#a_masbox'),c=$('#a_masctl');if(a)a.classList.toggle('hid',v!=='3');if(c)c.classList.toggle('hid',!v||v==='3'&&!ART_MASD[3])}
 function masSet(url,w,h){ART_MAS[3]={f:'',ar:w/h,h};ART_MASD[3]=url;Object.keys(ART_MASV).forEach(k=>{if(k.indexOf('3:')===0)delete ART_MASV[k]})}
 async function masUp(inp){
   const f=inp.files&&inp.files[0];if(!f)return;
@@ -490,7 +490,7 @@ async function masRestore(){
 async function artMasLoad(){
   const id=artVal('mas');masUiSync();
   if(id&&id!=='3'&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
-  artRender();
+  masUiSync();artRender();
 }
 let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
 const artCache=new Map();

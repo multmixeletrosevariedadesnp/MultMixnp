@@ -1,5 +1,5 @@
 {
- "version": "1.12.0",
+ "version": "1.12.1",
  "date": "2026-11-02",
- "notes": "Foto do produto: tamanho 30-180% e posição; mostrar/ocultar foto no cartão e no rodapé."
+ "notes": "Corrige: controles de tamanho e posição do mascote não apareciam."
 }
