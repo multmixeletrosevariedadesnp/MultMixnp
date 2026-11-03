@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.49.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.49.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1928,6 +1928,7 @@ function xmlApply(){
   const x=XML;if(!x)return;
   const upd=$('#xml_cost').checked,pay=$('#xml_pay')&&$('#xml_pay').checked&&ADM();
   const{a,n,cp}=xmlCore(x,upd,pay);
+  if(x.relanc&&x.key)confMark(x.key,true);
   closeM();XML=null;render();dfeLoad();
   alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
 }
@@ -3334,6 +3335,10 @@ async function dfeEntrada(chave){
     xmlOpen();xmlLoad(data.xml);
   }catch(e){alert('Não foi possível abrir a nota: '+e.message)}
 }
+const confDone=()=>{try{return JSON.parse(localStorage.mmconf||'[]')}catch(e){return[]}};
+function confMark(chave,on){const l=confDone().filter(k=>k!==chave);if(on)l.push(chave);try{localStorage.mmconf=JSON.stringify(l.slice(-2000))}catch(e){}}
+function dfeConfOk(chave){confMark(chave,true);closeM();vDfe()}
+function dfeConfUndo(chave){confMark(chave,false);vDfe()}
 async function dfeConferir(chave){
   try{
     const{data,error}=await sb.from('dfe_notas').select('xml').eq('chave',chave).maybeSingle();
@@ -3351,7 +3356,7 @@ async function dfeConferir(chave){
     <td>${r.p?`${esc(r.p.name)}${r.p.active===false||r.p.active===0?'<div class="sm bad">inativo (sem preço ou desativado)</div>':''}`:'<span class="bad">Não encontrado</span>'}</td><td>${r.p?`<b>${+r.p.stock||0}</b>`:'—'}</td></tr>`).join('')}</table></div>
     <p class="sm">${x.dups.length?`Parcelas da nota: ${x.dups.length}. Em Contas a pagar: ${pays.length}${pays.length<x.dups.length?' (faltam parcelas)':''}.`:'Nota sem parcelas (à vista).'}</p>
     <p class="sm"><b>Atenção:</b> o sistema não guarda quanto foi somado ao estoque em cada nota. Item <b>não encontrado</b> com certeza não entrou. Item <b>encontrado</b> pode ter entrado ou não: compare o estoque de hoje com o que você tem na prateleira.</p>
-    <div class="bar">${falta?`<button class="btn" onclick="dfeRelancar(true)">Relançar só os ${falta} não encontrado(s)</button>`:''}<button class="btn ${falta?'g':''}" onclick="dfeRelancar(false)">Relançar a nota inteira (soma de novo)</button></div>`);
+    <div class="bar"><button class="btn ok" onclick="dfeConfOk('${chave}')">Está tudo certo: marcar como conferida</button>${falta?`<button class="btn g" onclick="dfeRelancar(true)">Relançar só os ${falta} não encontrado(s)</button>`:''}<button class="btn g" onclick="dfeRelancar(false)">Relançar a nota inteira (soma de novo)</button></div>`);
   }catch(e){alert('Não foi possível conferir a nota: '+e.message)}
 }
 function dfeRelancar(soFalta){
@@ -3432,8 +3437,8 @@ function vDfe(){
   ${dfePend()>1?'<button class="btn g" onclick="dfeIgnorarTodas()">Marcar pendentes como já lançadas</button>':''}</div>
   <p class="sm">O sistema consulta a SEFAZ sozinho, no máximo uma vez por hora, enquanto estiver aberto, e avisa quando chega nota nova. Primeiro chega só o resumo da nota; <b>Baixar nota</b> registra a ciência na SEFAZ e traz o XML completo, e então <b>Dar entrada</b> lança os itens no estoque.</p>
   ${L.length?`<div style="overflow:auto"><table><tr><th></th><th>Emissão</th><th>Fornecedor</th><th>Nº</th><th>Valor</th><th>Situação</th><th></th></tr>
-  ${L.map(n=>{const done=n.entrada_at||xmlDone().includes(n.chave),st=n.canceled?'<span class="bad">Cancelada</span>':done?'<span class="ok">Entrada feita</span>':n.status==='completo'?'Pronta para entrada':n.ciencia_at?'Ciência registrada':'Só resumo';
-   const ac=n.canceled?'':done?(n.status==='completo'?`<button class="btn g s" onclick="dfeConferir('${n.chave}')">Conferir</button>`:`<button class="btn g s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`):(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
+  ${L.map(n=>{const done=n.entrada_at||xmlDone().includes(n.chave),st=n.canceled?'<span class="bad">Cancelada</span>':done?`<span class="ok">Entrada feita</span>${confDone().includes(n.chave)?'<div class="sm ok">✓ Conferida</div>':''}`:n.status==='completo'?'Pronta para entrada':n.ciencia_at?'Ciência registrada':'Só resumo';
+   const ac=n.canceled?'':done?(confDone().includes(n.chave)?`<button class="btn g s" disabled title="Nota já conferida">Conferida ✓</button> <button class="btn g s" onclick="dfeConfUndo('${n.chave}')" title="Reabrir a conferência">Desfazer</button>`:n.status==='completo'?`<button class="btn g s" onclick="dfeConferir('${n.chave}')">Conferir</button>`:`<button class="btn g s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`):(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
    return`<tr><td>${!n.canceled&&!done&&n.status==='completo'?`<input type="checkbox" style="width:auto" ${dfeSel.has(n.chave)?'checked':''} onchange="dfeTog('${n.chave}',this.checked)" aria-label="Selecionar nota">`:''}</td><td>${n.dh_emi?fmtD(n.dh_emi):'—'}</td><td>${esc(n.emit_nome||'—')}<div class="sm">${esc(cnpjF(n.emit_cnpj))}</div></td><td>${esc(n.numero||'—')}</td><td>${R(n.valor)}</td><td>${st}</td><td style="white-space:nowrap">${ac}</td></tr>`}).join('')}</table></div>`
   :`<p>${DFE.length?'Nenhuma nota pendente. 🎉':'Nenhuma nota recebida ainda. Toque em <b>Buscar notas agora</b>.'}</p>`}`;
 }
