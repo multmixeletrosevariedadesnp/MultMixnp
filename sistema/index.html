@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.46.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.47.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3386,6 +3386,9 @@ function vIni(){
 
 /* ========= Tela de cobrança (parcelas a receber) ========= */
 let cobF='atraso';
+const COBK='mm_cob_filtro';
+let cobC=(()=>{try{return Object.assign({n:7,a:30,d1:'',d2:''},JSON.parse(localStorage.getItem(COBK)||'{}'))}catch(e){return{n:7,a:30,d1:'',d2:''}}})();
+function cobSet(k,v){if(k==='n'||k==='a'){v=Math.max(1,Math.min(365,Math.round(+v)||1))}cobC[k]=v;try{localStorage.setItem(COBK,JSON.stringify(cobC))}catch(e){}vCob()}
 function vCob(){
   const today=ld(now()),rows=[];
   db.installments.forEach(i=>{
@@ -3394,11 +3397,18 @@ function vCob(){
     const n=dleft(i.due_date),c=db.customers.find(x=>x.id===sl.customer_id)||{};
     rows.push({i,sl,c,n,d:due(i),tot:db.installments.filter(x=>x.sale_id===sl.id&&!x.canceled_at).length});
   });
-  const late=rows.filter(r=>r.n<0),wk=rows.filter(r=>r.n>=0&&r.n<=7),sum=a=>a.reduce((t,r)=>t+r.d.v,0);
-  const list=(cobF==='atraso'?late:cobF==='semana'?wk:rows).sort((a,b)=>a.n-b.n);
+  const N=cobC.n,A=cobC.a,late=rows.filter(r=>r.n<0),wk=rows.filter(r=>r.n>=0&&r.n<=N),sum=a=>a.reduce((t,r)=>t+r.d.v,0);
+  const dk=r=>String(r.i.due_date).slice(0,10);
+  const list=(cobF==='atraso'?late:cobF==='hoje'?rows.filter(r=>r.n===0):(cobF==='semana'||cobF==='prox')?wk:cobF==='atrasoN'?rows.filter(r=>r.n<=-A):cobF==='faixa'?rows.filter(r=>(!cobC.d1||dk(r)>=cobC.d1)&&(!cobC.d2||dk(r)<=cobC.d2)):rows).sort((a,b)=>a.n-b.n);
+  if(cobF==='semana')cobF='prox';
+  const chips=(k,vals,cur)=>vals.map(v=>`<button class="btn ${v===cur?'':'g'} s" onclick="cobSet('${k}',${v})">${v}</button>`).join(' ');
+  const opt=(v,l)=>`<option value="${v}" ${cobF===v?'selected':''}>${l}</option>`;
+  const extra=cobF==='prox'?`<span class="sm">Próximos</span> <input type="number" min="1" max="365" value="${N}" style="width:80px" onchange="cobSet('n',this.value)"> <span class="sm">dias</span> ${chips('n',[3,7,15,30],N)}`
+    :cobF==='atrasoN'?`<span class="sm">Atrasadas há pelo menos</span> <input type="number" min="1" max="365" value="${A}" style="width:80px" onchange="cobSet('a',this.value)"> <span class="sm">dias</span> ${chips('a',[7,15,30,60,90],A)}`
+    :cobF==='faixa'?`<span class="sm">De</span> <input type="date" value="${cobC.d1}" style="max-width:160px" onchange="cobSet('d1',this.value)"> <span class="sm">até</span> <input type="date" value="${cobC.d2}" style="max-width:160px" onchange="cobSet('d2',this.value)"> <button class="btn g s" onclick="cobC.d1=cobC.d2='';cobSet('d1','')">Limpar</button>`:'';
   $('#app').innerHTML=`<div class="prices"><div class="pr"><span class="bad">Em atraso (${late.length})</span><b class="bad">${R(sum(late))}</b></div>
-  <div class="pr"><span>Vencem em 7 dias (${wk.length})</span><b>${R(sum(wk))}</b></div><div class="pr"><span>Total a receber (${rows.length})</span><b>${R(sum(rows))}</b></div></div>
-  <div class="bar"><select style="max-width:260px" onchange="cobF=this.value;vCob()"><option value="atraso" ${cobF==='atraso'?'selected':''}>Parcelas em atraso</option><option value="semana" ${cobF==='semana'?'selected':''}>Vencem nos próximos 7 dias</option><option value="todas" ${cobF==='todas'?'selected':''}>Todas em aberto</option></select></div>
+  <div class="pr"><span>Vencem em ${N} dias (${wk.length})</span><b>${R(sum(wk))}</b></div><div class="pr"><span>Total a receber (${rows.length})</span><b>${R(sum(rows))}</b></div></div>
+  <div class="bar"><select style="max-width:260px" onchange="cobF=this.value;vCob()">${opt('atraso','Parcelas em atraso')}${opt('atrasoN','Atrasadas há X dias ou mais')}${opt('hoje','Vencem hoje')}${opt('prox','Vencem nos próximos X dias')}${opt('faixa','Vencimento entre datas')}${opt('todas','Todas em aberto')}</select>${extra}</div>
   ${list.length?`<div style="overflow:auto"><table><tr><th>Cliente</th><th>Parcela</th><th>Vencimento</th><th>Valor hoje</th><th></th></tr>
   ${list.map(r=>`<tr><td>${esc(r.c.name||'Cliente')}<div class="sm">${esc(r.c.phone||'sem telefone')}</div></td><td>${r.i.number}/${r.tot}</td>
   <td class="${r.n<0?'bad':''}">${fmtD(r.i.due_date)}<div class="sm">${dtxt(r.n)}</div></td><td><b>${R(r.d.v)}</b>${r.d.fee?`<div class="sm">com R$ ${(+r.d.fee).toFixed(2).replace('.',',')} de encargos</div>`:''}</td>
