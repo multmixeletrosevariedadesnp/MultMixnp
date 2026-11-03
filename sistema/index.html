@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.47.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.48.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1899,20 +1899,20 @@ function xmlDone(){try{return JSON.parse(localStorage.mmxml||'[]')}catch(e){retu
 function xmlView(){
   const x=XML,dup=x.key&&xmlDone().includes(x.key);
   $('#xmlv').innerHTML=`<p><b>${esc(x.forn)}</b> · NF ${esc(x.num)} · ${x.items.length} item(ns)</p>
-  ${dup?'<p class="bad">Esta nota já foi lançada neste aparelho. Confirme só se tiver certeza, senão o estoque será somado de novo.</p>':''}
+  ${x.relanc?`<p class="sm"><b>Relançamento.</b> ${x.items.some(i=>i.pid==='ignorar')?'Os itens já encontrados no cadastro ficaram como <b>Ignorar</b>; troque o destino de um item se quiser somar a quantidade dele de novo.':'Todos os itens vão somar de novo ao estoque.'} Ajuste a quantidade se precisar.</p>`:dup?'<p class="bad">Esta nota já foi lançada neste aparelho. Confirme só se tiver certeza, senão o estoque será somado de novo.</p>':''}
   <div style="overflow:auto"><table><tr><th>Item da nota</th><th>Qtd</th><th>Custo</th><th>Vai para</th></tr>
-  ${x.items.map((i,ix)=>`<tr><td>${esc(i.name)}<div class="sm">${i.ean?'EAN '+i.ean+' · ':''}cód. ${esc(i.code)}</div></td><td>${i.qty}</td><td>${R(i.cost)}</td>
+  ${x.items.map((i,ix)=>`<tr><td>${esc(i.name)}<div class="sm">${i.ean?'EAN '+i.ean+' · ':''}cód. ${esc(i.code)}</div></td><td><input type="number" min="0" value="${i.qty}" style="width:72px" onchange="XML.items[${ix}].qty=Math.max(0,Math.round(+this.value||0));xmlView()"></td><td>${R(i.cost)}</td>
   <td><select onchange="XML.items[${ix}].pid=this.value;xmlView()"><option value="novo" ${i.pid==='novo'?'selected':''}>Cadastrar produto novo</option><option value="ignorar" ${i.pid==='ignorar'?'selected':''}>Ignorar este item</option>
   ${[...db.products].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(p=>`<option value="${p.id}" ${i.pid===p.id?'selected':''}>${esc(p.name)} (estoque ${p.stock})</option>`).join('')}</select></td></tr>`).join('')}</table></div>
   <p><label><input type="checkbox" id="xml_cost" checked style="width:auto"> Atualizar o custo dos produtos</label></p>
-  ${x.dups.length?`<p><label><input type="checkbox" id="xml_pay" checked style="width:auto"> Lançar em <b>Contas a pagar</b> as ${x.dups.length} parcela(s) da nota</label></p>
+  ${x.dups.length?`<p><label><input type="checkbox" id="xml_pay" ${x.hasPay?'':'checked'} style="width:auto"> Lançar em <b>Contas a pagar</b> as ${x.dups.length} parcela(s) da nota</label>${x.hasPay?' <span class="sm bad">(já existem parcelas desta nota em Contas a pagar; marque só se faltar)</span>':''}</p>
   <div class="sm">${x.dups.map(d=>`${esc(d.n||'—')}: vence ${fmtD(d.venc)} · ${R(d.v)}`).join('<br>')}</div>`:'<p class="sm">Esta nota não traz parcelas (pagamento à vista), então não gera conta a pagar.</p>'}
   <button class="btn" onclick="xmlApply()">Dar entrada no estoque</button>`;
 }
 function xmlCore(x,upd,pay){
   let a=0,n=0,cp=0;
   x.items.forEach(i=>{
-    if(i.pid==='ignorar')return;
+    if(i.pid==='ignorar'||!(i.qty>0))return;
     if(i.pid==='novo'){
       put('products',{id:uid(),name:i.name,category:'',description:'',price_cash:0,price_card:null,price_credit:null,max_inst:10,stock:i.qty,active:false,ncm:i.ncm,cfop:'5102',unit:i.un,cest:i.cest,csosn:'102',specs:[],photos:[],ean:i.ean||null,supplier_code:i.code||null,cost:i.cost||null});n++;
     }else{
@@ -3272,6 +3272,34 @@ async function dfeEntrada(chave){
     xmlOpen();xmlLoad(data.xml);
   }catch(e){alert('Não foi possível abrir a nota: '+e.message)}
 }
+async function dfeConferir(chave){
+  try{
+    const{data,error}=await sb.from('dfe_notas').select('xml').eq('chave',chave).maybeSingle();
+    if(error||!data||!data.xml)return alert('XML não encontrado. Baixe a nota antes de conferir.');
+    const x=xmlParse(data.xml),nota=DFE.find(n=>n.chave===chave)||{};
+    const pays=(db.payables||[]).filter(p=>!p.canceled_at&&p.nfe_key===chave);
+    const rows=x.items.map(i=>{const p=i.pid!=='novo'?db.products.find(y=>y.id===i.pid):null;return{i,p}});
+    const ach=rows.filter(r=>r.p).length,falta=rows.length-ach;
+    window.CONF={chave,xml:data.xml};
+    modal(`<h2>Conferir NF ${esc(x.num)} · ${esc(x.forn)}</h2>
+    <p class="sm">A lista mostra cada item da nota e o produto correspondente no seu cadastro (pelo código de barras, código do fornecedor ou nome).</p>
+    <div class="prices"><div class="pr"><span>Itens na nota</span><b>${rows.length}</b></div><div class="pr"><span>Achados no cadastro</span><b>${ach}</b></div><div class="pr ${falta?'k':''}"><span>Não encontrados</span><b class="${falta?'bad':''}">${falta}</b></div></div>
+    <div style="overflow:auto;max-height:300px"><table><tr><th>Item da nota</th><th>Qtd</th><th>No cadastro</th><th>Estoque hoje</th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.i.name)}<div class="sm">${r.i.ean?'EAN '+esc(r.i.ean)+' · ':''}cód. ${esc(r.i.code)}</div></td><td>${r.i.qty}</td>
+    <td>${r.p?`${esc(r.p.name)}${r.p.active===false||r.p.active===0?'<div class="sm bad">inativo (sem preço ou desativado)</div>':''}`:'<span class="bad">Não encontrado</span>'}</td><td>${r.p?`<b>${+r.p.stock||0}</b>`:'—'}</td></tr>`).join('')}</table></div>
+    <p class="sm">${x.dups.length?`Parcelas da nota: ${x.dups.length}. Em Contas a pagar: ${pays.length}${pays.length<x.dups.length?' (faltam parcelas)':''}.`:'Nota sem parcelas (à vista).'}</p>
+    <p class="sm"><b>Atenção:</b> o sistema não guarda quanto foi somado ao estoque em cada nota. Item <b>não encontrado</b> com certeza não entrou. Item <b>encontrado</b> pode ter entrado ou não: compare o estoque de hoje com o que você tem na prateleira.</p>
+    <div class="bar">${falta?`<button class="btn" onclick="dfeRelancar(true)">Relançar só os ${falta} não encontrado(s)</button>`:''}<button class="btn ${falta?'g':''}" onclick="dfeRelancar(false)">Relançar a nota inteira (soma de novo)</button></div>`);
+  }catch(e){alert('Não foi possível conferir a nota: '+e.message)}
+}
+function dfeRelancar(soFalta){
+  const c=window.CONF;if(!c)return;
+  xmlOpen();xmlLoad(c.xml);
+  if(!XML)return;
+  XML.relanc=true;XML.hasPay=(db.payables||[]).some(p=>!p.canceled_at&&p.nfe_key===c.chave);
+  if(soFalta)XML.items.forEach(i=>{if(i.pid!=='novo')i.pid='ignorar'});
+  xmlView();
+}
 async function dfeIgnorar(chave){
   if(!confirm('Marcar esta nota como já lançada/ignorada? Ela sai da lista de pendentes e dos avisos.'))return;
   await sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',chave);await dfeLoad();vDfe();
@@ -3343,7 +3371,7 @@ function vDfe(){
   <p class="sm">O sistema consulta a SEFAZ sozinho, no máximo uma vez por hora, enquanto estiver aberto, e avisa quando chega nota nova. Primeiro chega só o resumo da nota; <b>Baixar nota</b> registra a ciência na SEFAZ e traz o XML completo, e então <b>Dar entrada</b> lança os itens no estoque.</p>
   ${L.length?`<div style="overflow:auto"><table><tr><th></th><th>Emissão</th><th>Fornecedor</th><th>Nº</th><th>Valor</th><th>Situação</th><th></th></tr>
   ${L.map(n=>{const done=n.entrada_at||xmlDone().includes(n.chave),st=n.canceled?'<span class="bad">Cancelada</span>':done?'<span class="ok">Entrada feita</span>':n.status==='completo'?'Pronta para entrada':n.ciencia_at?'Ciência registrada':'Só resumo';
-   const ac=n.canceled||done?'':(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
+   const ac=n.canceled?'':done?(n.status==='completo'?`<button class="btn g s" onclick="dfeConferir('${n.chave}')">Conferir</button>`:`<button class="btn g s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`):(n.status==='completo'?`<button class="btn s" onclick="dfeEntrada('${n.chave}')">Dar entrada</button>`:`<button class="btn s" onclick="dfeBaixar('${n.chave}')">Baixar nota</button>`)+` <button class="btn g s" onclick="dfeIgnorar('${n.chave}')">Ignorar</button>`;
    return`<tr><td>${!n.canceled&&!done&&n.status==='completo'?`<input type="checkbox" style="width:auto" ${dfeSel.has(n.chave)?'checked':''} onchange="dfeTog('${n.chave}',this.checked)" aria-label="Selecionar nota">`:''}</td><td>${n.dh_emi?fmtD(n.dh_emi):'—'}</td><td>${esc(n.emit_nome||'—')}<div class="sm">${esc(cnpjF(n.emit_cnpj))}</div></td><td>${esc(n.numero||'—')}</td><td>${R(n.valor)}</td><td>${st}</td><td style="white-space:nowrap">${ac}</td></tr>`}).join('')}</table></div>`
   :`<p>${DFE.length?'Nenhuma nota pendente. 🎉':'Nenhuma nota recebida ainda. Toque em <b>Buscar notas agora</b>.'}</p>`}`;
 }
