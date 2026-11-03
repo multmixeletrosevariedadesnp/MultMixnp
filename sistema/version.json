@@ -1,5 +1,5 @@
 {
- "version": "1.51.0",
+ "version": "1.52.0",
  "date": "2026-11-02",
- "notes": "Pix Mercado Pago com baixa automática da parcela (desligado até ligar na aba Empresa)."
+ "notes": "Multa e juros de atraso configuráveis (limites legais) e dias de tolerância."
 }

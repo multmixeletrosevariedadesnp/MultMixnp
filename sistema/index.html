@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.51.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.52.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -258,7 +258,7 @@ a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ========= CONFIG: preencha com os dados do seu projeto Supabase ========= */
-const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4',WHATS:'5593999999999',BUCKET:'produtos',MULTA:2,JURO_MES:1,ADMIN_EMAIL:'multmixeletrosevariedades@gmail.com'};
+const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4',WHATS:'5593999999999',BUCKET:'produtos',MULTA:2,JURO_MES:1,CARENCIA:0,ADMIN_EMAIL:'multmixeletrosevariedades@gmail.com'};
 /* Sem URL/KEY o sistema roda em modo demonstração (só neste navegador). */
 
 const sb=CFG.URL?supabase.createClient(CFG.URL,CFG.KEY):null;
@@ -640,7 +640,7 @@ function buildCarnePdf(d){
   const nP=d.parcels.length,pages=1+Math.ceil(nP/4),pixName=d.pix?pixNameFor(d.co):'';
   const foot=pg=>P.text(`Carnê nº ${d.num}   |   ${d.cust.name}   |   Página ${pg} de ${pages}   |   Gerado em ${d.issued}`,105,291.5,{size:6.5,color:GR,align:'c'});
   const box=(x,y,w,h,t)=>{P.rect(x,y,w,6,{fill:LT});P.rect(x,y,w,h,{stroke:LN,lw:.3});P.text(t.toUpperCase(),x+3,y+4.2,{size:6.8,bold:true,color:GR})};
-  const mult=d.multa,jur=d.juro,instr=`Após o vencimento: multa de ${String(mult).replace('.',',')}% + juros de ${String(jur).replace('.',',')}% ao mês, acertados na loja.`;
+  const mult=d.multa,jur=d.juro,instr=`Após o vencimento${CFG.CARENCIA?' (tolerância de '+CFG.CARENCIA+' dia'+(CFG.CARENCIA>1?'s':'')+')':''}: multa de ${String(mult).replace('.',',')}% + juros de ${String(jur).replace('.',',')}% ao mês, acertados na loja.`;
   /* ---- página 1: resumo ---- */
   P.page();
   P.rect(0,0,210,30,{fill:BRAND});P.rect(0,30,210,1.3,{fill:GOLD});
@@ -1281,6 +1281,11 @@ function vEmp(){
   <div><label>até (opcional)</label><input id="e_tto" type="date" value="${esc((c.theme_cfg||{}).to||'')}"></div></div>
   <p class="sm">Com datas preenchidas, o tema só vale dentro do período; depois volta sozinho ao padrão. Para um visual mais sóbrio, digite um traço (-) no campo do emoji.</p>
   <button class="btn g s" type="button" onclick="temaPrev()">Pré-visualizar neste aparelho</button></div>
+  <div style="margin:14px 0"><b>Multa e juros por atraso (carnê)</b>
+  <p class="sm" style="margin:2px 0 8px">Valem para todas as parcelas em atraso, no carnê, na Cobrança e no Pix. Limites da lei: multa até <b>2%</b> (cobrada uma vez) e juros de mora até <b>1% ao mês</b> (por dia de atraso). Nunca é cobrado juros sobre juros. Combine os mesmos valores no contrato do carnê.</p>
+  <div class="f"><div><label>Multa (%)</label><input id="e_cob_multa" type="number" step="0.01" min="0" max="2" value="${CFG.MULTA}"></div>
+  <div><label>Juros ao mês (%)</label><input id="e_cob_juro" type="number" step="0.01" min="0" max="1" value="${CFG.JURO_MES}"></div>
+  <div><label>Dias de tolerância</label><input id="e_cob_car" type="number" step="1" min="0" max="10" value="${CFG.CARENCIA||0}"></div></div></div>
   <div style="margin:14px 0"><b>Pix Mercado Pago (confirmação automática)</b>
   <p class="sm" style="margin:2px 0 8px">Gera o QR Code Pix pelo Mercado Pago e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até criar a aplicação no Mercado Pago, publicar a função <code>mp-pix</code> e conferir a tarifa na sua conta (veja supabase/functions/mp-pix/README.md).</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar Pix Mercado Pago</label></div>
@@ -1367,6 +1372,11 @@ function saveEmp(){
   }
   row.mp_pix_on=$('#e_mp_pix_on').checked;row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
+  const cm=+$('#e_cob_multa').value,cj=+$('#e_cob_juro').value,cc=+$('#e_cob_car').value;
+  if(!(cm>=0&&cm<=COB_MAX.multa))return alert('A multa por atraso não pode passar de 2% (Código de Defesa do Consumidor).');
+  if(!(cj>=0&&cj<=COB_MAX.juro))return alert('Os juros de mora não podem passar de 1% ao mês.');
+  if(!(cc>=0&&cc<=COB_MAX.car&&Number.isInteger(cc)))return alert('Os dias de tolerância vão de 0 a 10, em número inteiro.');
+  const cobNew={multa:cm,juro:cj,carencia:cc},cobMudou=cm!==CFG.MULTA||cj!==CFG.JURO_MES||cc!==(CFG.CARENCIA||0);
   const pt=$('#e_pix_key_type').value,pk=pixNorm(pt,$('#e_pix_key').value);
   if(pk&&!pt)return alert('Escolha o tipo da chave Pix.');
   if(pk&&!pixOk(pt,pk))return alert('Chave Pix inválida para o tipo escolhido. Confira os números ou o e-mail.');
@@ -1376,7 +1386,8 @@ function saveEmp(){
   if(tk||tkClr)prv={...(prv||{}),ibpt_token:tkClr?null:tk};
   const pixRow=prv?{...PRIV(),id:1,...prv}:null;
   const tmodo=$('#e_tmodo').value,tmodoMudou=tmodo!==((IBM&&IBM.modo)||'auto');
-  master(async()=>{put('company',row);if(pixRow)put('company_private',pixRow);
+  master(async()=>{put('company',row);
+    if(cobMudou&&sb){const{error}=await sb.from('app_settings').upsert({key:'cobranca_cfg',value:cobNew,updated_at:now()});if(error)return alert('Não consegui salvar multa e juros: '+error.message+' (precisa do supabase-v27.sql)');cobApply(cobNew);try{localStorage.mm_cobcfg=JSON.stringify(cobNew)}catch(e){}}if(pixRow)put('company_private',pixRow);
     if(tmodoMudou&&sb){const{error}=await sb.from('app_settings').upsert({key:'ibpt_cfg',value:{modo:tmodo},updated_at:now()});if(error)alert('Não consegui salvar a fonte dos tributos: '+error.message+' (rode o supabase-v29.sql)');else{IBM={...(IBM||{t:0,v:null}),modo:tmodo};try{localStorage.mm_ibpt=JSON.stringify(IBM)}catch(e){}}}
     alert('Dados da empresa salvos.');render()});
 }
@@ -1679,6 +1690,7 @@ async function login(e){
 async function afterLogin(){
   await loadRole();
   if(!role){await sb.auth.signOut();session=null;view='login';render();return setTimeout(()=>{const er=$('#err');if(er)er.textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'},50)}
+  cobLoad().then(()=>{try{render()}catch(e){}});
   view=ADM()?'prod':'pdv';render();sync();
 }
 /* ----- cadastro do autenticador (Verificação em 2 etapas) ----- */
@@ -2676,9 +2688,22 @@ function fiadoImpGo(){
 /* ========= Carnê com multa e juros ========= */
 const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const days=d=>Math.floor((new Date(ld(now()))-new Date(d))/864e5);
+/* multa e juros de mora configuráveis (Empresa). Travas legais: multa até 2% (CDC art. 52 §1º), juros até 1% ao mês, carência até 10 dias. */
+const COB_MAX={multa:2,juro:1,car:10};
+function cobApply(x){
+  if(!x)return;const n=(v,m)=>Math.max(0,Math.min(m,isFinite(+v)?+v:0));
+  CFG.MULTA=n(x.multa,COB_MAX.multa);CFG.JURO_MES=n(x.juro,COB_MAX.juro);CFG.CARENCIA=Math.round(n(x.carencia,COB_MAX.car));
+}
+try{cobApply(JSON.parse(localStorage.mm_cobcfg||'null'))}catch(e){}
+async function cobLoad(){
+  if(!sb||role!=='admin')return;
+  try{const{data,error}=await sb.from('app_settings').select('value').eq('key','cobranca_cfg').maybeSingle();
+    if(!error&&data&&data.value){cobApply(data.value);try{localStorage.mm_cobcfg=JSON.stringify(data.value)}catch(e){}}}catch(e){}
+}
 function due(i){
   const dl=i.paid_at?0:days(i.due_date);
   if(dl<=0)return{v:+i.amount,fee:0,dl:0};
+  if(dl<=(+CFG.CARENCIA||0))return{v:+i.amount,fee:0,dl}; // carência: sem multa e juros
   const calc=+(i.amount*CFG.MULTA/100+i.amount*(CFG.JURO_MES/100)/30*dl).toFixed(2),fee=Math.max(0,+(calc-(+i.fee_settled||0)).toFixed(2));
   return{v:+(i.amount+fee).toFixed(2),fee,dl};
 }
@@ -2748,7 +2773,7 @@ function pixAtual(iid,sid,charge){
   const co=CO(),pv=PRIV(),c=db.customers.find(x=>x.id===s.customer_id)||{};
   if(!(pv.pix_key&&pixOk(pv.pix_key_type,pv.pix_key)))return alert('Cadastre a chave Pix da empresa na aba Empresa para gerar o Pix.');
   if(!co.city)return alert('Preencha a cidade da empresa na aba Empresa. Ela é obrigatória no código Pix.');
-  const d=due(i),multa=d.dl>0?+(i.amount*CFG.MULTA/100).toFixed(2):0,juros=Math.max(0,+(d.fee-multa).toFixed(2));
+  const d=due(i),multa=d.fee>0?+(i.amount*CFG.MULTA/100).toFixed(2):0,juros=Math.max(0,+(d.fee-multa).toFixed(2));
   const ch=charge==null?d.fee:Math.max(0,Math.min(d.fee,+charge)),valor=+(+i.amount+ch).toFixed(2),desc=+(d.fee-ch).toFixed(2);
   PIXW[i.id]=desc>0?{day:ld(now()),total:valor}:undefined;if(!PIXW[i.id])delete PIXW[i.id];
   const total=db.installments.filter(x=>x.sale_id===sid&&!x.canceled_at).length,num=sid.replace(/-/g,'').slice(0,8).toUpperCase();
@@ -3064,7 +3089,7 @@ function extratoHtml(cid){
   <div class="box"><div>Em aberto (parcelas)<b>${R(D.aberto)}</b></div><div>Em atraso (com multa e juros)<b>${R(D.atraso)}</b></div><div>Total hoje<b>${R(D.tot)}</b></div></div>
   ${D.rows.length?`<table><tr><th>Parcela</th><th>Vencimento</th><th class="n">Em aberto</th><th class="n">Multa/juros</th><th class="n">Total hoje</th></tr>${D.rows.map(r=>`<tr><td>${r.n}/${r.of}${r.obs?`<div class="m">${esc(r.obs)}</div>`:''}${r.pago?`<div class="m">já pago ${R(r.pago)}</div>`:''}</td><td class="${r.dl>0?'late':''}">${fmtD(r.due)}${r.dl>0?`<div class="m late">${r.dl} dias de atraso</div>`:''}</td><td class="n">${R(r.aberto)}</td><td class="n">${r.fee?R(r.fee):'—'}</td><td class="n"><b>${R(r.total)}</b></td></tr>`).join('')}</table>`:'<p><b>Nenhuma parcela em aberto.</b></p>'}
   ${D.rc.length?`<h3>Últimos pagamentos</h3><table><tr><th>Data</th><th>Meio</th><th class="n">Recebido</th><th class="n">Abatimento</th><th>Recibo</th></tr>${D.rc.map(r=>`<tr><td>${dBR(r.at)}</td><td>${esc(r.meio||'')}</td><td class="n">${R(r.amount)}</td><td class="n">${r.disc?R(r.disc):'—'}</td><td>${String(r.rid).slice(0,8).toUpperCase()}</td></tr>`).join('')}</table>`:''}
-  <p class="m">Valores de multa e juros calculados até hoje (multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês). Documento sem valor fiscal.</p></body></html>`;
+  <p class="m">Valores de multa e juros calculados até hoje (multa ${CFG.MULTA}% + juros ${CFG.JURO_MES}% ao mês${CFG.CARENCIA?', após '+CFG.CARENCIA+' dia'+(CFG.CARENCIA>1?'s':'')+' de tolerância':''}). Documento sem valor fiscal.</p></body></html>`;
 }
 function extratoTxt(cid){
   const D=extratoDados(cid),co=CO();
