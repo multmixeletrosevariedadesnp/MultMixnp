@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.14.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.15.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -245,7 +245,61 @@ setInterval(()=>{if(ME&&navigator.onLine!==false&&Date.now()-lastSync>60000)sync
 const HW=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
 const BW=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
 /* ========= Arte do produto: gerador de imagem (SVG) ========= */
+/* ---- QR Code (modo byte, correção M, versões 1 a 6) gerado no aparelho ---- */
+function qrMake(text){
+  const bytes=[...new TextEncoder().encode(text)],B=[null,[26,10,1],[44,16,1],[70,26,1],[100,18,2],[134,24,2],[172,16,4]],cap=[0,14,26,42,62,84,106];
+  let v=1;while(v<=6&&bytes.length>cap[v])v++;if(v>6)return null;
+  const [tot,ecn,nb]=B[v],dcw=tot-ecn*nb,S=17+4*v;
+  const bits=[],put=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>i)&1)};
+  put(4,4);put(bytes.length,8);bytes.forEach(b=>put(b,8));
+  for(let i=0;i<4&&bits.length<dcw*8;i++)bits.push(0);
+  while(bits.length%8)bits.push(0);
+  const data=[];for(let i=0;i<bits.length;i+=8){let x=0;for(let j=0;j<8;j++)x=x*2+bits[i+j];data.push(x)}
+  for(let p=0;data.length<dcw;p++)data.push(p%2?0x11:0xEC);
+  const EXP=new Array(512),LOG=new Array(256);let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];
+  const mul=(a,b)=>a&&b?EXP[LOG[a]+LOG[b]]:0;
+  let gen=[1];for(let i=0;i<ecn;i++){const ng=new Array(gen.length+1).fill(0);for(let j=0;j<gen.length;j++){ng[j]^=gen[j];ng[j+1]^=mul(gen[j],EXP[i])}gen=ng}
+  const per=dcw/nb,blocks=[],ecs=[];
+  for(let k=0;k<nb;k++){const d=data.slice(k*per,(k+1)*per),r=new Array(ecn).fill(0);
+    d.forEach(c=>{const f=c^r[0];r.shift();r.push(0);for(let j=0;j<ecn;j++)r[j]^=mul(gen[j+1],f)});blocks.push(d);ecs.push(r)}
+  const cw=[];for(let i=0;i<per;i++)blocks.forEach(b=>cw.push(b[i]));for(let i=0;i<ecn;i++)ecs.forEach(e=>cw.push(e[i]));
+  const M=Array.from({length:S},()=>new Array(S).fill(false)),F=Array.from({length:S},()=>new Array(S).fill(false));
+  const set=(xx,yy,d)=>{if(xx<0||yy<0||xx>=S||yy>=S)return;M[yy][xx]=d;F[yy][xx]=true};
+  for(let i=0;i<S;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+  const finder=(cx,cy)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy));set(cx+dx,cy+dy,d!==2&&d!==4)}};
+  finder(3,3);finder(S-4,3);finder(3,S-4);
+  if(v>=2){const c=S-7;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)set(c+dx,c+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}
+  const fmt=(mask)=>{const d=mask;let rem=d;for(let i=0;i<10;i++)rem=(rem<<1)^((rem>>>9)*0x537);const bt=((d<<10)|rem)^0x5412,g=i=>((bt>>>i)&1)!==0;
+    for(let i=0;i<=5;i++)set(8,i,g(i));set(8,7,g(6));set(8,8,g(7));set(7,8,g(8));for(let i=9;i<15;i++)set(14-i,8,g(i));
+    for(let i=0;i<8;i++)set(S-1-i,8,g(i));for(let i=8;i<15;i++)set(8,S-15+i,g(i));set(8,S-8,true)};
+  fmt(0);
+  const res=M.map(r=>r.slice());
+  let bi=0;const place=[];
+  for(let right=S-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<S;vert++)for(let j=0;j<2;j++){const xx=right-j,up=((right+1)&2)===0,yy=up?S-1-vert:vert;if(!F[yy][xx]){place.push([xx,yy,bi<cw.length*8?((cw[bi>>3]>>(7-(bi&7)))&1)===1:false]);bi++}}}
+  const MF=[(x,y)=>(x+y)%2===0,(x,y)=>y%2===0,(x,y)=>x%3===0,(x,y)=>(x+y)%3===0,(x,y)=>(Math.floor(x/3)+Math.floor(y/2))%2===0,(x,y)=>x*y%2+x*y%3===0,(x,y)=>(x*y%2+x*y%3)%2===0,(x,y)=>((x+y)%2+x*y%3)%2===0];
+  const pen=m=>{let p=0;const n=S;
+    for(let y=0;y<n;y++){let run=1;for(let x=1;x<=n;x++){if(x<n&&m[y][x]===m[y][x-1])run++;else{if(run>=5)p+=run-2;run=1}}}
+    for(let x=0;x<n;x++){let run=1;for(let y=1;y<=n;y++){if(y<n&&m[y][x]===m[y-1][x])run++;else{if(run>=5)p+=run-2;run=1}}}
+    for(let y=0;y<n-1;y++)for(let x=0;x<n-1;x++){const c=m[y][x];if(c===m[y][x+1]&&c===m[y+1][x]&&c===m[y+1][x+1])p+=3}
+    const pat=[true,false,true,true,true,false,true];const hit=(get)=>{for(let i=0;i<n;i++)for(let j=0;j+6<n;j++){let ok=true;for(let k=0;k<7;k++)if(get(i,j+k)!==pat[k]){ok=false;break}if(ok){const w=(a)=>{for(let k=a;k<a+4;k++){if(k<0||k>=n)continue;if(get(i,k))return false}return true};if(w(j-4)||w(j+7))p+=40}}};
+    hit((i,j)=>m[i][j]);hit((i,j)=>m[j][i]);
+    let dk=0;for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(m[y][x])dk++;p+=Math.floor(Math.abs(dk*20-n*n*10)/(n*n))*10;return p};
+  let best=null,bp=1e9,bm=0;
+  for(let mk=0;mk<8;mk++){const m=res.map(r=>r.slice());place.forEach(([x,y,b])=>{m[y][x]=b!==MF[mk](x,y)});
+    // formato com a máscara certa
+    const save=M.map(r=>r.slice());fmt(mk);for(let y=0;y<S;y++)for(let x=0;x<S;x++)if(F[y][x])m[y][x]=M[y][x];
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++)M[y][x]=save[y][x];
+    const p=pen(m);if(p<bp){bp=p;best=m;bm=mk}}
+  return best;
+}
+function qrSvg(text,x,y,size,dark,light){
+  const m=qrMake(text);if(!m)return '';const n=m.length,q=4,u=size/(n+2*q);let d='';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(m[r][c])d+=`M${(x+(c+q)*u).toFixed(2)} ${(y+(r+q)*u).toFixed(2)}h${u.toFixed(2)}v${u.toFixed(2)}h-${u.toFixed(2)}z`;
+  return `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${(size*.05).toFixed(1)}" fill="${light}"/><path d="${d}" fill="${dark}" shape-rendering="crispEdges"/>`;
+}
 const ART_TH={
+  claro:{n:'Claro (branco)',a:'#ffffff',b:'#e6edf6',text:'#0b2a4a',sub:'#475467',accent:'#00468f',price:'#00468f',badge:'#00468f',badgeT:'#ffffff',shape:'#00468f',foot:'rgba(0,70,143,.10)',footT:'#0b2a4a'},
+  luxo:{n:'Preto e dourado',a:'#1a1a1a',b:'#000000',text:'#ffffff',sub:'#d9bf73',accent:'#d4af37',price:'#d4af37',badge:'#d4af37',badgeT:'#111111',shape:'#d4af37',foot:'rgba(212,175,55,.12)',footT:'#ffffff'},
   azul:{n:'Azul MultMix',a:'#00539f',b:'#002b63',text:'#ffffff',sub:'#cfe0f7',accent:'#ffc21a',price:'#ffc21a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
   amarelo:{n:'Amarelo oferta',a:'#ffd24d',b:'#ffb300',text:'#101828',sub:'#4b3b00',accent:'#d92d20',price:'#00468f',badge:'#d92d20',badgeT:'#ffffff',shape:'#ffffff',foot:'rgba(0,0,0,.14)',footT:'#101828'},
   vermelho:{n:'Vermelho promoção',a:'#e53b2c',b:'#9c1a10',text:'#ffffff',sub:'#ffd9d4',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#101828',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
@@ -710,24 +764,26 @@ function cardSvg(o){
   E.push(`<circle cx="${W+40}" cy="${H*.15}" r="${H*.3}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-60" cy="${H*.9}" r="${H*.25}" fill="${th.shape}" fill-opacity=".06"/>`);
   const logoBox=(x,y,s)=>{if(!o.showLogo||!o.logo)return;E.push(`<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x}" y="${y}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet" clip-path="url(#lcp)"/>`)};
   const pill=(cx,y,w,h,fs)=>{E.push(`<rect x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="#25d366"/>`);T('WhatsApp',cx,y+h/2+fs*.35,fs,{bold:1,color:'#ffffff',anchor:'m'})};
-  const tel=fmtTel(sel.phone);
+  const tel=fmtTel(sel.phone),qrOn=!!o.qr;
   const mas=o.mascot;let mc=null;
-  if(mas){const mh=Math.min((V?H*.24:H*.5)*(mas.z||1),mas.h),mw0=mh*mas.ar;mc={mh,mw:mw0,x:Math.max(0,Math.min(W-mw0,W-mw0-(V?10:24)+(mas.dx||0))),y:Math.max(0,Math.min(H-mh,(V?H-230-mh+40:H-mh-14)+(mas.dy||0)))};mc.img=artMasImg(mas.id,mh)}
+  if(mas){const mh=Math.min((V?H*.3:H*.44)*(mas.z||1),mas.h),mw0=mh*mas.ar;mc={mh,mw:mw0,x:Math.max(0,Math.min(W-mw0,W-mw0-(V?10:24)+(mas.dx||0))),y:Math.max(0,Math.min(H-mh,(V?1015-mh:H-mh-14)+(mas.dy||0)))};mc.img=artMasImg(mas.id,mh)}
   if(!V){
     E.push(`<rect x="0" y="0" width="16" height="${H}" fill="${th.accent}"/>`);
     if(!o.noPhoto){if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="40" y="40" width="330" height="520" rx="28"/></clipPath><rect x="32" y="32" width="346" height="536" rx="34" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="40" y="40" width="330" height="520" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'))}
-    const x0=o.noPhoto?70:410,mw=W-x0-60-(mc?Math.round(mc.mw*.85):0);
+    const x0=o.noPhoto?70:410,rb=Math.min(W-60,mc?mc.x-(o.panel?Math.round(mc.mw*.12):0)-24:W,qrOn?W-60-130-24:W),mw=Math.max(260,rb-x0);
     let [nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo?110:0),66,true,34);T(nm,x0,185,ns,{bold:1});
     if(sel.role)T(artFit(sel.role,mw,34,false),x0,236,34,{color:th.sub});
     E.push(`<rect x="${x0}" y="262" width="120" height="8" rx="4" fill="${th.accent}"/>`);
     if(tel){pill(x0+95,298,190,52,28);const[t2,s2]=fit(tel,mw,62,true,34);T(t2,x0,424,s2,{bold:1,color:th.price})}
     if(sel.extra)T(artFit(sel.extra,mw,30,false),x0,474,30,{color:th.text});
     logoBox(W-92-40,36,92);
+    if(qrOn){E.push(qrSvg(o.qr,W-60-130,146,130,'#101828','#ffffff'));T('WhatsApp',W-60-65,296,20,{bold:1,anchor:'m',color:th.sub})}
     T(artFit(o.co.name,mw,30,true),x0,H-64,30,{bold:1});
     if(o.co.addr)T(artFit(o.co.addr,mw,22,false),x0,H-30,22,{color:th.sub});
   }else{
     const mw=W-120;
     logoBox(W/2-70,90,140);
+    if(qrOn){E.push(qrSvg(o.qr,W-40-230,40,230,'#101828','#ffffff'))}
     T(artFit(o.co.name,mw,56,true),W/2,o.showLogo&&o.logo?300:170,56,{bold:1,anchor:'m'});
     if(!o.noPhoto){if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="${W/2-270}" y="330" width="540" height="770" rx="40"/></clipPath><rect x="${W/2-280}" y="320" width="560" height="790" rx="46" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-270}" y="330" width="540" height="770" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-200}" y="330" width="400" height="700" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(W/2,700,280,sel,th,F,'c'))}
     let [nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,1120,ns,{bold:1,anchor:'m'});
@@ -739,13 +795,15 @@ function cardSvg(o){
     if(o.co.addr)T(artFit(o.co.addr,mw,34,false),W/2,H-110,34,{anchor:'m',color:th.footT,op:.9});
     T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:th.footT});
   }
+  if(o.border)E.push(`<rect x="${V?28:30}" y="28" width="${W-(V?56:60)}" height="${H-56}" rx="${V?30:18}" fill="none" stroke="${th.accent}" stroke-opacity=".7" stroke-width="${V?5:3}"/>`);
+  if(mc&&mc.img&&o.panel){const pd=Math.round(mc.mw*.12);E.push(`<rect x="${(mc.x-pd).toFixed(0)}" y="${(mc.y-pd).toFixed(0)}" width="${(mc.mw+2*pd).toFixed(0)}" height="${(mc.mh+2*pd).toFixed(0)}" rx="${Math.round(pd*1.6)}" fill="#ffffff" fill-opacity=".96"/>`)}
   if(mc&&mc.img)E.push(`<ellipse cx="${(mc.x+mc.mw*.5).toFixed(0)}" cy="${(mc.y+mc.mh-4).toFixed(0)}" rx="${(mc.mw*.36).toFixed(0)}" ry="10" fill="#000" fill-opacity=".25"/><image href="${mc.img}" xlink:href="${mc.img}" x="${mc.x.toFixed(0)}" y="${mc.y.toFixed(0)}" width="${mc.mw.toFixed(0)}" height="${mc.mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`);
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
 }
 function cardOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
   const s=SEL();
-  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
+  return{fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto'),qr:ck('cqr')&&waNum()?'https://wa.me/'+waNum():'',border:ck('cbor'),panel:ck('cpan'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
 }
 function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
 const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
@@ -771,7 +829,7 @@ async function vArte(){
   <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
   <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
 </div>
-<div style="display:contents" class="mC hid"><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cfoto" style="width:auto" checked onchange="artRender()"> Mostrar minha foto no cartão</label></div><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
+<div style="display:contents" class="mC hid"><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cfoto" style="width:auto" checked onchange="artRender()"> Mostrar minha foto no cartão</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cqr" style="width:auto" onchange="artRender()"> QR Code do meu WhatsApp</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cbor" style="width:auto" onchange="artRender()"> Moldura fina</label></div><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
 <div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
@@ -783,6 +841,7 @@ async function vArte(){
   <label style="margin-top:8px">Altura do mascote: <b id="a_masyv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artMasY(-20)">▲ Subir</button><input type="range" id="a_masy" min="-500" max="300" step="10" value="0" style="flex:1;min-width:140px" oninput="artMasYSet(this.value)"><button type="button" class="btn g s" onclick="artMasY(20)">▼ Descer</button><button type="button" class="btn g s" onclick="artMasYSet(0)">Padrão</button></div>
   <label style="margin-top:8px">Esquerda / direita: <b id="a_masxv">padrão</b></label><input type="range" id="a_masx" min="0" max="700" step="10" value="0" oninput="$('#a_masxv').textContent=+this.value===0?'padrão':'+'+this.value+' px';artRender()"></div>
   <div class="mC hid"><label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="a_cmon" style="width:auto" onchange="artRender()"> Mostrar o mascote no cartão</label>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="a_cpan" style="width:auto" onchange="artRender()"> Caixa branca atrás do mascote</label>
   <label style="margin-top:8px">Tamanho no cartão: <b id="a_cmzv">100%</b></label><input type="range" id="a_cmz" min="50" max="150" value="100" oninput="$('#a_cmzv').textContent=this.value+'%';artRender()">
   <label style="margin-top:8px">Esquerda / direita</label><input type="range" id="a_cmx" min="-500" max="300" step="10" value="0" oninput="artRender()">
   <label style="margin-top:8px">Subir / descer</label><input type="range" id="a_cmy" min="-400" max="200" step="10" value="0" oninput="artRender()"></div>
