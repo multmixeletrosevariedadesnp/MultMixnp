@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.49.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.50.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3524,8 +3524,8 @@ function vPag(){
   ${list.length?`<div style="overflow:auto"><table><tr><th>Fornecedor</th><th>Documento</th><th>Vencimento</th><th>Valor</th><th></th></tr>
   ${list.map(p=>{const n=dleft(p.due_date);return`<tr><td>${esc(p.supplier||'—')}${p.note?`<div class="sm">${esc(p.note)}</div>`:''}</td><td>${p.doc?'NF '+esc(p.doc):'—'}${p.parcel?` · ${esc(p.parcel)}`:''}</td>
   <td class="${!p.paid_at&&n<0?'bad':''}">${fmtD(p.due_date)}${p.paid_at?'':`<div class="sm">${dtxt(n)}</div>`}</td>
-  <td>${p.paid_at?`<span class="ok">Paga ${fmtD(p.paid_at)}</span><div class="sm">${R(p.paid_amount||p.amount)}${p.method?' · '+esc(p.method):''}</div>`:`<b>${R(p.amount)}</b>`}</td>
-  <td style="white-space:nowrap">${p.paid_at?'':`<button class="btn s" onclick="pagPay('${p.id}')">Pagar</button> `}<button class="btn g s" onclick="pagForm('${p.id}')">Editar</button></td></tr>`}).join('')}</table></div>`:'<p>Nenhuma conta nesta lista. As contas entram sozinhas pela <b>Entrada por XML</b> (parcelas da nota) ou pelo botão <b>Nova conta</b>.</p>'}`;
+  <td>${p.paid_at?`<span class="ok">Paga ${fmtD(p.paid_at)}</span><div class="sm">${R(p.paid_amount||p.amount)}${p.method?' · '+esc(p.method):''}${p.bank?' · '+esc(p.bank):''}</div>${p.receipt?`<div class="sm">Comprovante ${esc(p.receipt)}</div>`:''}`:`<b>${R(p.amount)}</b>`}</td>
+  <td style="white-space:nowrap">${p.paid_at?`<button class="btn g s" onclick="pagPay('${p.id}')">Pagamento</button> `:`<button class="btn s" onclick="pagPay('${p.id}')">Pagar</button> `}<button class="btn g s" onclick="pagForm('${p.id}')">Editar</button></td></tr>`}).join('')}</table></div>`:'<p>Nenhuma conta nesta lista. As contas entram sozinhas pela <b>Entrada por XML</b> (parcelas da nota) ou pelo botão <b>Nova conta</b>.</p>'}`;
 }
 function pagForm(id){
   const p=(db.payables||[]).find(x=>x.id===id)||{},v=k=>esc(p[k]??'');
@@ -3544,16 +3544,22 @@ function pagSave(id){
   closeM();render();
 }
 function pagDel(id){if(confirm('Cancelar esta conta a pagar? Ela some da lista e dos avisos.'))master(()=>{put('payables',{...db.payables.find(x=>x.id===id),canceled_at:now()});closeM();render()})}
+const PAG_BANCOS=['Banco do Brasil','Caixa Econômica','Bradesco','Itaú','Santander','Sicredi','Sicoob','Banco da Amazônia','Nubank','Inter','C6 Bank','Mercado Pago','PagBank','Caixa (dinheiro)'];
+const pagBankLast=()=>{try{return localStorage.mm_pag_banco||''}catch(e){return''}};
 function pagPay(id){
-  const p=db.payables.find(x=>x.id===id);if(!p)return;
-  modal(`<h2>Pagar conta</h2><p>${esc(p.supplier||'')} · ${p.doc?'NF '+esc(p.doc)+' · ':''}vence ${fmtD(p.due_date)}</p>
-  <div class="f"><div><label>Valor pago</label><input id="pp_v" type="number" step="0.01" value="${p.amount}"></div><div><label>Forma</label><select id="pp_m"><option>Pix</option><option>Dinheiro</option><option>Boleto</option><option>Transferência</option><option>Cartão</option></select></div>
-  <div><label>Data do pagamento</label><input id="pp_d" type="date" value="${ld(now())}"></div></div>
-  <button class="btn" onclick="pagPayOk('${id}')">Confirmar pagamento</button>`);
+  const p=db.payables.find(x=>x.id===id);if(!p)return;const ed=!!p.paid_at,M=['Pix','Dinheiro','Boleto','Transferência','Cartão'];
+  modal(`<h2>${ed?'Dados do pagamento':'Pagar conta'}</h2><p>${esc(p.supplier||'')} · ${p.doc?'NF '+esc(p.doc)+' · ':''}vence ${fmtD(p.due_date)}</p>
+  <div class="f"><div><label>Valor pago</label><input id="pp_v" type="number" step="0.01" value="${ed?(p.paid_amount||p.amount):p.amount}"></div>
+  <div><label>Forma</label><select id="pp_m">${M.map(m=>`<option ${p.method===m?'selected':''}>${m}</option>`).join('')}</select></div>
+  <div><label>Data do pagamento</label><input id="pp_d" type="date" value="${ed?ld(p.paid_at):ld(now())}"></div>
+  <div><label>Banco</label><input id="pp_b" list="pp_bl" placeholder="De qual banco saiu" value="${esc(p.bank||(ed?'':pagBankLast()))}"><datalist id="pp_bl">${PAG_BANCOS.map(b=>`<option value="${b}">`).join('')}</datalist></div>
+  <div class="w"><label>Número do comprovante (autenticação ou ID da transação)</label><input id="pp_r" placeholder="Opcional" value="${esc(p.receipt||'')}"></div></div>
+  <button class="btn" onclick="pagPayOk('${id}')">${ed?'Salvar':'Confirmar pagamento'}</button>`);
 }
 function pagPayOk(id){
-  const p=db.payables.find(x=>x.id===id),d=pp_d.value||ld(now());
-  put('payables',{...p,paid_at:new Date(d+'T12:00:00').toISOString(),paid_amount:+pp_v.value||+p.amount,method:pp_m.value});
+  const p=db.payables.find(x=>x.id===id),d=pp_d.value||ld(now()),bank=pp_b.value.trim(),rc=pp_r.value.trim();
+  put('payables',{...p,paid_at:new Date(d+'T12:00:00').toISOString(),paid_amount:+pp_v.value||+p.amount,method:pp_m.value,bank:bank||null,receipt:rc||null});
+  try{if(bank)localStorage.mm_pag_banco=bank}catch(e){}
   closeM();render();
 }
 
@@ -3908,7 +3914,7 @@ function relBuild(){
     const L=(REL.pg==='pagas'?P.filter(p=>p.paid_at&&inP(p.paid_at)):P.filter(p=>!p.paid_at)).sort((a,b)=>String(REL.pg==='pagas'?a.paid_at:a.due_date).localeCompare(String(REL.pg==='pagas'?b.paid_at:b.due_date)));
     const amt=p=>+(REL.pg==='pagas'?(p.paid_amount||p.amount):p.amount)||0,lt=L.filter(p=>!p.paid_at&&dleft(p.due_date)<0);
     return{title:REL.pg==='pagas'?'Contas pagas':'Contas a pagar em aberto',sub:REL.pg==='pagas'?'Pagas no período: '+per:'Posição em '+fmtD(ld(now())),head:['Fornecedor','Documento','Vencimento',REL.pg==='pagas'?'Pago em':'Situação','Valor'],al:'llllr',
-      rows:L.map(p=>[p.supplier||'—',(p.doc?'NF '+p.doc:'—')+(p.parcel?' · '+p.parcel:''),fmtD(p.due_date),REL.pg==='pagas'?fmtD(p.paid_at)+(p.method?' · '+p.method:''):(dleft(p.due_date)<0?'Vencida':'A vencer'),R(amt(p))]),
+      rows:L.map(p=>[p.supplier||'—',(p.doc?'NF '+p.doc:'—')+(p.parcel?' · '+p.parcel:''),fmtD(p.due_date),REL.pg==='pagas'?fmtD(p.paid_at)+(p.method?' · '+p.method:'')+(p.bank?' · '+p.bank:'')+(p.receipt?' · comp. '+p.receipt:''):(dleft(p.due_date)<0?'Vencida':'A vencer'),R(amt(p))]),
       foot:['Total','','','',R(sum(L,amt))],sum:[['Contas',L.length],['Total',R(sum(L,amt))],...(REL.pg==='pagas'?[]:[['Vencidas',lt.length+' · '+R(sum(lt,amt))]])]};
   }
   if(k==='caixa'){
