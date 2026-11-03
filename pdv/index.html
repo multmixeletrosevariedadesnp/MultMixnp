@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.12.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.14.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -396,7 +396,7 @@ function artSvg(o){
   // cartão da foto
   const yTop=y,phF=ph,mas=o.mascot;let cx=M+10,cw=W-2*cx;
   const masDim=()=>{let mh=Math.min(phF*(mas.z||1),mas.h),mw=mh*mas.ar;if(mw>W*.5){mw=W*.5;mh=mw/mas.ar}return{mw,mh}};
-  if(mas){const mw=masDim().mw,x0=Math.round(20+mw*.97+6),av=W-30-x0;cw=Math.min(av,Math.round(phF*.8));cx=Math.round(x0+(av-cw)*.3);y=yTop+Math.round(phF*.1);ph=Math.round(phF*.74)}
+  if(mas){const mw=masDim().mw,x0=Math.round(20+mw*.97+6),av=W-30-x0;cw=Math.min(av,Math.round(phF*.8));cx=mas.r?Math.round(30+(av-cw)*.7):Math.round(x0+(av-cw)*.3);y=yTop+Math.round(phF*.1);ph=Math.round(phF*.74)}
   const Y0=y,P0=ph,pz=Math.max(.3,Math.min(1.8,o.pz||1));{const ccx=cx+cw/2+(o.px||0),ccy=y+ph/2+(o.py||0);cw=Math.round(cw*pz);ph=Math.round(ph*pz);cx=Math.round(ccx-cw/2);y=Math.round(ccy-ph/2)}
   if(o.nop){
     if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/>`);
@@ -407,7 +407,7 @@ function artSvg(o){
   else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
   }
   y=Y0;ph=P0;
-  if(mas){y=yTop;ph=phF;const{mw,mh}=masDim(),mimg=artMasImg(mas.id,mh),mx=Math.max(0,Math.min(W-mw-4,20+(mas.dx||0))),my=Math.max(6,Math.min(H-footH-mh-2,yTop+phF-mh+(mas.dy||0)));
+  if(mas){y=yTop;ph=phF;const{mw,mh}=masDim(),mimg=artMasImg(mas.id,mh),mx=Math.max(0,Math.min(W-mw-4,mas.r?W-mw-20-(mas.dx||0):20+(mas.dx||0))),my=Math.max(6,Math.min(H-footH-mh-2,yTop+phF-mh+(mas.dy||0)));
     E.push(`<ellipse cx="${(mx+mw*.45).toFixed(0)}" cy="${(my+mh-4).toFixed(0)}" rx="${(mw*.36).toFixed(0)}" ry="14" fill="#000" fill-opacity=".25"/><image href="${mimg}" xlink:href="${mimg}" x="${mx.toFixed(0)}" y="${my.toFixed(0)}" width="${mw.toFixed(0)}" height="${mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`)}
   y+=ph+Math.round(30*k);
   // nome
@@ -441,7 +441,7 @@ function artSvg(o){
 }
 
 /* ---- tela da aba "Arte do produto" ---- */
-const ART_MAS={1:{f:'mascote1.png',ar:450/1159,h:1159},2:{f:'mascote2.png',ar:578/1180,h:1180}},ART_MASD={},ART_MASV={};
+const ART_MAS={1:{f:'mascote1.png',ar:450/1159,h:1159},2:{f:'mascote2.png',ar:578/1180,h:1180},4:{f:'mascote4.png',ar:954/1522,h:1522},5:{f:'mascote5.png',ar:718/1513,h:1513},6:{f:'mascote6.png',ar:859/1522,h:1522},7:{f:'mascote7.png',ar:908/1518,h:1518,r:1},8:{f:'mascote8.png',ar:718/1513,h:1513,r:1},9:{f:'mascote9.png',ar:654/1526,h:1526}},ART_MASD={},ART_MASV={};
 // versões reduzidas e nítidas do mascote (redução em etapas, sem serrilhado); o original nunca é ampliado além do tamanho real
 function artMasYSet(v){const e=$('#a_masy');if(e)e.value=v;const t=$('#a_masyv');if(t)t.textContent=+v===0?'padrão':(+v<0?'subiu ':'desceu ')+Math.abs(+v)+' px';artRender()}
 function artPosLbl(){const f=(id,a,b)=>{const v=+($('#a_'+id)||{}).value||0,e=$('#a_'+id+'v');if(e)e.textContent=v===0?'padrão':(v<0?a:b)+' '+Math.abs(v)+' px'};f('px','← esquerda','direita →');f('py','↑ subiu','↓ desceu');artRender()}
@@ -549,7 +549,7 @@ function artCaption(){
 function artOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0,r:ART_MAS[artVal('mas')].r||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
     co:{name:co.trade_name||co.legal_name||'MultMix',phone:fmtTel(SEL().phone)||co.whatsapp||co.phone||'',addr},sel:ck('selfoot')?(artSel()&&{...artSel(),noav:!ck('fotorod')}):null,photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
@@ -776,7 +776,7 @@ async function vArte(){
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
   <div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="$('#a_pz').value=100;$('#a_px').value=0;$('#a_py').value=0;$('#a_pzv').textContent='100%';artPosLbl()">Foto no padrão</button></div></div>
-  <div class="w"><label>Mascote (na arte e, se quiser, no cartão)</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote MultMix: mulher</option><option value="2">Mascote MultMix: homem</option><option value="3">Meu mascote (enviar imagem pronta)</option></select>
+  <div class="w"><label>Mascote (na arte e, se quiser, no cartão)</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote MultMix: mulher</option><option value="2">Mascote MultMix: homem</option><option value="4">Mascote MultMix: robô</option><option value="5">Natal: vendedor (gesto p/ direita)</option><option value="6">Natal: Papai Noel (gesto p/ direita)</option><option value="7">Natal: Papai Noel (gesto p/ esquerda)</option><option value="8">Natal: vendedor (gesto p/ esquerda)</option><option value="9">Natal: vendedora (gesto p/ direita)</option><option value="3">Meu mascote (enviar imagem pronta)</option></select>
   <div id="a_masbox" class="hid" style="margin-top:6px"><input type="file" accept="image/*" onchange="masUp(this)"><div class="sm">Envie o mascote já pronto, de preferência PNG com fundo transparente. Ele fica salvo neste aparelho. <button type="button" class="btn g s" onclick="masDel()">Remover o meu mascote</button></div></div>
   <div id="a_masctl" class="hid">
   <div class="mA">  <label style="margin-top:8px">Tamanho do mascote: <b id="a_masv">100%</b></label><input type="range" id="a_masz" min="50" max="140" value="100" oninput="$('#a_masv').textContent=this.value+'%';artRender()"><div class="sm">Até 140%, que é o limite em que a imagem continua nítida (acima disso ela borraria). Ao diminuir, o produto ganha mais espaço.</div>
