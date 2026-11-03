@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.48.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.49.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2353,6 +2353,66 @@ function cliExport(fmt){
   const h=Object.keys(rows[0]),csv=[h,...rows.map(r=>h.map(k=>typeof r[k]==='number'?String(r[k]).replace('.',','):r[k]))].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=nome+'.csv';a.click();
 }
+/* ---- documentos do cliente (pasta privada do Supabase, foto reduzida no aparelho) ---- */
+const DOC_KINDS=[['rg','RG'],['cnh','CNH'],['cpf','CPF'],['comp','Comprovante de endereço'],['renda','Comprovante de renda'],['contrato','Contrato / carnê assinado'],['outro','Outro']];
+const docKind=k=>(DOC_KINDS.find(x=>x[0]===k)||[,'Outro'])[1];
+async function docShrink(file){
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(file)});
+  let side=1600,q=.72,blob;
+  for(let n=0;n<6;n++){
+    const k=Math.min(1,side/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(img,0,0,cv.width,cv.height);
+    blob=await new Promise(ok=>cv.toBlob(ok,'image/jpeg',q));
+    if(blob.size<=320*1024)break;
+    if(q>.55)q-=.08;else side=Math.round(side*.85);
+  }
+  URL.revokeObjectURL(img.src);return blob;
+}
+function docsBox(id){
+  return`<h3>Documentos do cliente</h3><div id="cdocs" class="sm">Carregando…</div>
+  <div class="row" style="margin:8px 0"><select id="cd_kind" style="max-width:230px">${DOC_KINDS.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select>
+  <input type="file" id="cd_file" accept="image/*,application/pdf" multiple style="max-width:260px"><button type="button" class="btn s" onclick="cliDocUp('${id}')">Anexar</button></div>
+  <p class="sm">As fotos são reduzidas para cerca de 300 KB e ficam em pasta privada: só o administrador abre. Nunca vão para o catálogo nem para o GitHub. PDF pode ter até 3 MB.</p>`;
+}
+async function cliDocsLoad(id){
+  const box=$('#cdocs');if(!box)return;
+  if(!sb||!navigator.onLine){box.textContent='Sem internet: os documentos aparecem quando voltar a conexão.';return}
+  const{data,error}=await sb.from('customer_docs').select('id,kind,path,mime,size,created_at').eq('customer_id',id).order('created_at',{ascending:false});
+  if(!$('#cdocs'))return;
+  if(error){box.innerHTML=`<span class="bad">Não foi possível ler os documentos${/relation|does not exist|schema cache/i.test(error.message)?' (rode o SQL v35 no Supabase)':''}.</span>`;return}
+  box.innerHTML=data.length?`<table>${data.map(d=>`<tr><td><b>${esc(docKind(d.kind))}</b><div class="sm">${fmtD(d.created_at)} · ${Math.max(1,Math.round((d.size||0)/1024))} KB</div></td><td style="white-space:nowrap"><button type="button" class="btn g s" onclick="cliDocVer('${d.path}')">Ver</button> <button type="button" class="btn g s" onclick="cliDocDel('${d.id}','${d.path}','${id}')">Excluir</button></td></tr>`).join('')}</table>`:'Nenhum documento anexado.';
+}
+async function cliDocVer(path){
+  const w=window.open('','_blank');
+  const{data,error}=await sb.storage.from('cliente-docs').createSignedUrl(path,180);
+  if(error||!data){if(w)w.close();return alert('Não foi possível abrir: '+(error&&error.message||''))}
+  if(w)w.location=data.signedUrl;else location.href=data.signedUrl;
+}
+async function cliDocDel(did,path,cid){
+  if(!confirm('Excluir este documento? Não dá para desfazer.'))return;
+  const a=await sb.storage.from('cliente-docs').remove([path]);if(a.error)return alert('Não foi possível excluir: '+a.error.message);
+  await sb.from('customer_docs').delete().eq('id',did);cliDocsLoad(cid);
+}
+async function cliDocUp(cid){
+  if(!sb||!navigator.onLine)return alert('Sem internet. Anexe o documento quando a conexão voltar.');
+  const fs=[...($('#cd_file').files||[])];if(!fs.length)return alert('Escolha a foto ou o PDF do documento.');
+  const kind=$('#cd_kind').value;let ok=0,erro='';
+  for(const f of fs){
+    try{
+      const pdf=f.type==='application/pdf';
+      if(pdf&&f.size>3*1024*1024)throw new Error('PDF maior que 3 MB: '+f.name);
+      if(!pdf&&!/^image\//.test(f.type))throw new Error('Tipo não aceito: '+f.name);
+      const blob=pdf?f:await docShrink(f),path=cid+'/'+uid()+(pdf?'.pdf':'.jpg'),mime=pdf?'application/pdf':'image/jpeg';
+      const up=await sb.storage.from('cliente-docs').upload(path,blob,{contentType:mime});
+      if(up.error)throw new Error(up.error.message);
+      const ins=await sb.from('customer_docs').insert({customer_id:cid,kind,path,mime,size:blob.size});
+      if(ins.error){await sb.storage.from('cliente-docs').remove([path]);throw new Error(/foreign key|violates/i.test(ins.error.message)?'O cadastro ainda não chegou ao servidor. Aguarde sincronizar e tente de novo.':ins.error.message)}
+      ok++;
+    }catch(e){erro=e.message;break}
+  }
+  $('#cd_file').value='';cliDocsLoad(cid);
+  if(erro)alert((ok?ok+' anexado(s). ':'')+'Não foi possível anexar: '+erro);
+}
 function cliForm(id){
   const c=db.customers.find(x=>x.id===id)||{},v=k=>esc(c[k]??''),hist=id?db.sales.filter(s=>s.customer_id===id).sort((a,b)=>b.created_at.localeCompare(a.created_at)):[];
   modal(`<h2>${id?'Cadastro':'Novo cadastro'}</h2><div class="f">
@@ -2376,11 +2436,13 @@ function cliForm(id){
    <div><label>Código IBGE</label><input id="k_ibge" inputmode="numeric" value="${v('ibge')}"></div>
    <div class="w"><label>Endereço em texto livre (vem do pedido do catálogo)</label><input id="k_address" value="${v('address')}"></div></div>
    <p class="sm">Ao digitar um CNPJ válido, razão social, fantasia, endereço (com código IBGE), telefone, e-mail e, quando encontrada, a inscrição estadual vêm da Receita Federal e do cadastro público. Confira os dados. NF-e (modelo 55) exige CPF ou CNPJ e endereço completo; NFC-e (modelo 65) só pede o CPF, e ele é opcional.</p>
+   ${id&&sb&&ADM()?docsBox(id):''}
    <button class="btn" onclick="saveCli('${id||''}')">Salvar cliente</button>
    ${id?`<button class="btn g" onclick="toggleCli('${id}')">${c.active===false?'Reativar':'Inativar'} cliente</button>`:''}
    ${c.phone?` <a class="btn g" target="_blank" rel="noopener" href="https://wa.me/55${digits(c.phone)}">WhatsApp</a>`:''}
    ${hist.length?`<h3>Compras</h3><table>${hist.map(s=>`<tr><td>${s.created_at.slice(0,10).split('-').reverse().join('/')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${R(s.total)}</td>
    <td>${s.pay_type==='crediario'?`<button class="btn g s" onclick="carne('${s.id}')">Ver carnê</button> `:''}<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button></td></tr>`).join('')}</table>`:''}`);
+  if(id&&sb&&ADM())cliDocsLoad(id);
 }
 async function cepCli(){
   const c=digits($('#k_cep').value);if(c.length!==8)return;
