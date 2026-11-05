@@ -1,6 +1,6 @@
 {
   "name": "multmix",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MultMix para computador (Windows): Sistema, Catálogo e PDV, funciona sem internet e imprime o cupom direto.",
   "main": "main.js",
   "author": "MultMix Eletros e Variedades",
@@ -22,7 +22,9 @@
     },
     "files": [
       "main.js",
+      "store.js",
       "preload.js",
+      "preload-app.js",
       "home.html",
       "settings.html",
       "offline.html",
@@ -46,6 +48,16 @@
       "createStartMenuShortcut": true,
       "shortcutName": "MultMix",
       "artifactName": "MultMix-Instalador.${ext}"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "icons",
+        "to": "icons"
+      },
+      {
+        "from": "app-files",
+        "to": "app-files"
+      }
+    ]
   }
 }

@@ -13,13 +13,16 @@ async function init(){cfg=await mmDesk.config();setup?vSetup():vHome()}
 function vSetup(){
   $('#sub').textContent='Escolha o que você quer neste computador. Um atalho será criado na área de trabalho para cada um.';
   $('#v').innerHTML=Object.entries(cfg.catalog).map(([k,a])=>`<label class="card"><input type="checkbox" value="${k}" ${cfg.apps.includes(k)||(!cfg.setup&&k==='pdv')?'checked':''}><div><b>${a.nome}</b><p>${a.desc}</p></div></label>`).join('')
-   +`<p id="m"></p><div class="bar"><button onclick="save()">Instalar atalhos e continuar</button>${cfg.setup?'<button class="g" onclick="location.search=\'\'">Cancelar</button>':''}</div>
-   <p style="color:#667085;font-size:13px">Na primeira abertura de cada programa o computador precisa de internet para baixá-lo. Depois ele abre sem internet e envia o que foi feito quando a conexão voltar.</p>`;
+   +`<label class="card"><input type="checkbox" value="__opt" id="o_start" ${cfg.startup?'checked':''}><div><b>Abrir junto com o Windows</b><p>O programa já fica pronto quando o computador liga.</p></div></label>
+   <div class="card"><div><b>Backup automático</b><p>Cópia diária do banco local (guarda 30 dias). Pasta: <span id="bkdir">${cfg.backupDir}</span></p></div><button class="g" onclick="pickDir()">Mudar pasta</button></div>
+   <p id="m"></p><div class="bar"><button onclick="save()">Instalar atalhos e continuar</button>${cfg.setup?'<button class="g" onclick="location.search=\'\'">Cancelar</button>':''}</div>
+   <p style="color:#667085;font-size:13px">Os programas já vêm dentro do instalador: abrem sem internet desde a primeira vez. Os dados ficam em um banco no próprio computador e são enviados ao servidor sozinhos quando a conexão voltar. Quando há internet, o programa também busca a versão nova em segundo plano.</p>`;
 }
+async function pickDir(){const d=await mmDesk.pickBackupDir();if(d){window.__bk=d;$('#bkdir').textContent=d}}
 async function save(){
-  const l=[...document.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);
+  const l=[...document.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value).filter(x=>x!=='__opt'&&x!=='on'&&x!=='');
   if(!l.length){$('#m').textContent='Escolha pelo menos um programa.';return}
-  await mmDesk.setApps(l);cfg=await mmDesk.config();
+  await mmDesk.setApps(l,{startup:$('#o_start').checked,backupDir:window.__bk||''});cfg=await mmDesk.config();
   if(l.length===1){await mmDesk.open(l[0]);window.close()}else{history.replaceState(null,'',location.pathname);vHome()}
 }
 function vHome(){

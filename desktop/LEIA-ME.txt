@@ -5,10 +5,13 @@ Duas formas. Use a A; se der problema, a B funciona sem gerar nada.
 
 A) INSTALADOR COMPLETO (MultMix-Instalador.exe)
    - Pergunta o que instalar: Sistema, PDV e/ou Catalogo, e cria um atalho de cada na area de trabalho.
-   - Cada programa abre em janela propria, funciona sem internet (depois da 1a abertura com internet) e
+   - Os programas VEM DENTRO do instalador: abrem sem internet desde a 1a vez. Com internet, a versao nova e baixada em segundo plano e vale na abertura seguinte.
+   - Banco local em arquivo (sem limite de espaco): gravacao segura, copia anterior automatica, backup diario em Documentos\MultMix\Backup (30 dias) e recuperacao sozinha se o arquivo estragar. Menu MultMix > Banco local: verificar, backup agora, restaurar, trazer dados da versao anterior.
+   - Opcoes na 1a abertura: quais programas instalar, abrir junto com o Windows e pasta dos backups.
+   - Cada programa abre em janela propria e
      imprime o cupom DIRETO na impressora escolhida (menu MultMix > Impressora do cupom).
    - Como gerar o .exe (uma vez, sem instalar nada no seu PC):
-       1. Envie para o GitHub as pastas "desktop" e ".github" (junto com o resto do projeto).
+       1. Envie para o GitHub as pastas "desktop" e ".github" (junto com o resto do projeto; o instalador copia sistema, pdv, catalogo e ibpt para dentro dele).
        2. No GitHub: aba Actions > "Instalador MultMix (Windows)" > Run workflow.
        3. Quando terminar (uns 5 a 10 min), abra a execucao e baixe "MultMix-Instalador" em Artifacts (vem num .zip).
        4. Dentro do zip esta o MultMix-Instalador.exe. Copie para os computadores e de dois cliques.
@@ -17,8 +20,11 @@ A) INSTALADOR COMPLETO (MultMix-Instalador.exe)
    - Os programas abrem do endereco publicado no GitHub Pages, entao as atualizacoes chegam sozinhas (sem reinstalar).
 
 B) INSTALADOR SIMPLES (Instalar-MultMix-simples.bat)
+   - Mantenha a pasta "icons" ao lado do .bat (e dele os icones de cada atalho).
    - De dois cliques, responda S/N para PDV, Sistema e Catalogo. Cria atalhos que abrem o Chrome/Edge como aplicativo.
    - O cupom sai direto na IMPRESSORA PADRAO do Windows: deixe a termica como padrao.
 
 Impressora termica: instale o driver do fabricante no Windows e use papel de 58 ou 80 mm.
 No instalador completo, escolha a impressora em MultMix > Impressora do cupom e clique "Imprimir teste".
+
+ATUALIZANDO DE UMA VERSAO ANTERIOR (1.0.x): antes de instalar a 1.1.0, abra o programa antigo com internet e deixe enviar as vendas pendentes. A 1.1.0 tenta trazer sozinha os dados guardados pela anterior (menu MultMix > Banco local > Trazer dados da versao anterior).

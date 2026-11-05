@@ -38,6 +38,11 @@ set "VBS=%TEMP%\mmlnk.vbs"
 >> "%VBS%" echo l.TargetPath = "%BROWSER%"
 >> "%VBS%" echo l.Arguments = "--kiosk-printing --app=%BASE%%~2 --user-data-dir=""%LocalAppData%\MultMix\%~3"""
 >> "%VBS%" echo l.Description = "%~1"
+if exist "%~dp0icons\%~3.ico" (
+  if not exist "%LocalAppData%\MultMix\icons" mkdir "%LocalAppData%\MultMix\icons"
+  copy /y "%~dp0icons\%~3.ico" "%LocalAppData%\MultMix\icons\%~3.ico" >nul
+  >> "%VBS%" echo l.IconLocation = "%LocalAppData%\MultMix\icons\%~3.ico"
+)
 >> "%VBS%" echo l.Save
 cscript //nologo "%VBS%"
 del "%VBS%" >nul 2>&1

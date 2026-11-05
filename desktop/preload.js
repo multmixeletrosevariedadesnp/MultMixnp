@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('mmDesk', {
   setPrinter: n => ipcRenderer.invoke('mm-set-printer', n),
   testPrint: () => ipcRenderer.invoke('mm-test-print'),
   config: () => ipcRenderer.invoke('mm-config'),
-  setApps: l => ipcRenderer.invoke('mm-set-apps', l),
+  setApps: (l, o) => ipcRenderer.invoke('mm-set-apps', l, o),
+  pickBackupDir: () => ipcRenderer.invoke('mm-pick-backup-dir'),
   open: k => ipcRenderer.invoke('mm-open', k)
 });
