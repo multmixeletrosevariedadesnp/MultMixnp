@@ -1,5 +1,5 @@
 {
- "version": "1.52.0",
- "date": "2026-11-02",
- "notes": "Multa e juros de atraso configuráveis (limites legais) e dias de tolerância."
+ "version": "1.53.0",
+ "date": "2026-11-05",
+ "notes": "Cobrança automática: escolha entre Mercado Pago e InfinitePay."
 }

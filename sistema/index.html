@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.52.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.53.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1286,9 +1286,10 @@ function vEmp(){
   <div class="f"><div><label>Multa (%)</label><input id="e_cob_multa" type="number" step="0.01" min="0" max="2" value="${CFG.MULTA}"></div>
   <div><label>Juros ao mês (%)</label><input id="e_cob_juro" type="number" step="0.01" min="0" max="1" value="${CFG.JURO_MES}"></div>
   <div><label>Dias de tolerância</label><input id="e_cob_car" type="number" step="1" min="0" max="10" value="${CFG.CARENCIA||0}"></div></div></div>
-  <div style="margin:14px 0"><b>Pix Mercado Pago (confirmação automática)</b>
+  <div style="margin:14px 0"><b>Cobrança automática (Mercado Pago ou InfinitePay)</b>
   <p class="sm" style="margin:2px 0 8px">Gera o QR Code Pix pelo Mercado Pago e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até criar a aplicação no Mercado Pago, publicar a função <code>mp-pix</code> e conferir a tarifa na sua conta (veja supabase/functions/mp-pix/README.md).</p>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar Pix Mercado Pago</label></div>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
+  <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option></select></div></div></div>
   <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
@@ -1370,7 +1371,7 @@ function saveEmp(){
     if(ae&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ae))return alert('E-mail do contador inválido.');
     if(an||ae||ap||'accountant_name' in CO()){row.accountant_name=an||null;row.accountant_email=ae||null;row.accountant_phone=ap||null}
   }
-  row.mp_pix_on=$('#e_mp_pix_on').checked;row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
+  row.mp_pix_on=$('#e_mp_pix_on').checked;row.pix_provider=$('#e_pix_provider').value;row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
   const cm=+$('#e_cob_multa').value,cj=+$('#e_cob_juro').value,cc=+$('#e_cob_car').value;
   if(!(cm>=0&&cm<=COB_MAX.multa))return alert('A multa por atraso não pode passar de 2% (Código de Defesa do Consumidor).');
@@ -2800,7 +2801,7 @@ function pixAtual(iid,sid,charge){
   <label>Pix copia e cola</label><textarea id="pxcode" rows="3" readonly onclick="this.select()">${esc(payload)}</textarea>
   <div class="row"><button class="btn" onclick="pixCopy()">Copiar código</button>
   <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp (sem número do cliente)'}</button></div>
-  ${co.mp_pix_on&&sb?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">Gerar Pix Mercado Pago (baixa sozinho)</button></div><p class="sm">O Mercado Pago gera um QR próprio e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:''}
+  ${co.mp_pix_on&&sb?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar link de pagamento InfinitePay (baixa sozinho)':'Gerar Pix Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:''}
   <p id="pxok" class="sm ok" role="status"></p>
   <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo do Mercado Pago e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
   <button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button>`);
@@ -2827,11 +2828,11 @@ function mpShow(r,iid,sid,desc){
   const i=db.installments.find(x=>x.id===iid)||{},s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO();
   const loja=co.trade_name||co.legal_name||'MultMix',prim=(c.name||'').trim().split(/\s+/)[0]||'';
   let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
-  window.mpMsg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\nSegue o Pix da parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (válido até ${dBR(r.expires_at)}).\n\nPix copia e cola:\n${r.qr_code}\n\nO pagamento é reconhecido na hora. Obrigado!`;
+  window.mpMsg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\n${r.checkout_url?`Segue o link para pagar a parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (Pix ou cartão):\n${r.checkout_url}`:`Segue o Pix da parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (válido até ${dBR(r.expires_at)}).\n\nPix copia e cola:\n${r.qr_code}`}\n\nO pagamento é reconhecido na hora. Obrigado!`;
   window.mpCh=r.id;
-  modal(`<h2>Pix Mercado Pago · parcela ${i.number}</h2><p class="sm">${esc(c.name||'')} · <b>${R(r.amount)}</b> · vale até ${dBR(r.expires_at)}</p>
-  ${r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:''}
-  <label>Pix copia e cola</label><textarea id="mpcode" rows="3" readonly onclick="this.select()">${esc(r.qr_code)}</textarea>
+  modal(`<h2>${r.checkout_url?'Link InfinitePay':'Pix Mercado Pago'} · parcela ${i.number}</h2><p class="sm">${esc(c.name||'')} · <b>${R(r.amount)}</b> · ${r.checkout_url?'combine o pagamento até':'vale até'} ${dBR(r.expires_at)}</p>
+  ${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:''}
+  <label>${r.checkout_url?'Link de pagamento':'Pix copia e cola'}</label><textarea id="mpcode" rows="3" readonly onclick="this.select()">${esc(r.checkout_url||r.qr_code)}</textarea>
   <div class="row"><button class="btn" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar código</button>
   <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.mpMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp'}</button></div>
   <p id="mpst" class="sm" role="status">Aguardando o pagamento… (confere sozinho a cada poucos segundos)</p>
@@ -2860,7 +2861,7 @@ async function mpBaixa(id,iid,paid,desc){ // reserva a baixa primeiro (só um ap
   const r=await mpCall({action:'aplicado',id,note:i&&!i.paid_at&&!i.canceled_at?'baixa automática':'parcela já estava baixada'});
   if(!r.aplicado_agora||!i||i.paid_at||i.canceled_at)return null;
   const rid=uid();
-  parcAplica(i,{valor:paid,desc:desc||0,meio:'Pix',nota:'Pix Mercado Pago (automático)',motivo:desc>0?'Desconto de juros combinado no Pix':'',rid});
+  parcAplica(i,{valor:paid,desc:desc||0,meio:'Pix',nota:'Pagamento automático',motivo:desc>0?'Desconto de juros combinado no Pix':'',rid});
   save();sync();return rid;
 }
 let mpBusy=false;
