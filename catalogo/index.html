@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.6.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.6.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -307,7 +307,7 @@ function list(){
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}${safeUrl(p.video_url)?'<span class="vidb" title="Tem vídeo">▶ vídeo</span>':''}</div>
    <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
-   <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div>${p.stock>0?`<a class="btn wa cwa" target="_blank" rel="noopener" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" href="https://wa.me/${wa()}?text=${encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:',false,true)+'\n\nAinda está disponível?')}">Chamar no WhatsApp</a>`:''}</div></div>`}).join('')||EMPTY;
+   <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div>${p.stock>0?`<a class="btn wa cwa" target="_blank" rel="noopener" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" href="https://wa.me/${wa()}?text=${waAsk(p)}">Chamar no WhatsApp</a>`:''}</div></div>`}).join('')||EMPTY;
   fab();
 }
 function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacola (${n})`;$('#fab').style.display=n?'':'none';document.body.classList.toggle('hasbag',n>0)}
@@ -315,10 +315,13 @@ function fab(){const n=bag.reduce((s,i)=>s+i.qty,0);$('#fab').textContent=`Sacol
 /* ---- Produto ---- */
 // foto reduzida (JPEG até 800 px, leve) para o WhatsApp mostrar a prévia da imagem no chat
 const waImg=u=>u?'https://wsrv.nl/?url='+encodeURIComponent(u)+'&w=800&h=800&fit=inside&we&bg=white&output=jpg&q=80':'';
-const pageUrl=id=>location.origin+location.pathname+'#p='+id;
+const PUB=/^https?:$/.test(location.protocol)?location.origin+location.pathname.replace(/[^/]*$/,''):'https://multmixeletrosevariedadesnp.github.io/MultMixnp/catalogo/'; // endereço público (no programa de computador o endereço interno não serve para o cliente)
+const pageUrl=id=>PUB+'#p='+id;
+/* "Chamar no WhatsApp": abre direto a conversa da loja com o produto (foto/prévia + link + preço) e a pergunta de disponibilidade */
+const waAsk=p=>encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:',false,true)+'\n\nEle está disponível? Se estiver, podem me chamar neste número para eu finalizar a compra. Obrigado!');
 let MAN={};
 async function manLoad(){try{const r=await fetch('p/manifest.json',{cache:'no-store'});if(r.ok)MAN=(await r.json()).itens||{}}catch(e){}}
-const pagePrev=p=>MAN[p.id]!=null&&MAN[p.id]===(p.updated_at||'')?new URL('p/'+p.id+'.html',location.href.split('#')[0]).href:''; // página com prévia (foto) pronta para este produto
+const pagePrev=p=>MAN[p.id]!=null&&MAN[p.id]===(p.updated_at||'')?new URL('p/'+p.id+'.html',PUB).href:''; // página com prévia (foto) pronta para este produto
 function productText(p,head,noPhoto,pf){
   const ph0=(p.photos||[])[0],pp=pf?pagePrev(p):'';
   const l=pf&&pp?[head,'',pp,'','*'+p.name+'*']:pf&&ph0?[head,'',waImg(ph0),'','*'+p.name+'*']:[head,'','*'+p.name+'*']; // pf: foto logo no começo, para o WhatsApp mostrar a prévia da imagem
@@ -379,7 +382,7 @@ function detail(id){
   gal=ph;gi=0;prefetchShare(p);
   setTimeout(()=>{const m=$('#mi');if(m){m.ontouchstart=e=>sx=e.touches[0].clientX;m.ontouchend=e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)showImg(gi+(d<0?1:-1))}}},0);
   const msgW=encodeURIComponent(productText(p,'Olá, MultMix! Quero ser avisado quando este produto chegar:'));
-  const msg=encodeURIComponent(productText(p,'Olá, MultMix! Tenho interesse neste produto:',false,true)+'\n\nAinda está disponível?');
+  const msg=waAsk(p);
   modal(`<div class="two"><div><div class="main" id="mi" role="button" tabindex="0" aria-label="Ampliar foto" onclick="if(!event.target.closest('.ar'))openLb()" onkeydown="if(event.key==='Enter')openLb()" style="cursor:zoom-in;${ph[0]?`background-image:url('${esc(ph[0])}')`:''}"><span class="zm">⤢ Ampliar</span>${ph.length>1?`<button class="ar l" aria-label="Foto anterior" onclick="showImg(gi-1)">‹</button><button class="ar r" aria-label="Próxima foto" onclick="showImg(gi+1)">›</button><span class="cnt" id="cnt">1/${ph.length}</span>`:''}</div>
    <div class="th">${ph.map((u,i)=>`<div class="${i?'':'on'}" role="button" tabindex="0" aria-label="Foto ${i+1}" style="background-image:url('${esc(u)}')" onclick="showImg(${i})" onkeydown="if(event.key==='Enter')showImg(${i})"></div>`).join('')}</div></div>
    <div><h2 style="margin:0 0 4px">${esc(p.name)}</h2><span class="tag">${esc(p.category||'')}</span> ${p.internal_code?`<span class="tag">Cód. ${esc(p.internal_code)}</span>`:''} ${out?'<span class="tag">Indisponível</span>':''}

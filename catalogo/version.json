@@ -1,5 +1,5 @@
 {
- "version": "1.6.0",
- "date": "2026-11-01",
- "notes": "Prévia com foto no WhatsApp (páginas de produto)."
+ "version": "1.6.1",
+ "date": "2026-11-05",
+ "notes": "Chamar no WhatsApp: mensagem com foto/link do produto, pergunta de disponibilidade e pedido para a loja chamar o cliente."
 }
