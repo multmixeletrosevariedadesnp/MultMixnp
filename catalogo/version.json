@@ -1,5 +1,5 @@
 {
- "version": "1.6.1",
+ "version": "1.6.2",
  "date": "2026-11-05",
- "notes": "Chamar no WhatsApp: mensagem com foto/link do produto, pergunta de disponibilidade e pedido para a loja chamar o cliente."
+ "notes": "Compartilhar usa a página de prévia (foto, nome e preço) quando existe."
 }

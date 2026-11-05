@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.6.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.6.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -331,7 +331,7 @@ function productText(p,head,noPhoto,pf){
   const sp=(p.specs||[]).slice(0,4).map(s=>s.k+': '+s.v).join(' · ');if(sp)l.push(sp);
   const pr=vis(p).map(t=>txt(p,t)).join(' · ');if(pr)l.push(pr);
   l.push('');const ph=(p.photos||[])[0];if(ph&&!noPhoto&&!pf)l.push('Foto: '+waImg(ph));
-  if(!(pf&&pp))l.push('Ver no catálogo: '+pageUrl(p.id));
+  if(!(pf&&pp))l.push('Ver no catálogo: '+(pagePrev(p)||pageUrl(p.id)));
   return l.join('\n');
 }
 let gal=[],gi=0,sx=0,shareFile=null;
@@ -345,10 +345,10 @@ function shareProduct(id){
   if(shareFile&&navigator.canShare&&navigator.canShare({files:[shareFile]})){
     navigator.share({files:[shareFile],text:productText(p,head,true)}).catch(e=>{if(!e||e.name!=='AbortError')waShare(p,head)});return;
   }
-  if(navigator.share){navigator.share({title:p.name,text:productText(p,head)}).catch(e=>{if(!e||e.name!=='AbortError')waShare(p,head)});return}
+  if(navigator.share){navigator.share({title:p.name,text:productText(p,head,false,true)}).catch(e=>{if(!e||e.name!=='AbortError')waShare(p,head)});return}
   waShare(p,head);
 }
-const waShare=(p,head)=>window.open('https://wa.me/?text='+encodeURIComponent(productText(p,head)),'_blank','noopener');
+const waShare=(p,head)=>window.open('https://wa.me/?text='+encodeURIComponent(productText(p,head,false,true)),'_blank','noopener');
 function lbShow(){$('#lbi').src=gal[gi];$('#lbc').textContent=gal.length>1?(gi+1)+' / '+gal.length:''}
 function openLb(){
   if(!gal.length)return;
