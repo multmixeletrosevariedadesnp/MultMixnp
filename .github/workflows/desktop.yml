@@ -3,6 +3,8 @@
 name: Instalador MultMix (Windows)
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
@@ -15,13 +17,15 @@ jobs:
         shell: bash
         run: |
           mkdir -p desktop/app-files
-          for d in sistema pdv catalogo ibpt; do [ -d "$d" ] && cp -r "$d" desktop/app-files/; done
+          for d in sistema pdv catalogo ibpt; do if [ -d "$d" ]; then cp -r "$d" desktop/app-files/; fi; done
           rm -rf desktop/app-files/*/node_modules
       - name: Instalar e gerar
         working-directory: desktop
         run: |
           npm install
-          npm run dist
+          npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: MultMix-Instalador
