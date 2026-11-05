@@ -1,5 +1,5 @@
 {
- "version": "1.53.0",
+ "version": "1.53.1",
  "date": "2026-11-05",
- "notes": "Cobrança automática: escolha entre Mercado Pago e InfinitePay."
+ "notes": "Corrige envio travado (offline) quando o SQL novo ainda não foi rodado; mostra o motivo real do erro."
 }

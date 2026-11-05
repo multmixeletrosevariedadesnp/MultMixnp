@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.53.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.53.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -354,7 +354,17 @@ async function doSync(){
       while(db.outbox.length){
         const t=db.outbox[0].t;let n=0;while(n<100&&db.outbox[n]&&db.outbox[n].t===t)n++;
         const rows=[...new Map(db.outbox.slice(0,n).map(o=>[o.row.id,o.row])).values()];
-        const{error}=await sb.from(t).upsert(rows);if(error)throw error;db.outbox.splice(0,n);save();}
+        let er=null,tent=0,fora=[];
+        for(;;){ // se o banco ainda não tem uma coluna nova (SQL não rodado), envia sem ela em vez de travar tudo
+          er=(await sb.from(t).upsert(rows)).error;if(!er)break;
+          const mc=/'([a-z_0-9]+)' column|column "?([a-z_0-9]+)"? .*does not exist|column [a-z_]+\.([a-z_0-9]+) does not exist/i.exec(er.message||'');
+          const col=mc&&(mc[1]||mc[2]||mc[3]);
+          if(!col||tent++>=6||!rows.some(r=>col in r))break;
+          fora.push(col);rows.forEach(r=>{delete r[col]});
+        }
+        if(er)throw er;
+        if(fora.length)window.__colFalta=[...new Set(fora)];
+        db.outbox.splice(0,n);save();}
     }
     for(const t of role?T:['company']){
       if((t==='payables'||t==='parcel_payments')&&role!=='admin')continue; // contas a pagar e recebimentos: só administrador
@@ -363,7 +373,11 @@ async function doSync(){
       if(!db.outbox.length)db[t]=data;
     }
     save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){setSync('offline · '+db.outbox.length+' pendente(s)')}
+  }catch(e){
+    const srv=e&&(e.code||e.status||/violates|does not exist|permission|JWT|row-level/i.test(e.message||''));
+    setSync((srv?'erro ao enviar · ':'offline · ')+db.outbox.length+' pendente(s)');
+    try{const el=document.getElementById('sync');if(el)el.title=(e&&e.message)||String(e);console.warn('sync:',e)}catch(x){}
+  }
   render();
   try{loadPev().then(()=>notifCheck());certCheck();ibptMeta().then(()=>{notifCheck();fiscHealth()});ibptAuto();pacLoad();codLoad()}catch(e){}
 }
@@ -1371,7 +1385,8 @@ function saveEmp(){
     if(ae&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ae))return alert('E-mail do contador inválido.');
     if(an||ae||ap||'accountant_name' in CO()){row.accountant_name=an||null;row.accountant_email=ae||null;row.accountant_phone=ap||null}
   }
-  row.mp_pix_on=$('#e_mp_pix_on').checked;row.pix_provider=$('#e_pix_provider').value;row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
+  {const on=$('#e_mp_pix_on').checked,pv2=$('#e_pix_provider').value;
+  if(on!==!!CO().mp_pix_on||('mp_pix_on' in CO()))row.mp_pix_on=on;if(pv2!==(CO().pix_provider||'mp')||('pix_provider' in CO()))row.pix_provider=pv2;}row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
   const cm=+$('#e_cob_multa').value,cj=+$('#e_cob_juro').value,cc=+$('#e_cob_car').value;
   if(!(cm>=0&&cm<=COB_MAX.multa))return alert('A multa por atraso não pode passar de 2% (Código de Defesa do Consumidor).');
