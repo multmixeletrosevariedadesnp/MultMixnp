@@ -1,0 +1,36 @@
+name: Páginas de produto (prévia do WhatsApp)
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'   # a cada 30 minutos
+  workflow_dispatch:          # botão "Run workflow" para rodar na hora
+  push:
+    paths:
+      - 'tools/gerar-paginas-produto.mjs'
+      - '.github/workflows/paginas-produto.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paginas-produto
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Gerar páginas
+        env:
+          SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/catalogo/
+        run: node tools/gerar-paginas-produto.mjs
+      - name: Salvar se mudou
+        run: |
+          git config user.name "multmix-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add catalogo/p
+          if git diff --cached --quiet; then echo "sem mudanças"; else git commit -m "Atualiza páginas de produto (prévia do WhatsApp)" && git push; fi
