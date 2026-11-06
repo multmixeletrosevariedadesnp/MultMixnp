@@ -1,5 +1,5 @@
 {
- "version": "1.56.0",
+ "version": "1.56.1",
  "date": "2026-11-06",
- "notes": "Aba Fiscal: botão WhatsApp para enviar a nota ao cliente."
+ "notes": "Fiscal: botão WhatsApp envia só o PDF da nota."
 }

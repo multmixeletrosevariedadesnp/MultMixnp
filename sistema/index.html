@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.56.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.56.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3864,30 +3864,20 @@ async function fisFile(id,kind){
     a.download=d.nome;a.click();
   }catch(e){alert(e.message)}
 }
-/* ===== enviar a nota ao cliente pelo WhatsApp ===== */
-function fisZapMsg(s){
-  const c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),nm=(c.name||'').trim().split(/\s+/)[0]||'',loja=co.trade_name||co.legal_name||'MultMix',tipo=s.doc_type==='nfce'?'NFC-e (cupom fiscal eletrônico)':'NF-e (nota fiscal eletrônica)';
-  const k=digits(s.fiscal_key||'');
-  return `Olá${nm?', '+nm:''}! Aqui é da ${loja}.\n\nSegue a ${tipo} da sua compra de ${fmtD(s.created_at)}, no valor de ${R(s.total)}.${s.fiscal_number?'\nNota nº '+s.fiscal_number+(s.fiscal_series?' · série '+s.fiscal_series:''):''}${k?'\n\nChave de acesso:\n'+k+'\n\nVocê pode consultar a nota em www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx digitando a chave acima.':''}\n\nObrigado pela preferência!`;
-}
-function fisZap(id){
+/* ===== enviar o PDF da nota (DANFE) ao cliente pelo WhatsApp ===== */
+async function fisZap(id){
   const s=db.sales.find(x=>x.id===id);if(!s)return;
-  const c=db.customers.find(x=>x.id===s.customer_id)||{};let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
-  window.zapNota={id,ph,msg:fisZapMsg(s)};
-  const canShare=!!(navigator.canShare&&navigator.canShare({files:[new File(['x'],'x.pdf',{type:'application/pdf'})]}));
-  modal(`<h2>Enviar a nota ao cliente</h2><p class="sm">${esc(c.name||'Consumidor')} · ${R(s.total)}${ph?'':' · <b class="bad">sem telefone cadastrado</b>'}</p>
-  <textarea id="zapmsg" rows="8">${esc(window.zapNota.msg)}</textarea>
-  <div class="row"><button class="btn" onclick="fisZapAbrir()">${ph?'Abrir WhatsApp do cliente':'Abrir WhatsApp (escolher contato)'}</button></div>
-  <p class="sm">O WhatsApp não aceita anexar arquivo por link. Para mandar o <b>PDF</b> (DANFE):</p>
-  <div class="row">${canShare?`<button class="btn g" onclick="fisZapPdf('${id}')">Enviar o PDF pelo celular</button>`:`<button class="btn g" onclick="fisFile('${id}','danfe')">Baixar o PDF e arrastar para a conversa</button>`}</div>`);
-}
-function fisZapAbrir(){const z=window.zapNota;window.open('https://wa.me/'+(z.ph||'')+'?text='+encodeURIComponent(document.getElementById('zapmsg').value),'_blank')}
-async function fisZapPdf(id){
+  const c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),nm=(c.name||'').trim().split(/\s+/)[0]||'',loja=co.trade_name||co.legal_name||'MultMix';
+  let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
+  const txt=`Olá${nm?', '+nm:''}! Aqui é da ${loja}. Segue em anexo a nota fiscal da sua compra de ${fmtD(s.created_at)} (${R(s.total)}). Obrigado pela preferência!`;
   try{
     const d=await fisCall({action:'danfe',sale_id:id}),bin=atob(d.pdf_base64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
     const f=new File([u],d.nome||'nota.pdf',{type:'application/pdf'});
-    await navigator.share({files:[f],text:document.getElementById('zapmsg').value});
-  }catch(e){if(e&&e.name!=='AbortError')alert('Não foi possível compartilhar o PDF: '+e.message)}
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:txt});return} // celular: anexa o PDF e você escolhe o WhatsApp e o contato
+    const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click(); // computador: baixa o PDF e abre a conversa do cliente
+    window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(txt),'_blank');
+    alert('O PDF da nota foi baixado ('+f.name+').\n\nNa conversa do WhatsApp que abriu, arraste o arquivo ou use o clipe para anexá-lo e envie.');
+  }catch(e){if(!e||e.name!=='AbortError')alert('Não foi possível enviar a nota: '+(e&&e.message||e))}
 }
 function fisCancel(id){
   const j=prompt('Cancelar a nota na SEFAZ? Não dá para desfazer, e o prazo costuma ser de 24 h após a autorização.\n\nJustificativa do cancelamento (mínimo 15 caracteres):');if(j===null)return;
