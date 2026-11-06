@@ -1,5 +1,5 @@
 {
- "version": "1.54.0",
+ "version": "1.55.0",
  "date": "2026-11-06",
- "notes": "Contrato de venda a prazo (carnê), preenchido sozinho."
+ "notes": "Contrato com assinatura eletrônica por link (CPF, assinatura na tela e selfie)."
 }

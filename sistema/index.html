@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.54.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.55.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2732,7 +2732,8 @@ function carne(id){
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}${i.due_orig&&i.due_orig!==i.due_date?`<div class="sm">alterado (era ${fmtD(i.due_orig)})</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
   <td>${i.paid_at?`${R(i.paid_amount||i.amount)}${+i.rebate?`<div class="sm">abatido ${R(i.rebate)}</div>`:''}`:`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button> <button class="btn g s" onclick="vencAsk('${i.id}','${id}')">Vencimento</button>`}`}</td></tr>`}).join('')}</table></div>
-  ${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn g" onclick="contrato('${id}')">Contrato</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+  <div id="ctrbox" class="noprint"></div>${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn g" onclick="contrato('${id}')">Contrato</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+  ctrLoad(id);
 }
 function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e estorno
   const rids=[...new Set(db.parcel_payments.filter(p=>p.sale_id===sid).sort((a,b)=>String(b.paid_at).localeCompare(String(a.paid_at))).map(p=>p.receipt_id))];
@@ -3967,6 +3968,7 @@ function contratoHtml(sid){
   cl.push(['Da propriedade e da posse',`A posse dos bens passa ao COMPRADOR na entrega, que passa a responder pela guarda e conservação deles.`]);
   cl.push(['Dos dados pessoais',`O COMPRADOR autoriza a VENDEDORA a tratar os dados pessoais informados neste contrato (nome, documentos, endereço, telefone e e-mail) para cadastro, emissão de nota fiscal, cobrança, atendimento e cumprimento de obrigações legais, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Os dados não são vendidos nem divulgados a terceiros, salvo obrigação legal ou para a cobrança do débito.`]);
   cl.push(['Das comunicações',`O COMPRADOR concorda em receber avisos e cobranças pelo telefone e pelo e-mail informados e se compromete a comunicar à VENDEDORA qualquer mudança de endereço ou telefone.`]);
+  cl.push(['Da assinatura eletrônica',`As partes reconhecem como válida, para todos os fins, a assinatura eletrônica deste contrato (Lei nº 13.874/2019, Lei nº 14.063/2020, art. 4º, I, e MP nº 2.200-2/2001, art. 10, §2º). Quando o contrato for assinado por link, o COMPRADOR confirma seu CPF, assina na tela e autoriza expressamente o registro de sua fotografia (selfie), do endereço IP, do aparelho e da data e hora da assinatura, usados somente como prova de autoria e integridade deste contrato.`]);
   cl.push(['Do foro',`As partes elegem o foro da comarca do domicílio do COMPRADOR (art. 101, I, do CDC) para resolver qualquer questão deste contrato. Quaisquer alterações só valem por escrito e assinadas pelas duas partes.`]);
   const cli=`<b>${esc(c.name||'COMPRADOR')}</b>${c.cpf?`, ${(c.person_type==='J'||digits(c.cpf).length===14)?'CNPJ':'CPF'} nº <b>${esc(docBR(c.cpf))}</b>`:', CPF nº ____________________'}, RG/documento nº ____________________${c.phone?`, telefone <b>${esc(c.phone)}</b>`:', telefone ____________________'}${c.email?`, e-mail ${esc(c.email)}`:''}, residente e domiciliado(a) em <b>${esc(addr(c)||'__________________________________________')}</b>`;
   const itens=(s.items||[]);
@@ -4000,6 +4002,53 @@ function contrato(sid){
   const html=contratoHtml(sid);if(!html)return alert('Venda não encontrada.');
   const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
   fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},400)};
+}
+/* ===== contrato com assinatura eletrônica por link (cliente assina no celular: CPF + assinatura + selfie) ===== */
+const SIGN_BASE='https://multmixeletrosevariedadesnp.github.io/MultMixnp/assinar/';
+async function sha256hex(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+const ctrSt=r=>r.status==='assinado'?`<span class="ok">Assinado em ${dBR(r.signed_at)}</span>`:r.status==='cancelado'?'<span class="sm">Cancelado</span>':(new Date(r.expires_at)<new Date()?'<span class="bad">Link vencido</span>':'<span style="color:#b26a00">Aguardando assinatura</span>');
+async function ctrLoad(sid){
+  const box=document.getElementById('ctrbox');if(!box)return;
+  if(!sb||role!=='admin'||navigator.onLine===false){box.innerHTML='';return}
+  const{data,error}=await sb.from('contract_sign').select('id,token,status,created_at,expires_at,signed_at').eq('sale_id',sid).order('created_at',{ascending:false});
+  const b2=document.getElementById('ctrbox');if(!b2)return;
+  if(error){b2.innerHTML=/relation|does not exist|schema cache/i.test(error.message)?'<p class="sm bad">Assinatura por link: rode o SQL v39 no Supabase.</p>':'';return}
+  b2.innerHTML=`<h3>Assinatura do contrato</h3>${(data||[]).length?`<table>${data.map(r=>`<tr><td>${ctrSt(r)}<div class="sm">enviado em ${fmtD(r.created_at)}</div></td><td style="white-space:nowrap">${r.status==='assinado'?`<button class="btn g s" onclick="ctrVer('${r.id}')">Ver contrato assinado</button>`:r.status==='pendente'?`<button class="btn g s" onclick="ctrShow('${r.token}','${sid}')">Link</button> <button class="btn g s" onclick="ctrCancel('${r.id}','${sid}')">Cancelar</button>`:''}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum contrato enviado para assinatura.</p>'}
+  <button class="btn" onclick="ctrNovo('${sid}')">Enviar contrato para assinar</button>`;
+}
+async function ctrNovo(sid){
+  const s=db.sales.find(x=>x.id===sid),c=db.customers.find(x=>x.id===s.customer_id)||{};
+  if(!sb||navigator.onLine===false)return alert('Precisa de internet para gerar o link.');
+  if(digits(c.cpf).length!==11&&digits(c.cpf).length!==14)return alert('Cadastre o CPF ou CNPJ do cliente antes: o cliente confirma o documento para assinar.');
+  if(!db.installments.some(i=>i.sale_id===sid)&&s.pay_type==='crediario')return alert('Esta venda ainda não tem parcelas sincronizadas.');
+  const html=contratoHtml(sid),tk=[...crypto.getRandomValues(new Uint8Array(20))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const row={sale_id:sid,customer_id:s.customer_id,token:tk,html,html_hash:await sha256hex(html),cpf_digits:digits(c.cpf),phone:c.phone||'',expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:(me&&me.id)||null};
+  const{error}=await sb.from('contract_sign').insert(row);
+  if(error)return alert('Não foi possível gerar o link: '+error.message+(/relation|schema cache/i.test(error.message)?' (rode o SQL v39)':''));
+  ctrShow(tk,sid);
+}
+function ctrShow(tk,sid){
+  const s=db.sales.find(x=>x.id===sid),c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),url=SIGN_BASE+'#t='+tk;
+  let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
+  const nm=(c.name||'').trim().split(/\s+/)[0]||'',loja=co.trade_name||co.legal_name||'MultMix';
+  window.ctrMsg=`Olá${nm?', '+nm:''}! Aqui é da ${loja}.\n\nSegue o link do seu contrato de compra no carnê para assinar pelo celular (leva 2 minutos; você vai precisar do seu CPF, assinar na tela e tirar uma selfie). O link vale por 7 dias:\n${url}`;
+  modal(`<h2>Contrato para assinar</h2><p class="sm">${esc(c.name||'')} · vale por 7 dias · o cliente confirma o CPF, assina com o dedo e tira uma selfie.</p>
+  <textarea id="ctrurl" rows="2" readonly onclick="this.select()">${esc(url)}</textarea>
+  <div class="row"><button class="btn" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.ctrMsg),'_blank')">${ph?'Enviar pelo WhatsApp':'Abrir WhatsApp'}</button>
+  <button class="btn g" onclick="ctrurl.select();document.execCommand('copy');this.textContent='Copiado'">Copiar link</button></div>
+  <button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button>`);
+}
+async function ctrCancel(id,sid){
+  if(!confirm('Cancelar este link? O cliente não poderá mais assinar por ele.'))return;
+  const{error}=await sb.from('contract_sign').update({status:'cancelado'}).eq('id',id).eq('status','pendente');
+  if(error)return alert('Não foi possível cancelar: '+error.message);ctrLoad(sid);
+}
+async function ctrVer(id){
+  const{data,error}=await sb.from('contract_sign').select('*').eq('id',id).maybeSingle();
+  if(error||!data)return alert('Não foi possível abrir o contrato assinado.');
+  const esc2=esc,blk=`<div style="margin-top:18px;padding:10px;border:1px solid #999;font:12px Arial;break-inside:avoid;display:flex;gap:14px;align-items:flex-start"><div style="flex:1"><b>ASSINATURA ELETRÔNICA</b><br>Assinado em ${dBR(data.signed_at)}<br>CPF/CNPJ do signatário: ${esc2(docBR(data.signer_cpf))}<br>IP: ${esc2(data.ip||'—')}<br>Aparelho: ${esc2((data.ua||'').slice(0,120))}<br><img src="${data.sig}" alt="Assinatura" style="height:70px;display:block;margin:6px 0;background:#fff;border-bottom:1px solid #999"><span style="word-break:break-all">Código de verificação: ${esc2(data.sign_hash||'')}<br>Impressão digital do texto (SHA-256): ${esc2(data.html_hash)}</span></div><img src="${data.selfie}" alt="Foto" style="width:110px;height:110px;object-fit:cover;border:1px solid #999"></div>`;
+  const h=data.html.replace('</body>',blk+'</body>'),fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=h;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},500)};
 }
 /* ========= Relatórios (PDF) ========= */
 let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
