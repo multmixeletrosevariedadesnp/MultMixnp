@@ -1,5 +1,5 @@
 {
- "version": "1.57.0",
+ "version": "1.58.0",
  "date": "2026-11-06",
- "notes": "Avisos mais altos, faixa vermelha visível e lembrete repetido."
+ "notes": "Carnês: filtros por vencimento, data da venda, situação e busca."
 }

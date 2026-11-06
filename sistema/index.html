@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.57.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.58.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2606,13 +2606,47 @@ function pickCli(id){
 }
 
 /* ========= Carnês ========= */
-function vCar(){
-  const sales=db.sales.filter(s=>s.pay_type==='crediario').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+let carC=(()=>{try{return Object.assign({q:'',st:'receber',v1:'',v2:'',c1:'',c2:''},JSON.parse(localStorage.getItem('mm_car_filtro')||'{}'))}catch(e){return{q:'',st:'receber',v1:'',v2:'',c1:'',c2:''}}})();
+function carSet(k,v,keep){carC[k]=v;try{localStorage.setItem('mm_car_filtro',JSON.stringify(carC))}catch(e){}vCar(keep)}
+function carPer(t){ // atalhos de período do vencimento
+  const d=new Date(),y=d.getFullYear(),m=d.getMonth(),f=x=>ld(x.toISOString()),mk=(a,b)=>{carC.v1=f(a);carC.v2=f(b)};
+  if(t==='hoje')mk(d,d);else if(t==='sem'){const e=new Date(d);e.setDate(e.getDate()+6);mk(d,e)}else if(t==='mes')mk(new Date(y,m,1,12),new Date(y,m+1,0,12));else if(t==='prox')mk(new Date(y,m+1,1,12),new Date(y,m+2,0,12));else if(t==='limpa'){carC.v1=carC.v2=carC.c1=carC.c2='';carC.q='';carC.st='receber'}
+  if(t!=='limpa'&&carC.st==='quitado')carC.st='receber';
+  try{localStorage.setItem('mm_car_filtro',JSON.stringify(carC))}catch(e){}vCar();
+}
+function vCar(keep){
+  const today=ld(now()),dk=i=>String(i.due_date).slice(0,10),q=norm(carC.q||'');
+  const base=db.sales.filter(s=>s.pay_type==='crediario').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const rows=base.map(s=>{
+    const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id&&!i.canceled_at),ab=ins.filter(i=>!i.paid_at);
+    const noPer=ab.filter(i=>(!carC.v1||dk(i)>=carC.v1)&&(!carC.v2||dk(i)<=carC.v2)); // parcelas em aberto dentro do período de vencimento
+    return{s,c,ins,ab,noPer,late:ab.some(i=>dk(i)<today),pagas:ins.filter(i=>i.paid_at).length};
+  }).filter(r=>{
+    const s=r.s;
+    if(q&&!norm(r.c.name||'').includes(q)&&!digits(r.c.cpf||'').includes(digits(carC.q||'')||'§')&&!digits(r.c.phone||'').includes(digits(carC.q||'')||'§'))return false;
+    const cd=ld(s.created_at);if(carC.c1&&cd<carC.c1)return false;if(carC.c2&&cd>carC.c2)return false;
+    if(carC.st==='quitado')return !s.canceled_at&&r.ins.length>0&&r.ab.length===0;
+    if(carC.st==='cancelado')return !!s.canceled_at;
+    if(s.canceled_at)return carC.st==='todos';
+    if(carC.st==='atraso')return r.late&&(!carC.v1&&!carC.v2||r.noPer.some(i=>dk(i)<today));
+    if(carC.st==='receber')return r.ab.length>0&&((!carC.v1&&!carC.v2)||r.noPer.length>0);
+    return true;
+  });
+  const per=!!(carC.v1||carC.v2),parc=rows.flatMap(r=>(carC.st==='quitado'||carC.st==='cancelado')?[]:(carC.st==='atraso'?(per?r.noPer:r.ab).filter(i=>dk(i)<today):per?r.noPer:r.ab)),sum=a=>a.reduce((t,i)=>t+(+i.amount||0),0);
+  const opt=(v,l)=>`<option value="${v}" ${carC.st===v?'selected':''}>${l}</option>`;
+  const sh=(t,l)=>`<button class="btn g s" onclick="carPer('${t}')">${l}</button>`;
   $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="fiadoOpen()">Lançar fiado antigo</button><button class="btn g" onclick="fiadoImpOpen()">Importar fiados (planilha)</button><span class="sm" style="align-self:center">Fiado antigo = dívida de antes do sistema: não baixa estoque, não gera nota e não entra no faturamento.</span></div>
-  ${sales.length?`<div class="tw"><table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th></th></tr>
-  ${sales.map(s=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},ins=db.installments.filter(i=>i.sale_id===s.id),late=!s.canceled_at&&ins.some(i=>!i.paid_at&&!i.canceled_at&&i.due_date<now().slice(0,10));
-  return`<tr><td>${esc(c.name)} ${s.legacy?'<span class="tag">saldo anterior</span>':''} ${s.canceled_at?'<span class="tag">cancelada</span>':late?'<span class="tag bad">em atraso</span>':''}${s.legacy&&s.legacy_note?`<div class="sm">${esc(s.legacy_note)}</div>`:''}</td><td>${R(s.total)}</td><td>${ins.filter(i=>i.paid_at).length}/${ins.filter(i=>i.paid_at||!i.canceled_at).length}</td>
-  <td><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button> ${s.legacy?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>`}</td></tr>`}).join('')}</table></div>`:empty('Nenhum carnê ainda','Faça uma venda no crediário ou lance os fiados antigos.')}`;
+  <div class="card" style="margin:8px 0"><div class="bar" style="flex-wrap:wrap;gap:8px"><input id="car_q" placeholder="Buscar cliente, CPF ou telefone" value="${esc(carC.q)}" style="max-width:260px" oninput="carC.q=this.value;try{localStorage.setItem('mm_car_filtro',JSON.stringify(carC))}catch(e){}clearTimeout(window.__cq);window.__cq=setTimeout(()=>vCar(true),250)">
+  <select style="max-width:190px" onchange="carSet('st',this.value)">${opt('receber','A receber')}${opt('atraso','Em atraso')}${opt('quitado','Quitados')}${opt('cancelado','Cancelados')}${opt('todos','Todos')}</select></div>
+  <div class="bar" style="flex-wrap:wrap;gap:6px"><span class="sm">Vencimento de</span><input type="date" value="${carC.v1}" style="max-width:160px" onchange="carSet('v1',this.value)"><span class="sm">até</span><input type="date" value="${carC.v2}" style="max-width:160px" onchange="carSet('v2',this.value)">${sh('hoje','Hoje')}${sh('sem','7 dias')}${sh('mes','Este mês')}${sh('prox','Mês que vem')}</div>
+  <div class="bar" style="flex-wrap:wrap;gap:6px"><span class="sm">Venda feita de</span><input type="date" value="${carC.c1}" style="max-width:160px" onchange="carSet('c1',this.value)"><span class="sm">até</span><input type="date" value="${carC.c2}" style="max-width:160px" onchange="carSet('c2',this.value)"><button class="btn g s" onclick="carPer('limpa')">Limpar filtros</button></div></div>
+  ${carC.st==='quitado'||carC.st==='cancelado'?'':`<div class="prices"><div class="pr"><span>${per?'A receber no período':'Total a receber'} (${parc.length} parcela${parc.length===1?'':'s'})</span><b>${R(sum(parc))}</b></div><div class="pr"><span>Carnês na lista</span><b>${rows.length}</b></div></div>`}
+  ${rows.length?`<div class="tw"><table><tr><th>Cliente</th><th>Total</th><th>Parcelas pagas</th><th>${per&&carC.st!=='quitado'?'A receber no período':'Próximo vencimento'}</th><th></th></tr>
+  ${rows.map(r=>{const s=r.s,c=r.c,ins=r.ins,nx=(per?r.noPer:r.ab).slice().sort((a,b)=>dk(a).localeCompare(dk(b)));
+  return`<tr><td>${esc(c.name)} ${s.legacy?'<span class="tag">saldo anterior</span>':''} ${s.canceled_at?'<span class="tag">cancelada</span>':r.late?'<span class="tag bad">em atraso</span>':''}${s.legacy&&s.legacy_note?`<div class="sm">${esc(s.legacy_note)}</div>`:''}<div class="sm">venda de ${fmtD(s.created_at)}</div></td><td>${R(s.total)}</td><td>${r.pagas}/${ins.length}</td>
+  <td>${nx.length?`${fmtD(nx[0].due_date)}${nx.length>1?` <span class="sm">+${nx.length-1}</span>`:''}<div class="sm">${R(sum(nx))}</div>`:'<span class="sm">—</span>'}</td>
+  <td style="white-space:nowrap"><button class="btn g s" onclick="carne('${s.id}')">Abrir carnê</button> ${s.legacy?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button>`}</td></tr>`}).join('')}</table></div>`:empty('Nenhum carnê neste filtro','Mude o período ou clique em Limpar filtros.')}`;
+  if(keep){const e=document.getElementById('car_q');if(e){e.focus();const n=e.value.length;e.setSelectionRange(n,n)}}
 }
 /* ========= Fiado antigo (saldo anterior): sem estoque, sem nota, fora do faturamento ========= */
 function fiadoCria(o){ // {nome,doc,total,n,primeiro(yyyy-mm-dd),compra(yyyy-mm-dd),obs}
