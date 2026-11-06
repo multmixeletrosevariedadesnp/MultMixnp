@@ -28,3 +28,15 @@ Impressora termica: instale o driver do fabricante no Windows e use papel de 58 
 No instalador completo, escolha a impressora em MultMix > Impressora do cupom e clique "Imprimir teste".
 
 ATUALIZANDO DE UMA VERSAO ANTERIOR (1.0.x): antes de instalar a 1.1.0, abra o programa antigo com internet e deixe enviar as vendas pendentes. A 1.1.0 tenta trazer sozinha os dados guardados pela anterior (menu MultMix > Banco local > Trazer dados da versao anterior).
+
+SE A PASTA ".github" NAO SOBE (pastas que comecam com ponto ficam ocultas e alguns envios ignoram):
+  1. No GitHub, abra o repositorio > Add file > Create new file.
+  2. No nome do arquivo digite exatamente:  .github/workflows/desktop.yml   (ao digitar a "/" ele cria as pastas).
+  3. Abra o arquivo "workflow-desktop.yml.txt" (esta na pasta desktop), copie todo o texto e cole.
+  4. Commit changes. Depois: aba Actions > "Instalador MultMix (Windows)" > Run workflow.
+
+VERSAO 1.2.0 - INSTALACAO E ATUALIZACAO
+  - Instala em C:\Program Files\MultMix (pede permissao de administrador do Windows uma vez; da para escolher outra pasta). Os dados ficam no perfil de cada usuario do Windows e NAO sao apagados ao desinstalar.
+  - Atualizador do programa: o Actions agora publica uma "Release" no GitHub. Os computadores procuram versao nova ao abrir e a cada 6 horas, baixam sozinhos e instalam ao fechar (menu Ajuda > Procurar atualizacao).
+    IMPORTANTE: antes de cada novo "Run workflow", aumente o numero em desktop/package.json ("version"), senao o GitHub recusa a Release repetida. Mudancas so nos apps (Sistema/PDV/Catalogo) NAO precisam de novo instalador: chegam sozinhas.
+  - Varios caixas: instale o mesmo instalador em cada computador. Cada caixa vende mesmo sem internet e envia ao Supabase quando a conexao volta; estoque, precos e clientes ficam iguais entre os caixas pela nuvem. (Nao ha servidor local entre os caixas: sem internet em TODOS, cada um trabalha com o que tem guardado.)

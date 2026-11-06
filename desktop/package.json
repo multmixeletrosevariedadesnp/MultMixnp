@@ -1,13 +1,14 @@
 {
   "name": "multmix",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "MultMix para computador (Windows): Sistema, Catálogo e PDV, funciona sem internet e imprime o cupom direto.",
   "main": "main.js",
   "author": "MultMix Eletros e Variedades",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win --publish never"
+    "dist": "electron-builder --win --publish never",
+    "release": "electron-builder --win --publish always"
   },
   "devDependencies": {
     "electron": "33.2.1",
@@ -42,12 +43,16 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": true,
-      "perMachine": false,
+      "oneClick": false,
+      "perMachine": true,
       "createDesktopShortcut": false,
       "createStartMenuShortcut": true,
       "shortcutName": "MultMix",
-      "artifactName": "MultMix-Instalador.${ext}"
+      "artifactName": "MultMix-Instalador.${ext}",
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     },
     "extraResources": [
       {
@@ -58,6 +63,17 @@
         "from": "app-files",
         "to": "app-files"
       }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "multmixeletrosevariedadesnp",
+        "repo": "MultMixnp",
+        "releaseType": "release"
+      }
     ]
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
   }
 }

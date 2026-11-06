@@ -169,7 +169,20 @@ ipcMain.handle('mm-set-apps', (e, list, opt) => { const sel = (list || []).filte
 ipcMain.handle('mm-pick-backup-dir', async () => { const r = await dialog.showOpenDialog({ title: 'Pasta dos backups', properties: ['openDirectory', 'createDirectory'] }); return r.canceled ? '' : r.filePaths[0]; });
 ipcMain.handle('mm-open', (e, k) => { openApp(k); return true; });
 
+/* atualizador do próprio programa (a parte que muda raramente; os apps se atualizam sozinhos pelo espelho) */
+function iniciarAtualizador() {
+  if (!app.isPackaged) return;
+  try {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = true; autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on('update-downloaded', i => dialog.showMessageBox({ type: 'info', message: 'MultMix ' + i.version + ' baixado', detail: 'A atualização será instalada quando você fechar o MultMix.' }));
+    autoUpdater.on('error', () => {});
+    const chk = () => autoUpdater.checkForUpdates().catch(() => {});
+    setTimeout(chk, 15000); setInterval(chk, 6 * 3600 * 1000);
+  } catch (e) { /* sem atualizador: segue normalmente */ }
+}
 app.whenReady().then(() => {
+  iniciarAtualizador();
   prepMirror(); protocol.handle('mm', handleMm);
   setTimeout(() => backupAll(false), 20000); setInterval(() => backupAll(false), 30 * 60 * 1000); setInterval(flushAll, 5000);
   Menu.setApplicationMenu(Menu.buildFromTemplate([
@@ -186,7 +199,8 @@ app.whenReady().then(() => {
       { label: 'Recarregar', accelerator: 'CmdOrCtrl+R', click: (m, w) => w && w.webContents.reloadIgnoringCache && w.webContents.reload() },
       { label: 'Tela cheia', accelerator: 'F11', click: (m, w) => w && w.setFullScreen(!w.isFullScreen()) },
       { type: 'separator' }, { role: 'quit', label: 'Sair' } ] },
-    { label: 'Ajuda', submenu: [{ label: 'Sobre', click: () => dialog.showMessageBox({ message: 'MultMix ' + app.getVersion(), detail: 'Atualizações: ' + readCfg().base + '\nBanco local: ' + dataDir() }) }] }
+    { label: 'Ajuda', submenu: [{ label: 'Procurar atualização', click: () => { try { require('electron-updater').autoUpdater.checkForUpdates().then(r => dialog.showMessageBox({ message: r && r.updateInfo && r.updateInfo.version !== app.getVersion() ? 'Nova versão ' + r.updateInfo.version + ' encontrada; baixando.' : 'Você está na versão mais nova.' })).catch(() => dialog.showMessageBox({ message: 'Não foi possível verificar agora (sem internet?).' })); } catch (e) {} } },
+      { label: 'Sobre', click: () => dialog.showMessageBox({ message: 'MultMix ' + app.getVersion(), detail: 'Atualizações: ' + readCfg().base + '\nBanco local: ' + dataDir() }) }] }
   ]));
   const c = readCfg(), k = argApp(process.argv);
   if (k) openApp(k);
