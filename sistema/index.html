@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.58.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.59.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -103,7 +103,8 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 .artp{position:sticky;top:12px}
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
-@media(max-width:900px){.art{grid-template-columns:1fr}.artp{position:static;max-width:360px;margin:0 auto}}
+@media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:34vh;margin:0 auto}}
+.artg{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;background:var(--card)}.artg>summary{cursor:pointer;font-weight:700;padding:12px 14px;list-style:none}.artg>summary::after{content:'▾';float:right}.artg[open]>summary::after{content:'▴'}.artg>.f{padding:0 14px;margin-bottom:0}.artg>.f::after{content:'';grid-column:1/-1;height:4px}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
 
 /* PDV: produtos à esquerda, carrinho à direita (no celular, um abaixo do outro) */
@@ -1242,9 +1243,24 @@ async function vArte(){
   <div class="row"><button class="btn" onclick="artShare()">Enviar para o WhatsApp (Status)</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
   <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
   <div class="artp"><div id="artv"></div></div></div>`;
+  artGroups();
   artFilter();
   try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
   artRender();
+}
+function artGroups(){
+  const f=document.querySelector('.art .box>.f');if(!f||f.dataset.g)return;f.dataset.g='1';
+  const top=id=>{let e=document.getElementById(id);while(e&&e.parentNode!==f)e=e.parentNode;return e};
+  const G=[['a_q','1. Produto e formato'],['a_badge','2. Selo, estilo e cores'],['a_ttl','3. Textos e preços'],['a_ph','4. Foto do produto'],['a_mas','5. Mascote'],['a_logo','6. Rodapé e legenda']];
+  const kids=[...f.children],idx=G.map(g=>kids.indexOf(top(g[0])));
+  if(idx.some(i=>i<0))return;
+  const wide=window.innerWidth>900;
+  G.forEach((g,n)=>{
+    const part=kids.slice(idx[n],n+1<G.length?idx[n+1]:kids.length);
+    const d=document.createElement('details');d.className='artg';if(n===0||wide)d.open=true;
+    d.innerHTML='<summary>'+g[1]+'</summary><div class="f" style="margin-top:4px"></div>';
+    f.insertBefore(d,part[0]);const inner=d.lastChild;part.forEach(e=>inner.appendChild(e));
+  });
 }
 
 /* ========= Dados da empresa ========= */
