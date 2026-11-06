@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assinar contrato · MultMix</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#123a6b">
+<style>
+:root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#d0d5dd;--pri:#123a6b;--ok:#0a7a3d;--bad:#b3261e}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#334066;--pri:#6f8cff;--ok:#2fbf71;--bad:#ff8a80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px}h1{font-size:20px;margin:6px 0 2px}.m{color:var(--mut);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+iframe{width:100%;height:60vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+label{display:block;font-weight:600;margin:10px 0 4px}input[type=text],input[type=tel]{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:18px;background:var(--card);color:var(--ink)}
+.ck{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:14px}.ck input{width:22px;height:22px;flex:none;margin-top:2px}
+canvas{width:100%;height:170px;border:2px dashed var(--line);border-radius:10px;background:#fff;touch-action:none;display:block}
+video{width:100%;max-height:260px;border-radius:10px;background:#000;object-fit:cover;transform:scaleX(-1)}
+button{font:inherit;font-weight:700;padding:14px 18px;border:0;border-radius:12px;background:var(--pri);color:#fff;width:100%;margin-top:10px}button.g{background:transparent;color:var(--pri);border:1px solid var(--line);font-weight:600;padding:8px 12px;width:auto}
+button:disabled{opacity:.5}.bad{color:var(--bad)}.ok{color:var(--ok)}#msg{margin:10px 0;font-weight:600}
+</style></head><body><main>
+<h1 id="tt">Assinar contrato</h1><div class="m" id="sub">Abrindo…</div>
+<div id="app"></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4'};
+const sb=supabase.createClient(CFG.URL,CFG.KEY,{auth:{persistSession:false}});
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TOKEN=(location.hash.match(/t=([a-f0-9]{16,64})/)||[])[1]||'';
+let stream=null,drawn=false,DOC=null;
+function fail(t){$('#sub').textContent='';$('#app').innerHTML='<div class="card"><b class="bad">'+esc(t)+'</b><p class="m">Fale com a loja pelo WhatsApp para receber um novo link.</p></div>'}
+async function load(){
+  if(!TOKEN)return fail('Link inválido.');
+  const{data,error}=await sb.rpc('contrato_pub',{p_token:TOKEN});
+  if(error||!data)return fail('Não foi possível abrir agora. Verifique a internet e tente de novo.');
+  if(!data.ok)return fail(data.erro);DOC=data;
+  if(data.status==='assinado')return done(data);
+  $('#sub').textContent='Leia o contrato, assine e tire a selfie. Leva 2 minutos.';
+  $('#app').innerHTML=`<div class="card"><b>1. Leia o contrato</b><iframe id="fr" sandbox="" title="Contrato"></iframe></div>
+  <div class="card"><b>2. Confirme que é você</b><label for="cpf">Seu CPF/CNPJ (somente números)</label><input id="cpf" type="tel" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="Digite o documento do cadastro">
+  <label>Sua foto (selfie)</label><video id="v" autoplay playsinline muted></video><div class="m" id="vm">A câmera tira a foto sozinha no momento em que você toca em Assinar.</div>
+  <input id="up" type="file" accept="image/*" capture="user" style="display:none"><button class="g" id="upb" style="display:none" onclick="up.click()">Tirar foto com a câmera do celular</button></div>
+  <div class="card"><b>3. Assine com o dedo</b><canvas id="cv"></canvas><button class="g" onclick="clr()">Limpar assinatura</button></div>
+  <div class="card"><div class="ck"><input type="checkbox" id="c1"><label for="c1" style="margin:0;font-weight:400">Li e concordo com este contrato e aceito assiná-lo eletronicamente (assinatura eletrônica, Lei 14.063/2020).</label></div>
+  <div class="ck"><input type="checkbox" id="c2"><label for="c2" style="margin:0;font-weight:400">Autorizo o uso da minha foto, da assinatura, do IP e do horário somente como prova desta assinatura.</label></div>
+  <div id="msg" role="status"></div><button id="go" onclick="sign()">Assinar contrato</button></div>`;
+  $('#fr').srcdoc=data.html;pad();cam();
+}
+function pad(){
+  const c=$('#cv'),r=c.getBoundingClientRect(),k=Math.min(2,window.devicePixelRatio||1);c.width=r.width*k;c.height=r.height*k;
+  const x=c.getContext('2d');x.scale(k,k);x.lineWidth=2.6;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#0b1b3a';let d=false,lx=0,ly=0;
+  const p=e=>{const b=c.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+  c.onpointerdown=e=>{d=true;[lx,ly]=p(e);c.setPointerCapture(e.pointerId);x.beginPath();x.arc(lx,ly,1.2,0,7);x.fill()};
+  c.onpointermove=e=>{if(!d)return;const[a,b]=p(e);x.beginPath();x.moveTo(lx,ly);x.lineTo(a,b);x.stroke();lx=a;ly=b;drawn=true};
+  c.onpointerup=c.onpointercancel=()=>{d=false};
+}
+function clr(){const c=$('#cv'),x=c.getContext('2d');x.save();x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.restore();drawn=false}
+async function cam(){
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:640}},audio:false});$('#v').srcObject=stream}
+  catch(e){$('#v').style.display='none';$('#vm').innerHTML='<b class="bad">Não consegui abrir a câmera.</b> Permita o uso da câmera no navegador ou use o botão abaixo.';$('#upb').style.display='block'}
+}
+let upImg='';
+document.addEventListener('change',e=>{if(e.target.id!=='up'||!e.target.files[0])return;const f=e.target.files[0],im=new Image();im.onload=()=>{upImg=shrink(im,im.naturalWidth,im.naturalHeight);$('#vm').innerHTML='<b class="ok">Foto recebida.</b>'};im.src=URL.createObjectURL(f)});
+function shrink(src,w,h){const m=520,s=Math.min(1,m/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*s);c.height=Math.round(h*s);c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.72)}
+function snap(){const v=$('#v');if(upImg)return upImg;if(!stream||!v.videoWidth)return'';return shrink(v,v.videoWidth,v.videoHeight)}
+function msg(t,cls){const m=$('#msg');m.className=cls||'';m.textContent=t}
+async function sign(){
+  if(!$('#cpf').value.replace(/\D/g,''))return msg('Digite o seu CPF.','bad');
+  if(!drawn)return msg('Faça a assinatura no quadro.','bad');
+  if(!$('#c1').checked||!$('#c2').checked)return msg('Marque as duas confirmações.','bad');
+  const selfie=snap();if(!selfie)return msg('A foto é obrigatória. Permita a câmera ou use o botão de foto.','bad');
+  const sig=$('#cv').toDataURL('image/png');$('#go').disabled=true;msg('Enviando…');
+  const{data,error}=await sb.rpc('contrato_assinar',{p_token:TOKEN,p_cpf:$('#cpf').value,p_sig:sig,p_selfie:selfie,p_ua:navigator.userAgent,p_consent:true});
+  $('#go').disabled=false;
+  if(error||!data)return msg('Não foi possível enviar. Verifique a internet e tente de novo.','bad');
+  if(!data.ok)return msg(data.erro,'bad');
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  const{data:d2}=await sb.rpc('contrato_pub',{p_token:TOKEN});done(d2&&d2.ok?d2:{...DOC,status:'assinado',sig,signed_at:data.signed_at,sign_hash:data.sign_hash});
+}
+function done(d){
+  $('#tt').textContent='Contrato assinado';$('#sub').textContent='';
+  const when=new Date(d.signed_at).toLocaleString('pt-BR');
+  $('#app').innerHTML=`<div class="card"><b class="ok">Assinado em ${esc(when)}.</b><p>A loja recebeu o seu contrato assinado. Guarde a sua via:</p>
+  <button onclick="via()">Salvar / imprimir minha via (PDF)</button><p class="m">Código de verificação:<br><span style="word-break:break-all">${esc(d.sign_hash||'')}</span></p></div>`;
+  window.__d=d;
+}
+function via(){
+  const d=window.__d,blk=`<div style="margin-top:18px;padding:10px;border:1px solid #999;font:12px Arial;break-inside:avoid"><b>ASSINATURA ELETRÔNICA</b><br>Assinado em ${esc(new Date(d.signed_at).toLocaleString('pt-BR'))}<br><img src="${d.sig}" alt="Assinatura" style="height:70px;display:block;margin:6px 0;background:#fff"><span style="word-break:break-all">Código de verificação: ${esc(d.sign_hash||'')}</span></div>`;
+  const h=(d.html||'').replace('</body>',blk+'</body>'),w=window.open('','_blank');if(!w)return alert('Permita pop-ups para salvar a via.');w.document.write(h);w.document.close();setTimeout(()=>w.print(),600);
+}
+load();
+</script></body></html>
