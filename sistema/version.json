@@ -1,5 +1,5 @@
 {
- "version": "1.55.0",
+ "version": "1.55.1",
  "date": "2026-11-06",
- "notes": "Contrato com assinatura eletrônica por link (CPF, assinatura na tela e selfie)."
+ "notes": "Aviso quando o cliente assina o contrato pelo link."
 }
