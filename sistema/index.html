@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.53.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.54.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2264,7 +2264,7 @@ function finish(){
     }
   }
   if(fromOrder){const o=db.orders.find(x=>x.id===fromOrder);if(o)put('orders',{...o,status:'convertido'});fromOrder=null}
-  cart=[];const printIt=confirm('Venda registrada.\n\nImprimir o cupom não fiscal (controle) agora?');view=t==='crediario'?'car':'pdv';render();if(printIt)cupom(sale.id);
+  cart=[];const ctr=t==='crediario'&&confirm('Venda no carnê registrada.\n\nImprimir o CONTRATO (para o cliente assinar) agora?');const printIt=confirm('Imprimir o cupom não fiscal (controle) agora?');view=t==='crediario'?'car':'pdv';render();if(ctr)contrato(sale.id);if(printIt)setTimeout(()=>cupom(sale.id),ctr?3000:0);
 }
 
 /* ========= Clientes ========= */
@@ -2732,7 +2732,7 @@ function carne(id){
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}${i.due_orig&&i.due_orig!==i.due_date?`<div class="sm">alterado (era ${fmtD(i.due_orig)})</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
   <td>${i.paid_at?`${R(i.paid_amount||i.amount)}${+i.rebate?`<div class="sm">abatido ${R(i.rebate)}</div>`:''}`:`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button> <button class="btn g s" onclick="vencAsk('${i.id}','${id}')">Vencimento</button>`}`}</td></tr>`}).join('')}</table></div>
-  ${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+  ${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn g" onclick="contrato('${id}')">Contrato</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
 }
 function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e estorno
   const rids=[...new Set(db.parcel_payments.filter(p=>p.sale_id===sid).sort((a,b)=>String(b.paid_at).localeCompare(String(a.paid_at))).map(p=>p.receipt_id))];
@@ -3931,6 +3931,76 @@ function cupomPrint(html){
 }
 function cupom(sid){const html=cupomHtml(sid);if(!html)return alert('Venda não encontrada.');cupomPrint(html)}
 
+/* ========= Contrato de compra e venda a prazo (carnê), preenchido com os dados da venda ========= */
+function extenso(v){ // valor em reais por extenso (até 999.999.999,99)
+  v=Math.round((+v||0)*100)/100;const U=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'],
+  D=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],C=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  const t=n=>{if(n===0)return'';if(n===100)return'cem';const c=Math.floor(n/100),r=n%100,o=[];if(c)o.push(C[c]);if(r){if(r<20)o.push(U[r]);else{const d=Math.floor(r/10),u=r%10;o.push(D[d]+(u?' e '+U[u]:''))}}return o.join(' e ')};
+  const num=n=>{if(n===0)return'zero';const m=Math.floor(n/1e6),k=Math.floor(n%1e6/1e3),u=n%1000,o=[];
+    if(m)o.push(t(m)+(m===1?' milhão':' milhões'));if(k)o.push(k===1?'mil':t(k)+' mil');if(u)o.push(t(u));
+    return o.reduce((a,x,i)=>i===0?x:(i===o.length-1&&(u&&u<=100||u%100===0)&&u?a+' e '+x:a+', '+x),'')};
+  const r=Math.floor(v),c=Math.round((v-r)*100);let o=[];
+  if(r>0||c===0)o.push(num(r)+(r===1?' real':(r>=1e6&&r%1e6===0?' de reais':' reais')));
+  if(c>0)o.push(num(c)+(c===1?' centavo':' centavos'));return o.join(' e ');
+}
+function contratoHtml(sid){
+  const s=db.sales.find(x=>x.id===sid);if(!s)return'';
+  const c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO(),pv=PRIV();
+  const ins=db.installments.filter(i=>i.sale_id===sid&&!i.canceled_at).sort((a,b)=>a.number-b.number);
+  const logo=new URL(logoIcon(),location.href).href,n=ins.length,ent=+s.entry||0,tot=+s.total||0;
+  const addr=o=>o.street?`${o.street}, ${o.number||'s/n'}${o.complement?' - '+o.complement:''}, ${o.district||''}, ${o.city||''}/${o.uf||''}${o.cep?', CEP '+o.cep:''}`:(o.address||'');
+  const lojaNome=co.legal_name||co.trade_name||'MultMix',fant=co.trade_name&&co.legal_name&&co.trade_name!==co.legal_name?` (nome fantasia ${co.trade_name})`:'';
+  const cidade=co.city||'____________',uf=co.uf||'';
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const dt=new Date(s.created_at||now()),dExt=`${dt.getDate()} de ${meses[dt.getMonth()]} de ${dt.getFullYear()}`;
+  const vals=[...new Set(ins.map(i=>(+i.amount).toFixed(2)))];
+  const parcTxt=n?(vals.length===1?`${n} (${extenso(n).replace(/ reais?$/,'')}) parcela${n>1?'s':''} mensal${n>1?'is':''} e consecutiva${n>1?'s':''} de ${R(ins[0].amount)} (${extenso(ins[0].amount)})`:`${n} parcela${n>1?'s':''} mensal${n>1?'is':''} e consecutiva${n>1?'s':''}, nos valores e datas da tabela abaixo`):'';
+  const multa=CFG.MULTA,juro=CFG.JURO_MES,car=CFG.CARENCIA||0;
+  const il=n=>String(n).padStart(2,'0');
+  const cl=[];
+  cl.push(['Do objeto',`A VENDEDORA vende ao COMPRADOR, e este adquire, os bens descritos abaixo, que o COMPRADOR declara ter examinado, recebido e aceito na quantidade e no estado em que se encontram.`]);
+  cl.push(['Do preço e da forma de pagamento',`O preço total é de <b>${R(tot)}</b> (${extenso(tot)}), pago ${ent>0?`com entrada de <b>${R(ent)}</b> (${extenso(ent)}) em ${esc(s.method&&s.method!=='Carnê'?s.method:'pagamento na hora da compra')}, e o saldo de <b>${R(tot-ent)}</b> `:`em `}${n?`<b>${parcTxt}</b>, com a primeira vencendo em ${fmtD(ins[0].due_date)}`:'parcelas conforme o carnê'}. O pagamento é feito por meio do carnê entregue ao COMPRADOR, ${pv.pix_key?'por Pix (chave '+esc(pixShow(pv.pix_key_type,pv.pix_key))+') ':''}ou diretamente no estabelecimento da VENDEDORA, em dinheiro, cartão ou outro meio por ela aceito.`]);
+  cl.push(['Do atraso',`O não pagamento de qualquer parcela até a data do vencimento sujeita o COMPRADOR, sobre o valor da parcela em atraso, a: (a) multa moratória de ${String(multa).replace('.',',')}% (limite do art. 52, §1º, do Código de Defesa do Consumidor), cobrada uma única vez; e (b) juros de mora de ${String(juro).replace('.',',')}% ao mês, calculados por dia de atraso, sem capitalização.${car?` Há tolerância de ${car} dia${car>1?'s':''} após o vencimento, dentro da qual nada é cobrado.`:''} Não haverá cobrança de multa ou juros sobre parcelas pagas em dia.`]);
+  cl.push(['Da antecipação de pagamento',`O COMPRADOR pode quitar antecipadamente, total ou parcialmente, o débito, com redução proporcional dos juros e demais acréscimos, se houver, conforme o art. 52, §2º, do Código de Defesa do Consumidor.`]);
+  cl.push(['Do inadimplemento',`Havendo atraso, a VENDEDORA poderá cobrar o débito por meios amigáveis (contato por telefone, mensagem ou carta) e, persistindo o atraso, comunicar o COMPRADOR por escrito, com antecedência, antes de qualquer inclusão em cadastro de proteção ao crédito, nos termos do art. 43, §2º, do Código de Defesa do Consumidor. Fica vedada a cobrança que exponha o COMPRADOR a ridículo ou constrangimento (art. 42 do CDC).`]);
+  cl.push(['Da garantia e dos defeitos',`Os bens têm a garantia legal prevista nos arts. 24 a 26 do Código de Defesa do Consumidor e, quando houver, a garantia do fabricante descrita no respectivo termo. A troca e o conserto seguem a lei. A existência de reclamação sobre o bem não suspende, por si só, o pagamento das parcelas, salvo acordo por escrito entre as partes.`]);
+  cl.push(['Da propriedade e da posse',`A posse dos bens passa ao COMPRADOR na entrega, que passa a responder pela guarda e conservação deles.`]);
+  cl.push(['Dos dados pessoais',`O COMPRADOR autoriza a VENDEDORA a tratar os dados pessoais informados neste contrato (nome, documentos, endereço, telefone e e-mail) para cadastro, emissão de nota fiscal, cobrança, atendimento e cumprimento de obrigações legais, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Os dados não são vendidos nem divulgados a terceiros, salvo obrigação legal ou para a cobrança do débito.`]);
+  cl.push(['Das comunicações',`O COMPRADOR concorda em receber avisos e cobranças pelo telefone e pelo e-mail informados e se compromete a comunicar à VENDEDORA qualquer mudança de endereço ou telefone.`]);
+  cl.push(['Do foro',`As partes elegem o foro da comarca do domicílio do COMPRADOR (art. 101, I, do CDC) para resolver qualquer questão deste contrato. Quaisquer alterações só valem por escrito e assinadas pelas duas partes.`]);
+  const cli=`<b>${esc(c.name||'COMPRADOR')}</b>${c.cpf?`, ${(c.person_type==='J'||digits(c.cpf).length===14)?'CNPJ':'CPF'} nº <b>${esc(docBR(c.cpf))}</b>`:', CPF nº ____________________'}, RG/documento nº ____________________${c.phone?`, telefone <b>${esc(c.phone)}</b>`:', telefone ____________________'}${c.email?`, e-mail ${esc(c.email)}`:''}, residente e domiciliado(a) em <b>${esc(addr(c)||'__________________________________________')}</b>`;
+  const itens=(s.items||[]);
+  return`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato ${esc(c.name||'')}</title><style>
+  @page{size:A4;margin:15mm 16mm}*{box-sizing:border-box}body{font:12.2px/1.5 Arial,Helvetica,sans-serif;color:#111;margin:0}
+  .h{display:flex;gap:12px;align-items:center;border-bottom:2px solid #123a6b;padding-bottom:8px;margin-bottom:10px}.h img{width:52px;height:52px;object-fit:contain}.h b{font-size:15px}.m{color:#555;font-size:11px}
+  h1{font-size:15px;text-align:center;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.3px}.sub{text-align:center;color:#555;margin-bottom:10px;font-size:11px}
+  h3{font-size:12.5px;margin:12px 0 3px;color:#123a6b}p{margin:4px 0;text-align:justify}
+  table{width:100%;border-collapse:collapse;margin:6px 0}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eef2f8;font-size:10.5px;text-transform:uppercase}.n{text-align:right;white-space:nowrap}
+  .box{border:1px solid #bbb;padding:7px 9px;margin:6px 0;background:#fafbfd}.cl{break-inside:avoid}
+  .ass{display:flex;gap:30px;margin-top:46px;break-inside:avoid}.ass div{flex:1;border-top:1px solid #111;text-align:center;padding-top:4px;font-size:11px}
+  .tst{display:flex;gap:30px;margin-top:40px;break-inside:avoid}.tst div{flex:1;border-top:1px solid #111;padding-top:4px;font-size:11px}
+  </style></head><body>
+  <div class="h"><img src="${esc(logo)}" alt="" onerror="this.style.display='none'"><div><b>${esc(co.trade_name||lojaNome)}</b><div class="m">${co.cnpj?'CNPJ '+esc(docBR(co.cnpj))+' · ':''}${esc(addr(co))}${co.phone?' · Fone '+esc(co.phone):''}</div></div><div class="m" style="margin-left:auto;text-align:right">Venda nº ${esc(String(sid).slice(0,8).toUpperCase())}<br>${fmtD(s.created_at)}</div></div>
+  <h1>Contrato de compra e venda a prazo (carnê)</h1><div class="sub">Pelo presente instrumento particular, as partes abaixo qualificadas acordam o que segue.</div>
+  <h3>Partes</h3>
+  <div class="box"><b>VENDEDORA:</b> ${esc(lojaNome)}${esc(fant)}, ${co.cnpj?'inscrita no CNPJ sob nº <b>'+esc(docBR(co.cnpj))+'</b>, ':''}${co.ie?'IE '+esc(co.ie)+', ':''}com sede em ${esc(addr(co)||'____________________')}${s.seller_name?`, neste ato atendida por ${esc(s.seller_name)}`:''}.</div>
+  <div class="box"><b>COMPRADOR:</b> ${cli}.</div>
+  <h3>Bens vendidos</h3>
+  <table><tr><th>Descrição</th><th class="n">Qtd.</th><th class="n">Valor unit.</th><th class="n">Total</th></tr>${itens.map(i=>`<tr><td>${esc(i.name)}</td><td class="n">${i.qty}</td><td class="n">${R(i.price)}</td><td class="n">${R(i.qty*i.price)}</td></tr>`).join('')}
+  <tr><td colspan="3" class="n"><b>Total da venda</b></td><td class="n"><b>${R(tot)}</b></td></tr>${ent>0?`<tr><td colspan="3" class="n">Entrada</td><td class="n">${R(ent)}</td></tr><tr><td colspan="3" class="n">Saldo parcelado</td><td class="n">${R(tot-ent)}</td></tr>`:''}</table>
+  ${n?`<h3>Parcelas</h3><table><tr><th>Parcela</th><th>Vencimento</th><th class="n">Valor</th></tr>${ins.map(i=>`<tr><td>${il(i.number)}/${il(n)}</td><td>${fmtD(i.due_date)}</td><td class="n">${R(i.amount)}</td></tr>`).join('')}</table>`:''}
+  ${cl.map((x,k)=>`<div class="cl"><h3>Cláusula ${k+1}ª · ${x[0]}</h3><p>${x[1]}</p></div>`).join('')}
+  <p style="margin-top:12px">E, por estarem de acordo, firmam este contrato em duas vias de igual teor, na presença de duas testemunhas.</p>
+  <p>${esc(cidade)}${uf?'/'+esc(uf):''}, ${dExt}.</p>
+  <div class="ass"><div><b>${esc(lojaNome)}</b><br>VENDEDORA</div><div><b>${esc(c.name||'COMPRADOR')}</b><br>COMPRADOR</div></div>
+  <div class="tst"><div>Testemunha 1<br>Nome: <br>CPF:</div><div>Testemunha 2<br>Nome: <br>CPF:</div></div>
+  </body></html>`;
+}
+function contrato(sid){
+  const html=contratoHtml(sid);if(!html)return alert('Venda não encontrada.');
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},400)};
+}
 /* ========= Relatórios (PDF) ========= */
 let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
 const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
