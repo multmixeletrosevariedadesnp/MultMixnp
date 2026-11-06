@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.56.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.57.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3193,22 +3193,41 @@ const unlockAudio=()=>{try{actx=actx||new(window.AudioContext||window.webkitAudi
 ['pointerdown','keydown'].forEach(ev=>addEventListener(ev,unlockAudio,{once:true,passive:true}));
 function beep(){
   try{
-    unlockAudio();if(!actx)return;const t=actx.currentTime;
-    [[880,0],[1175,.2],[880,.4]].forEach(([f,d])=>{const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;
-      g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.3,t+d+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d+.18);
-      o.connect(g);g.connect(actx.destination);o.start(t+d);o.stop(t+d+.2)});
+    unlockAudio();if(!actx)return;
+    const v=NS().vol||'alto',pk=v==='normal'?.3:v==='maximo'?1:.75,n=v==='normal'?1:v==='maximo'?3:2,t0=actx.currentTime;
+    for(let k=0;k<n;k++)[[880,0],[1175,.22],[880,.44],[1175,.66]].forEach(([f,d])=>{const t=t0+k*1.05+d,o=actx.createOscillator(),g=actx.createGain();o.type=v==='normal'?'sine':'square';o.frequency.value=f;
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(pk,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.2);
+      o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.22)});
   }catch(e){}
-  try{if(navigator.vibrate)navigator.vibrate([200,100,200,100,300])}catch(e){}
+  try{if(navigator.vibrate)navigator.vibrate([300,120,300,120,500])}catch(e){}
 }
+function avisoToast(txt){ // faixa bem visível no topo até clicar ou passar 30 s
+  try{let e=document.getElementById('avtoast');if(!e){e=document.createElement('div');e.id='avtoast';e.setAttribute('role','alert');
+    e.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#d92d20;color:#fff;font:700 16px system-ui;padding:14px 20px;border-radius:14px;box-shadow:0 8px 30px #0009;cursor:pointer;max-width:92vw;text-align:center';
+    e.onclick=()=>{e.remove();notifOpen()};document.body.appendChild(e)}
+    e.textContent='🔔 '+txt+' — toque para ver';clearTimeout(e._t);e._t=setTimeout(()=>e.remove(),30000)}catch(x){}
+}
+let lastRep=0;
+const urgente=n=>n.kind==='contrato'||n.kind==='nota'||n.kind==='pdv'||n.kind==='fiscal'||n.kind==='cert'||n.kind==='backup'||((n.kind==='cobrar'||n.kind==='pagar')&&n.days<=0);
 function notifCheck(){
   if(!isAdmin()||view==='login')return;
   const o=NS(),today=ld(now()),L=notifs(),seen=o.seen&&o.seen.d===today?o.seen.ids:[];
   const nw=L.filter(n=>!seen.includes(n.id));
-  if(!nw.length)return;
+  if(!nw.length){ // nada novo: repete o lembrete enquanto houver aviso urgente pendente
+    const mins=+(o.rep??15),pend=L.filter(urgente);
+    if(mins>0&&pend.length&&Date.now()-lastRep>=mins*60000){
+      lastRep=Date.now();const tx=pend.length+' aviso'+(pend.length>1?'s':'')+' pendente'+(pend.length>1?'s':'');
+      if(o.sound!==false)beep();avisoToast(tx);
+      if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){try{new Notification('MultMix: '+tx,{body:pend.slice(0,3).map(n=>n.title).join('\n'),icon:'icon-192.png',tag:'mm-avisos-rep',renotify:true})}catch(e){}}
+    }
+    return;
+  }
+  lastRep=Date.now();
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
   const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'||n.kind==='pacote'||n.kind==='codigos'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),ctn=nw.filter(n=>n.kind==='contrato').length,txt=[ctn?(ctn>1?ctn+' contratos assinados':'contrato assinado pelo cliente'):'',c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado, tabela IBPT ou pacote do contador':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
+  avisoToast(txt);
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
     try{new Notification('MultMix: '+txt,{body:nw.slice(0,3).map(n=>n.title+(n.amount?' · '+R(n.amount):'')).join('\n'),icon:'icon-192.png',tag:'mm-avisos'})}catch(e){}
   }
@@ -3239,12 +3258,15 @@ function notifOpen(){
   ${B.length?`<h3>Atenção</h3><div class="pres">${B.map(row).join('')}</div>`:''}
   <details class="sm" style="margin-top:12px"><summary style="cursor:pointer"><b>Configurar avisos</b></summary>
   <p><label><input type="checkbox" style="width:auto" ${o.sound!==false?'checked':''} onchange="nset('sound',this.checked)"> Tocar um bip e vibrar quando surgir aviso novo</label></p>
+  <div class="f"><div><label>Volume do bip</label><select onchange="nset('vol',this.value);beep()"><option value="normal" ${o.vol==='normal'?'selected':''}>Normal</option><option value="alto" ${(o.vol||'alto')==='alto'?'selected':''}>Alto</option><option value="maximo" ${o.vol==='maximo'?'selected':''}>Máximo</option></select></div>
+  <div><label>Repetir o lembrete a cada</label><select onchange="nset('rep',+this.value)">${[[0,'Não repetir'],[5,'5 minutos'],[10,'10 minutos'],[15,'15 minutos'],[30,'30 minutos'],[60,'1 hora']].map(([v,t])=>`<option value="${v}" ${+(o.rep??15)===v?'selected':''}>${t}</option>`).join('')}</select></div></div>
+  <p class="sm">O lembrete repete enquanto houver cobrança vencida ou de hoje, conta a pagar vencida ou de hoje, contrato assinado não visto, nota de compra, problema fiscal ou do PDV.</p>
   <p><label><input type="checkbox" style="width:auto" ${o.push?'checked':''} onchange="notifPerm(this)"> Mostrar aviso do navegador/celular (com o app aberto em segundo plano)</label></p>
   <div class="f"><div><label>Avisar cobrança quantos dias antes</label><input type="number" min="0" max="15" value="${+(o.aheadR??1)}" onchange="nset('aheadR',+this.value||0)"></div>
   <div><label>Avisar contas a pagar quantos dias antes</label><input type="number" min="0" max="30" value="${+(o.aheadP??3)}" onchange="nset('aheadP',+this.value||0)"></div></div>
   <div class="f"><div><label>Estoque baixo: avisar quando restar até</label><input type="number" min="0" max="99" value="${stockMin()}" onchange="nset('stockMin',+this.value||0)"></div></div>
   <p><button class="btn g s" onclick="beep()">Testar o bip</button></p>
-  <p>Cada aviso toca uma vez por dia. Os avisos funcionam com o sistema aberto (inclusive em segundo plano no celular). Com o app fechado, ele não consegue avisar.</p></details>`);
+  <p>Cada aviso novo toca na hora e, se estiver ligado, é repetido no intervalo escolhido. Os avisos funcionam com o sistema aberto (inclusive em segundo plano no celular). Com o app fechado, ele não consegue avisar.</p></details>`);
 }
 function notifPerm(el){
   nset('push',el.checked);

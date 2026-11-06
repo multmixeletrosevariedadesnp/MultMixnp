@@ -1,5 +1,5 @@
 {
- "version": "1.56.1",
+ "version": "1.57.0",
  "date": "2026-11-06",
- "notes": "Fiscal: botão WhatsApp envia só o PDF da nota."
+ "notes": "Avisos mais altos, faixa vermelha visível e lembrete repetido."
 }
