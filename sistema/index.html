@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.59.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.60.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2280,7 +2280,7 @@ function finish(){
     }
   }
   if(fromOrder){const o=db.orders.find(x=>x.id===fromOrder);if(o)put('orders',{...o,status:'convertido'});fromOrder=null}
-  cart=[];const ctr=t==='crediario'&&confirm('Venda no carnê registrada.\n\nImprimir o CONTRATO (para o cliente assinar) agora?');const printIt=confirm('Imprimir o cupom não fiscal (controle) agora?');view=t==='crediario'?'car':'pdv';render();if(ctr)contrato(sale.id);if(printIt)setTimeout(()=>cupom(sale.id),ctr?3000:0);
+  cart=[];const ctr=t==='crediario'&&confirm('Venda no carnê registrada.\n\nAbrir o CONTRATO agora? (você confere na tela e imprime quando quiser; também fica no carnê)');const printIt=confirm('Imprimir o cupom não fiscal (controle) agora?');view=t==='crediario'?'car':'pdv';render();if(ctr)contrato(sale.id);if(printIt)setTimeout(()=>cupom(sale.id),0);
 }
 
 /* ========= Clientes ========= */
@@ -2782,7 +2782,7 @@ function carne(id){
   <td class="${d.dl>0?'bad':''}">${i.due_date.split('-').reverse().join('/')}${d.dl>0?`<div class="sm">${d.dl} dias de atraso</div>`:''}${i.due_orig&&i.due_orig!==i.due_date?`<div class="sm">alterado (era ${fmtD(i.due_orig)})</div>`:''}</td><td>${R(origAmt(i))}${(+i.paid_total||+i.rebate)&&!i.paid_at?`<div class="sm">${+i.paid_total?'pago '+R(i.paid_total):''}${+i.rebate?' · abatido '+R(i.rebate):''}<br><b>falta ${R(i.amount)}</b></div>`:''}</td>
   <td>${i.paid_at?`${R(i.paid_amount||i.amount)}${+i.rebate?`<div class="sm">abatido ${R(i.rebate)}</div>`:''}`:`<b>${R(d.v)}</b>`}</td>
   <td>${i.paid_at?`<span class="ok">Paga${i.method?' · '+esc(i.method):''}</span>`:`<button class="btn s" onclick="payAsk('${i.id}','${id}')">Receber</button>${s.canceled_at?'':` <button class="btn g s" onclick="pixAtual('${i.id}','${id}')">Pix atualizado</button> <button class="btn g s" onclick="vencAsk('${i.id}','${id}')">Vencimento</button>`}`}</td></tr>`}).join('')}</table></div>
-  <div id="ctrbox" class="noprint"></div>${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn g" onclick="contrato('${id}')">Contrato</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
+  <div id="ctrbox" class="noprint"></div>${carnePag(id)}<div class="row noprint">${s.canceled_at?'':`<button class="btn g" onclick="quitaOpen('${s.customer_id}')">Receber várias parcelas</button><button class="btn g" onclick="extratoOpen('${s.customer_id}')">Extrato do cliente</button><button class="btn g" onclick="contrato('${id}')">Ver / imprimir contrato</button><button class="btn" onclick="carnePdf('${id}',false)">Gerar PDF do carnê</button><button class="btn g" onclick="carnePdf('${id}',true)">Só as parcelas em aberto</button><button class="btn g" onclick="cancelSale('${id}')">Cancelar venda</button>`}</div>`);
   ctrLoad(id);
 }
 function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e estorno
@@ -4104,10 +4104,17 @@ function contratoHtml(sid){
   <div class="tst"><div>Testemunha 1<br>Nome: <br>CPF:</div><div>Testemunha 2<br>Nome: <br>CPF:</div></div>
   </body></html>`;
 }
+function ctrView(html,sid,titulo){ // mostra o contrato na tela; imprime só quando você tocar em Imprimir
+  window.ctrHtml=html;
+  modal(`<h2>${esc(titulo||'Contrato')}</h2><p class="sm noprint">Confira o contrato e toque em <b>Imprimir</b> quando quiser (no celular, escolha “Salvar como PDF” ou a impressora).</p>
+  <iframe id="ctrfr" style="width:100%;height:62vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>
+  <div class="row noprint"><button class="btn" onclick="ctrPrint()">Imprimir</button><button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button></div>`);
+  const fr=document.getElementById('ctrfr');if(fr)fr.srcdoc=html;
+}
+function ctrPrint(){const fr=document.getElementById('ctrfr');try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}}
 function contrato(sid){
   const html=contratoHtml(sid);if(!html)return alert('Venda não encontrada.');
-  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
-  fr.srcdoc=html;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},400)};
+  ctrView(html,sid,'Contrato do carnê');
 }
 /* ===== contrato com assinatura eletrônica por link (cliente assina no celular: CPF + assinatura + selfie) ===== */
 const SIGN_BASE='https://multmixeletrosevariedadesnp.github.io/MultMixnp/assinar/';
@@ -4119,7 +4126,7 @@ async function ctrLoad(sid){
   const{data,error}=await sb.from('contract_sign').select('id,token,status,created_at,expires_at,signed_at').eq('sale_id',sid).order('created_at',{ascending:false});
   const b2=document.getElementById('ctrbox');if(!b2)return;
   if(error){b2.innerHTML=/relation|does not exist|schema cache/i.test(error.message)?'<p class="sm bad">Assinatura por link: rode o SQL v39 no Supabase.</p>':'';return}
-  b2.innerHTML=`<h3>Assinatura do contrato</h3>${(data||[]).length?`<table>${data.map(r=>`<tr><td>${ctrSt(r)}<div class="sm">enviado em ${fmtD(r.created_at)}</div></td><td style="white-space:nowrap">${r.status==='assinado'?`<button class="btn g s" onclick="ctrVer('${r.id}')">Ver contrato assinado</button>`:r.status==='pendente'?`<button class="btn g s" onclick="ctrShow('${r.token}','${sid}')">Link</button> <button class="btn g s" onclick="ctrCancel('${r.id}','${sid}')">Cancelar</button>`:''}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum contrato enviado para assinatura.</p>'}
+  b2.innerHTML=`<h3>Assinatura do contrato</h3>${(data||[]).length?`<table>${data.map(r=>`<tr><td>${ctrSt(r)}<div class="sm">enviado em ${fmtD(r.created_at)}</div></td><td style="white-space:nowrap">${r.status==='assinado'?`<button class="btn g s" onclick="ctrVer('${r.id}')">Ver / imprimir contrato assinado</button>`:r.status==='pendente'?`<button class="btn g s" onclick="ctrShow('${r.token}','${sid}')">Link</button> <button class="btn g s" onclick="ctrCancel('${r.id}','${sid}')">Cancelar</button>`:''}</td></tr>`).join('')}</table>`:'<p class="sm">Nenhum contrato enviado para assinatura.</p>'}
   <button class="btn" onclick="ctrNovo('${sid}')">Enviar contrato para assinar</button>`;
 }
 async function ctrNovo(sid){
@@ -4154,8 +4161,7 @@ async function ctrVer(id){
   const{data,error}=await sb.from('contract_sign').select('*').eq('id',id).maybeSingle();
   if(error||!data)return alert('Não foi possível abrir o contrato assinado.');
   const esc2=esc,blk=`<div style="margin-top:18px;padding:10px;border:1px solid #999;font:12px Arial;break-inside:avoid;display:flex;gap:14px;align-items:flex-start"><div style="flex:1"><b>ASSINATURA ELETRÔNICA</b><br>Assinado em ${dBR(data.signed_at)}<br>CPF/CNPJ do signatário: ${esc2(docBR(data.signer_cpf))}<br>IP: ${esc2(data.ip||'—')}<br>Aparelho: ${esc2((data.ua||'').slice(0,120))}<br><img src="${data.sig}" alt="Assinatura" style="height:70px;display:block;margin:6px 0;background:#fff;border-bottom:1px solid #999"><span style="word-break:break-all">Código de verificação: ${esc2(data.sign_hash||'')}<br>Impressão digital do texto (SHA-256): ${esc2(data.html_hash)}</span></div><img src="${data.selfie}" alt="Foto" style="width:110px;height:110px;object-fit:cover;border:1px solid #999"></div>`;
-  const h=data.html.replace('</body>',blk+'</body>'),fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
-  fr.srcdoc=h;fr.onload=()=>{setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){alert('Não foi possível abrir a impressão: '+e.message)}setTimeout(()=>fr.remove(),60000)},500)};
+  ctrView(data.html.replace('</body>',blk+'</body>'),data.sale_id,'Contrato assinado');
 }
 /* ========= Relatórios (PDF) ========= */
 let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
