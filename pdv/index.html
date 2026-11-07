@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.19.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.19.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
-.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
+.pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#6f8cff;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66}}
 *{box-sizing:border-box}
@@ -1048,11 +1048,11 @@ function vPdv(){
   selCli=null;const carne=!!(ME&&ME.can_carne);
   $('#app').innerHTML=`<div class="pdv">
   <section class="pdvl box" aria-label="Produtos"><h2>Nova venda</h2>
+   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p>
    <div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
     <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
     <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
-   <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div>
-   <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p></section>
+   <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div></section>
   <section class="pdvr box" id="pdvcart" aria-label="Carrinho"><h2>Carrinho</h2>
    <div class="cact"><button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></div>
    <div class="bar" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="holdSave()">Pausar venda</button><button type="button" class="btn g s" id="hbtn" onclick="holdList()">Em espera (0)</button></div>
