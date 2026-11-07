@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.17.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.18.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -329,6 +329,11 @@ const artStar=(cx,cy,R,r,n)=>{const p=[];for(let i=0;i<n*2;i++){const a=Math.PI*
 const artHeart=(x,y,s)=>`M${x},${y+s*.62} C${x-s*1.15},${y-s*.1} ${x-s*.55},${y-s*.95} ${x},${y-s*.4} C${x+s*.55},${y-s*.95} ${x+s*1.15},${y-s*.1} ${x},${y+s*.62}Z`;
 const artRay=(cx,cy,r1,r2,n,col,w)=>{let o='';for(let i=0;i<n;i++){const a=Math.PI*2*i/n;o+=`<line x1="${(cx+Math.cos(a)*r1).toFixed(1)}" y1="${(cy+Math.sin(a)*r1).toFixed(1)}" x2="${(cx+Math.cos(a)*r2).toFixed(1)}" y2="${(cy+Math.sin(a)*r2).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`}return o};
 const artStripes=(y0,y1,W,c1,c2,op)=>{let o=`<rect x="0" y="${y0}" width="${W}" height="${y1-y0}" fill="${c2}" fill-opacity="${op}"/>`;for(let x=-(y1-y0);x<W+(y1-y0);x+=64)o+=`<polygon points="${x},${y1} ${x+(y1-y0)},${y0} ${x+(y1-y0)+32},${y0} ${x+32},${y1}" fill="${c1}" fill-opacity="${op}"/>`;return o};
+const artBolt=(cx,cy,s,fill,op)=>`<polygon points="${[[.25,-1],[-.55,.12],[-.12,.12],[-.32,1],[.6,-.3],[.14,-.3],[.55,-1]].map(([a,b])=>(cx+a*s*.62).toFixed(0)+','+(cy+b*s).toFixed(0)).join(' ')}" fill="${fill}" fill-opacity="${op}"/>`;
+const artFlags=(E,W,y0,sag,n,r,cols,sz)=>{let pts='';for(let t=0;t<=40;t++){const x=t*W/40;pts+=`${x.toFixed(0)},${(y0+Math.sin(t/40*Math.PI)*sag).toFixed(0)} `}
+  E.push(`<polyline points="${pts}" fill="none" stroke="#3e2723" stroke-opacity=".7" stroke-width="3"/>`);
+  for(let i=1;i<n;i++){const t=i/n,x=t*W,y=y0+Math.sin(t*Math.PI)*sag;E.push(`<polygon points="${(x-sz*.55).toFixed(0)},${y.toFixed(0)} ${(x+sz*.55).toFixed(0)},${y.toFixed(0)} ${x.toFixed(0)},${(y+sz*1.15).toFixed(0)}" fill="${cols[i%cols.length]}" fill-opacity=".95"/>`)}};
+const artFlame=(x,y,s,c1,c2)=>`<path d="M${x},${y} C${x-s*.9},${y-s*.5} ${x-s*.5},${y-s*1.3} ${x-s*.1},${y-s*1.9} C${x+s*.1},${y-s*1.2} ${x+s*.9},${y-s*1.1} ${x+s*.8},${y-s*.3} C${x+s*.7},${y} ${x+s*.3},${y+s*.1} ${x},${y}Z" fill="${c1}"/><path d="M${x},${y} C${x-s*.45},${y-s*.3} ${x-s*.2},${y-s*.8} ${x},${y-s*1.05} C${x+s*.25},${y-s*.7} ${x+s*.45},${y-s*.4} ${x},${y}Z" fill="${c2}"/>`;
 const ART_OCC={
  natal:{n:'Natal',ttl:'FELIZ NATAL',sub:'Presentes com preço de Natal',th:{a:'#c8102e',b:'#6b0a1a',text:'#ffffff',sub:'#ffe3e3',accent:'#ffc21a',price:'#ffe27a',badge:'#ffc21a',badgeT:'#7a0d1f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
   deco:(E,W,H,th,r)=>{for(let i=0;i<80;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*9).toFixed(1)}" fill="#fff" fill-opacity="${(.18+r()*.5).toFixed(2)}"/>`);
@@ -375,15 +380,57 @@ const ART_OCC={
   deco:(E,W,H,th,r)=>{E.push(artStripes(0,26,W,'#ffc21a','#000',.9));for(let i=0;i<16;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(60+r()*80).toFixed(0)}" fill="#ffffff" fill-opacity=".07">%</text>`)}},
  relampago:{n:'Oferta relâmpago',ttl:'OFERTA RELÂMPAGO',sub:'Corra: por tempo limitado',th:{a:'#ffd400',b:'#ff9800',text:'#101828',sub:'#4b3300',accent:'#d50000',price:'#d50000',badge:'#d50000',badgeT:'#ffffff',shape:'#000000',foot:'rgba(0,0,0,.16)',footT:'#101828'},
   deco:(E,W,H,th,r)=>{E.push(`<polygon points="${W*.62},${H*.04} ${W*.28},${H*.34} ${W*.46},${H*.34} ${W*.34},${H*.62} ${W*.74},${H*.26} ${W*.54},${H*.26}" fill="#fff" fill-opacity=".22"/>`);
-   E.push(`<polygon points="${W*.9},${H*.5} ${W*.7},${H*.7} ${W*.8},${H*.7} ${W*.72},${H*.88} ${W*.98},${H*.62} ${W*.86},${H*.62}" fill="#d50000" fill-opacity=".14"/>`);E.push(artStripes(0,28,W,'#d50000','#000',.85))}}
+   E.push(`<polygon points="${W*.9},${H*.5} ${W*.7},${H*.7} ${W*.8},${H*.7} ${W*.72},${H*.88} ${W*.98},${H*.62} ${W*.86},${H*.62}" fill="#d50000" fill-opacity=".14"/>`);E.push(artStripes(0,28,W,'#d50000','#000',.85))}},
+ festajunina:{n:'Festa Junina',ttl:'FESTA JUNINA',sub:'Ofertas de arrasta-pé',th:{a:'#f4511e',b:'#8a1c00',text:'#ffffff',sub:'#ffe0b2',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#7a1700',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const c=['#ffd54f','#2e9e4f','#29b6f6','#ffffff','#ff4081','#ffab40'];
+   artFlags(E,W,0,14,18,r,c,36);
+   for(let y=H-150;y<H;y+=50)for(let x=0;x<W;x+=50)if(((x+y)/50)%2===0)E.push(`<rect x="${x}" y="${y}" width="50" height="50" fill="#fff" fill-opacity=".1"/>`);
+   [[60,H*.4,'#ffd54f'],[W-60,H*.52,'#ff4081'],[70,H*.7,'#29b6f6']].forEach(([x,y,col])=>{E.push(`<path d="M${x-34},${y} Q${x-46},${y-62} ${x},${y-70} Q${x+46},${y-62} ${x+34},${y}Z" fill="${col}" fill-opacity=".85"/><rect x="${x-14}" y="${y}" width="28" height="12" fill="#ffffff" fill-opacity=".6"/>`)});
+   for(let i=0;i<50;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(2+r()*4).toFixed(1)}" fill="#ffd54f" fill-opacity=".55"/>`)}},
+ arraia:{n:'Arraiá',ttl:'ARRAIÁ',sub:'O arraiá de ofertas começou',th:{a:'#283593',b:'#0d123f',text:'#ffffff',sub:'#d1d9ff',accent:'#ffb300',price:'#ffd54f',badge:'#ffb300',badgeT:'#0d123f',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<70;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H*.6).toFixed(0)}" r="${(1.5+r()*3).toFixed(1)}" fill="#fff" fill-opacity="${(.3+r()*.6).toFixed(2)}"/>`);
+   E.push(`<circle cx="${W-150}" cy="170" r="70" fill="#fff3c4"/><circle cx="${W-125}" cy="155" r="62" fill="#283593"/>`);
+   artFlags(E,W,0,14,18,r,['#ffb300','#ef5350','#66bb6a','#ffffff','#42a5f5'],36);
+   [[W*.1,H-30],[W*.9,H-30]].forEach(([x,y],i)=>{E.push(`<rect x="${x-70}" y="${y-12}" width="140" height="14" rx="7" fill="#4e342e"/><rect x="${x-60}" y="${y-30}" width="120" height="14" rx="7" fill="#6d4c41" transform="rotate(${i?8:-8} ${x} ${y-24})"/>`);E.push(artFlame(x,y-14,70,'#ff6d00','#ffd54f'))});
+   for(let i=0;i<45;i++){const x=(r()<.5?W*.1:W*.9)+(r()-.5)*260;E.push(`<circle cx="${x.toFixed(0)}" cy="${(H-120-r()*420).toFixed(0)}" r="${(2+r()*4).toFixed(1)}" fill="#ffb300" fill-opacity="${(.35+r()*.5).toFixed(2)}"/>`)}}},
+ carnaval:{n:'Carnaval',ttl:'CARNAVAL',sub:'Pule de alegria com nossas ofertas',th:{a:'#7b1fa2',b:'#2a0a52',text:'#ffffff',sub:'#f1ddff',accent:'#ffe600',price:'#ffee58',badge:'#00e676',badgeT:'#12003a',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{const pal=['#ffe600','#00e676','#ff4081','#29b6f6','#ffffff','#ff9100'];
+   for(let k=0;k<7;k++){const x0=r()*W,c=pal[k%pal.length];let d=`M${x0.toFixed(0)},0`;for(let y=0;y<H;y+=120)d+=` q${(r()*140-70).toFixed(0)},60 0,120`;E.push(`<path d="${d}" fill="none" stroke="${c}" stroke-opacity=".5" stroke-width="${(5+r()*5).toFixed(0)}" stroke-linecap="round"/>`)}
+   for(let i=0;i<130;i++){const x=r()*W,y=r()*H,c=pal[Math.floor(r()*pal.length)],k=Math.floor(r()*3);
+    if(k===0)E.push(`<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${(8+r()*14).toFixed(0)}" height="${(5+r()*7).toFixed(0)}" fill="${c}" fill-opacity=".9" transform="rotate(${(r()*180).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})"/>`);
+    else if(k===1)E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(4+r()*6).toFixed(1)}" fill="${c}" fill-opacity=".9"/>`);
+    else E.push(`<polygon points="${artStar(x,y,10+r()*9,4,5)}" fill="${c}" fill-opacity=".9"/>`)}}},
+ mulher:{n:'Dia da Mulher',ttl:'DIA DA MULHER',sub:'Homenagem a quem faz a diferença',th:{a:'#ab47bc',b:'#4a148c',text:'#ffffff',sub:'#f5dcff',accent:'#ffd54f',price:'#ffe27a',badge:'#ffd54f',badgeT:'#4a148c',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let i=0;i<9;i++){const x=r()<.5?r()*130:W-r()*130,y=r()*H,s=26+r()*30;for(let k=0;k<6;k++){const a=Math.PI*2*k/6;E.push(`<circle cx="${(x+Math.cos(a)*s).toFixed(0)}" cy="${(y+Math.sin(a)*s).toFixed(0)}" r="${(s*.72).toFixed(0)}" fill="#fff" fill-opacity=".2"/>`)}E.push(`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(s*.5).toFixed(0)}" fill="#ffd54f" fill-opacity=".75"/>`)}
+   for(let i=0;i<16;i++)E.push(`<path d="${artHeart(r()*W,r()*H,10+r()*22)}" fill="#fff" fill-opacity="${(.1+r()*.16).toFixed(2)}"/>`)}},
+ cliente:{n:'Dia do Cliente',ttl:'DIA DO CLIENTE',sub:'Você é o nosso destaque, aproveite',th:{a:'#0277bd',b:'#01355c',text:'#ffffff',sub:'#d6efff',accent:'#ffca28',price:'#ffe082',badge:'#ffca28',badgeT:'#01355c',shape:'#ffffff',foot:'rgba(0,0,0,.28)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artRay(W*.5,H*.32,300,H,36,'#ffffff',10).replace(/stroke="#ffffff"/g,'stroke="#ffffff" stroke-opacity=".05"'));
+   for(let i=0;i<34;i++)E.push(`<polygon points="${artStar(r()*W,r()*H,10+r()*22,5+r()*5,5)}" fill="${i%3?'#ffffff':'#ffca28'}" fill-opacity="${(.12+r()*.35).toFixed(2)}"/>`);
+   for(let i=0;i<8;i++)E.push(`<path d="${artHeart(r()*W,r()*H,14+r()*22)}" fill="#fff" fill-opacity=".14"/>`)}},
+ liquidacao:{n:'Liquidação',ttl:'LIQUIDAÇÃO',sub:'Preços que não voltam mais',th:{a:'#d50000',b:'#7f0000',text:'#ffffff',sub:'#ffd6d6',accent:'#ffee00',price:'#ffee00',badge:'#ffee00',badgeT:'#7f0000',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artStripes(0,40,W,'#ffee00','#000',.9));E.push(artStripes(H-40,H,W,'#ffee00','#000',.9));
+   for(let i=0;i<18;i++)E.push(`<text x="${(r()*W).toFixed(0)}" y="${(r()*H).toFixed(0)}" font-family="Arial,sans-serif" font-weight="700" font-size="${(70+r()*110).toFixed(0)}" fill="#ffffff" fill-opacity=".09" transform="rotate(${(r()*40-20).toFixed(0)})">%</text>`);
+   [[W-110,H*.2],[100,H*.55]].forEach(([x,y],i)=>E.push(`<g transform="rotate(${i?-14:12} ${x} ${y})"><path d="M${x-60},${y-40} h95 l35,40 -35,40 h-95z" fill="#ffee00" fill-opacity=".9"/><circle cx="${x+66}" cy="${y}" r="8" fill="#d50000"/><text x="${x-48}" y="${y+10}" font-family="Arial,sans-serif" font-weight="700" font-size="30" fill="#7f0000">% OFF</text></g>`))}},
+ queima:{n:'Queima de estoque',ttl:'QUEIMA DE ESTOQUE',sub:'Esquentou: tudo com preço baixo',th:{a:'#ff6d00',b:'#9e1b00',text:'#ffffff',sub:'#ffe0b2',accent:'#ffee00',price:'#ffee00',badge:'#ffee00',badgeT:'#7a1700',shape:'#ffee00',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{for(let x=-20;x<W+40;x+=95){const s=60+r()*70;E.push(artFlame(x,H+8,s*1.4,'#ff3d00','#ffd54f'));E.push(artFlame(x+45,H+8,s,'#ff9100','#fff176'))}
+   for(let i=0;i<60;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(H*.35+r()*H*.6).toFixed(0)}" r="${(2+r()*5).toFixed(1)}" fill="#ffd54f" fill-opacity="${(.3+r()*.5).toFixed(2)}"/>`);
+   E.push(artStripes(0,30,W,'#ffee00','#000',.85))}},
+ relampago2:{n:'Relâmpago neon',ttl:'OFERTA RELÂMPAGO',sub:'Acabou piscar, acabou a oferta',th:{a:'#101a4a',b:'#04071c',text:'#ffffff',sub:'#a9b8ff',accent:'#ffee00',price:'#ffee00',badge:'#ff2bd6',badgeT:'#ffffff',shape:'#ffee00',foot:'rgba(255,238,0,.1)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artBolt(W*.22,H*.2,230,'#ffee00',.22),artBolt(W*.8,H*.46,300,'#00e5ff',.18),artBolt(W*.15,H*.72,200,'#ff2bd6',.2),artBolt(W*.86,H*.14,150,'#ffee00',.3));
+   for(let i=0;i<8;i++)E.push(artBolt(r()*W,r()*H,40+r()*60,'#ffee00',.35));
+   for(let i=0;i<60;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H).toFixed(0)}" r="${(1.5+r()*3).toFixed(1)}" fill="#00e5ff" fill-opacity=".55"/>`)}},
+ relampago3:{n:'Relâmpago vermelho',ttl:'OFERTA RELÂMPAGO',sub:'Só por poucas horas',th:{a:'#e53935',b:'#7a0b10',text:'#ffffff',sub:'#ffdada',accent:'#ffee00',price:'#ffee00',badge:'#ffee00',badgeT:'#7a0b10',shape:'#ffffff',foot:'rgba(0,0,0,.3)',footT:'#ffffff'},
+  deco:(E,W,H,th,r)=>{E.push(artBolt(W*.5,H*.3,520,'#ffffff',.1),artBolt(W*.1,H*.62,260,'#ffee00',.16),artBolt(W*.92,H*.7,300,'#ffffff',.12));
+   for(let i=0;i<10;i++)E.push(artBolt(r()*W,r()*H,50+r()*80,'#ffee00',.2));E.push(artStripes(0,26,W,'#ffee00','#000',.8))}}
 };
-const ART_OCC_ORDER=['natal','blackfriday','cybermonday','aniversario','maes','pais','criancas','namorados','pascoa','anonovo','consumidor','relampago'];
+const ART_OCC_ORDER=['natal','blackfriday','cybermonday','aniversario','maes','pais','criancas','namorados','pascoa','anonovo','consumidor','relampago','festajunina','arraia','carnaval','mulher','cliente','liquidacao','queima','relampago2','relampago3'];
 function artNth(y,m,wd,n){const d=new Date(y,m,1);const off=(wd-d.getDay()+7)%7;return new Date(y,m,1+off+(n-1)*7)}
 function artEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
 function artDates(from){
   const out=[],y0=from.getFullYear();
   for(const y of[y0,y0+1]){
     const bf=artNth(y,10,5,4),cm=new Date(bf);cm.setDate(bf.getDate()+3);
+    const ce=artEaster(y),cv=new Date(ce);cv.setDate(ce.getDate()-47);out.push(['carnaval',cv],['festajunina',new Date(y,5,13)],['arraia',new Date(y,5,24)],['mulher',new Date(y,2,8)],['cliente',new Date(y,8,15)]);
     out.push(['natal',new Date(y,11,25)],['blackfriday',bf],['cybermonday',cm],['maes',artNth(y,4,0,2)],['pais',artNth(y,7,0,2)],['criancas',new Date(y,9,12)],['namorados',new Date(y,5,12)],['pascoa',artEaster(y)],['anonovo',new Date(y+1,0,1)],['consumidor',new Date(y,2,15)]);
   }
   const t=new Date(from.getFullYear(),from.getMonth(),from.getDate());
@@ -618,9 +665,20 @@ function artRender(){
   document.querySelectorAll('.occb').forEach(b=>b.classList.toggle('on',b.dataset.oc===artOcc));
   artFile=null;clearTimeout(artTimer);artTimer=setTimeout(artPrep,500);
 }
+const ART_UNI=[['natal','Natal'],['festajunina','Festa junina'],['arraia','Arraiá'],['carnaval','Carnaval'],['blackfriday','Black Friday'],['pascoa','Páscoa'],['maes','Dia das Mães'],['pais','Dia dos Pais'],['criancas','Dia das Crianças'],['mulher','Dia da Mulher'],['namorados','Namorados'],['aniversario','Aniversário'],['relampago','Oferta relâmpago'],['liquidacao','Liquidação']];
+const artUniId=k=>20+ART_UNI.findIndex(u=>u[0]===k);
+/* Uniformes do robô: coloque na pasta do programa um PNG transparente chamado robo-<data>.png (ex.: robo-festajunina.png, robo-natal.png). O que existir aparece sozinho na lista de mascotes e é escolhido ao tocar na data. */
+async function artUniProbe(){
+  const sel=document.getElementById('a_mas');if(!sel)return;
+  for(const [k,n] of ART_UNI){const id=artUniId(k);
+    if(!ART_MAS[id]){try{const d=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>i.naturalWidth>50?ok([i.naturalWidth,i.naturalHeight]):no();i.onerror=no;i.src='robo-'+k+'.png'});ART_MAS[id]={f:'robo-'+k+'.png',ar:d[0]/d[1],h:d[1]}}catch(e){continue}}
+    if(!sel.querySelector('option[value="'+id+'"]')){const o=document.createElement('option');o.value=id;o.textContent='Robô: uniforme '+n;sel.appendChild(o)}}
+}
+function artUniAuto(occ){const s=document.getElementById('a_mas');if(!s)return;const id=artUniId(occ);if(id>=20&&ART_MAS[id]&&(s.value===''||s.value==='4'||+s.value>=20)){s.value=String(id);artMasLoad()}else if(+s.value>=20&&!(id>=20&&ART_MAS[id])){s.value='4';artMasLoad()}}
 function artSetOcc(id){
   artOcc=id;const o=ART_OCC[id],set=(k,v)=>{const e=$('#a_'+k);if(e)e.value=v};
   if(o){set('ttl',o.ttl);set('sub',o.sub);set('badge','')}
+  if(document.getElementById('a_mas')&&document.getElementById('a_mas').value==='4'||+(document.getElementById('a_mas')||{}).value>=20)artUniAuto(id);
   artRender();
 }
 function artSetTheme(t){artTheme=t;artOcc='';artRender()}
@@ -877,7 +935,7 @@ async function vArte(){
   try{SELPH=localStorage.getItem(SELPK())||null;SELORIG=localStorage.getItem(SELOK())||null;SELKIND=localStorage.getItem(SELKK())||'foto'}catch(e){SELPH=SELORIG=null}
   MODE='art';{const x=$('#a_sfmt');if(x)x.value=SELFMT}await masRestore();artFilter();
   try{if(!artLogo)artLogo=await artUrlData(logoIcon(),300)}catch(e){}
-  artRender();
+  artUniProbe();artRender();
 }
 
 /* ----- navegação ----- */
