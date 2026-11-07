@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.18.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>window.APP_VERSION='1.18.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin-top:10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -666,15 +666,16 @@ function artRender(){
   artFile=null;clearTimeout(artTimer);artTimer=setTimeout(artPrep,500);
 }
 const ART_UNI=[['natal','Natal'],['festajunina','Festa junina'],['arraia','Arraiá'],['carnaval','Carnaval'],['blackfriday','Black Friday'],['pascoa','Páscoa'],['maes','Dia das Mães'],['pais','Dia dos Pais'],['criancas','Dia das Crianças'],['mulher','Dia da Mulher'],['namorados','Namorados'],['aniversario','Aniversário'],['relampago','Oferta relâmpago'],['liquidacao','Liquidação']];
-const artUniId=k=>20+ART_UNI.findIndex(u=>u[0]===k);
-/* Uniformes do robô: coloque na pasta do programa um PNG transparente chamado robo-<data>.png (ex.: robo-festajunina.png, robo-natal.png). O que existir aparece sozinho na lista de mascotes e é escolhido ao tocar na data. */
+const artUniId=(k,v)=>20+ART_UNI.findIndex(u=>u[0]===k)*10+(v||0);
+/* Uniformes do robô: coloque na pasta do programa PNGs transparentes chamados robo-<data>.png (e robo-<data>-2.png, -3 ... até -9 para mais modelos da mesma data).
+   Ex.: robo-natal.png, robo-natal-2.png, robo-blackfriday.png. O que existir aparece na lista de mascotes e o 1º modelo é escolhido ao tocar na data. */
 async function artUniProbe(){
   const sel=document.getElementById('a_mas');if(!sel)return;
-  for(const [k,n] of ART_UNI){const id=artUniId(k);
-    if(!ART_MAS[id]){try{const d=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>i.naturalWidth>50?ok([i.naturalWidth,i.naturalHeight]):no();i.onerror=no;i.src='robo-'+k+'.png'});ART_MAS[id]={f:'robo-'+k+'.png',ar:d[0]/d[1],h:d[1]}}catch(e){continue}}
-    if(!sel.querySelector('option[value="'+id+'"]')){const o=document.createElement('option');o.value=id;o.textContent='Robô: uniforme '+n;sel.appendChild(o)}}
+  for(const [k,n] of ART_UNI)for(let v=0;v<9;v++){const id=artUniId(k,v),f='robo-'+k+(v?'-'+(v+1):'')+'.png';
+    if(!ART_MAS[id]){try{const d=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>i.naturalWidth>50?ok([i.naturalWidth,i.naturalHeight]):no();i.onerror=no;i.src=f});ART_MAS[id]={f,ar:d[0]/d[1],h:d[1]}}catch(e){break}}
+    if(!sel.querySelector('option[value="'+id+'"]')){const o=document.createElement('option');o.value=id;o.textContent='Robô: uniforme '+n+(v?' '+(v+1):'');sel.appendChild(o)}}
 }
-function artUniAuto(occ){const s=document.getElementById('a_mas');if(!s)return;const id=artUniId(occ);if(id>=20&&ART_MAS[id]&&(s.value===''||s.value==='4'||+s.value>=20)){s.value=String(id);artMasLoad()}else if(+s.value>=20&&!(id>=20&&ART_MAS[id])){s.value='4';artMasLoad()}}
+function artUniAuto(occ){const s=document.getElementById('a_mas');if(!s)return;const id=artUniId(occ,0),has=ART_MAS[id]&&id>=20;if(has&&(s.value===''||s.value==='4'||+s.value>=20)){s.value=String(id);artMasLoad()}else if(+s.value>=20&&!has){s.value='4';artMasLoad()}}
 function artSetOcc(id){
   artOcc=id;const o=ART_OCC[id],set=(k,v)=>{const e=$('#a_'+k);if(e)e.value=v};
   if(o){set('ttl',o.ttl);set('sub',o.sub);set('badge','')}
