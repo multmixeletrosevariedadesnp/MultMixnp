@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.67.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.68.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4431,7 +4431,7 @@ async function ctrVer(id){
 }
 /* ========= Relatórios (PDF) ========= */
 let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
-const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',extrato:'Extrato de recebimentos (caixa)',com:'Comissões'};
+const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',atraso:'Média de atraso por cliente',extrato:'Extrato de recebimentos (caixa)',com:'Comissões'};
 function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
@@ -4535,6 +4535,23 @@ function relBuild(){
       rows:L.map(p=>[p.supplier||'—',(p.doc?'NF '+p.doc:'—')+(p.parcel?' · '+p.parcel:''),fmtD(p.due_date),REL.pg==='pagas'?fmtD(p.paid_at)+(p.method?' · '+p.method:'')+(p.bank?' · '+p.bank:'')+(p.receipt?' · comp. '+p.receipt:''):(dleft(p.due_date)<0?'Vencida':'A vencer'),R(amt(p))]),
       foot:['Total','','','',R(sum(L,amt))],sum:[['Contas',L.length],['Total',R(sum(L,amt))],...(REL.pg==='pagas'?[]:[['Vencidas',lt.length+' · '+R(sum(lt,amt))]])]};
   }
+  if(k==='atraso'){ // parcelas com vencimento no período; atraso = dias entre vencimento e pagamento (ou hoje, se em aberto)
+    const hoje=ld(now()),dd=(a,b)=>Math.round((Date.parse(a+'T12:00:00')-Date.parse(b+'T12:00:00'))/864e5),C={};
+    db.installments.filter(i=>!i.canceled_at&&i.due_date>=f&&i.due_date<=t).forEach(i=>{
+      const sl=db.sales.find(x=>x.id===i.sale_id);if(!sl)return;const o=C[sl.customer_id||'-']=C[sl.customer_id||'-']||{n:0,pagas:[],ab:[],vl:0};o.n++;
+      if(i.paid_at){o.pagas.push(Math.max(0,dd(ld(i.paid_at),i.due_date)))}
+      else if(i.due_date<hoje){o.ab.push(dd(hoje,i.due_date));o.vl+=+i.amount||0}
+    });
+    const av=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0,f1=n=>n.toFixed(1).replace('.',',');
+    const L=Object.entries(C).map(([id,o])=>{const todas=[...o.pagas,...o.ab];return{nome:id==='-'?'Balcão':cn(id),o,mp:av(o.pagas),mt:av(todas),mx:todas.length?Math.max(...todas):0,noPrazo:o.pagas.filter(d=>d===0).length}})
+      .filter(r=>r.o.pagas.length||r.o.ab.length).sort((a,b)=>b.mt-a.mt);
+    const allP=L.flatMap(r=>r.o.pagas),allT=L.flatMap(r=>[...r.o.pagas,...r.o.ab]),vl=L.reduce((a,r)=>a+r.o.vl,0);
+    return{title:RELN[k],sub:'Parcelas com vencimento de '+per+' · atraso em dias (paga = vencimento até o pagamento; em aberto = vencimento até hoje)',
+      head:['Cliente','Parcelas','Pagas','Pagas no prazo','Média atraso (pagas)','Em aberto vencidas','Valor vencido','Média geral','Maior atraso'],al:'lrrrrrrrr',
+      rows:L.map(r=>[r.nome,r.o.n,r.o.pagas.length,r.noPrazo,f1(r.mp)+' d',r.o.ab.length,R(r.o.vl),f1(r.mt)+' d',r.mx+' d']),
+      foot:['Geral',L.reduce((a,r)=>a+r.o.n,0),allP.length,L.reduce((a,r)=>a+r.noPrazo,0),f1(av(allP))+' d',L.reduce((a,r)=>a+r.o.ab.length,0),R(vl),f1(av(allT))+' d',(allT.length?Math.max(...allT):0)+' d'],
+      sum:[['Clientes',L.length],['Média de atraso (pagas)',f1(av(allP))+' dias'],['Média geral (com vencidas)',f1(av(allT))+' dias'],['Vencido em aberto',R(vl)]]};
+  }
   if(k==='extrato'){
     const base=exLines(f,t),L=exFilter(base,EX),S=exSum(L),fl=[EX.forma&&'forma: '+EX.forma,EX.tipo&&'tipo: '+EXT[EX.tipo],EX.user&&'recebido por: '+EX.user].filter(Boolean);
     return{title:RELN[k],sub:'Período: '+per+(fl.length?' · '+fl.join(' · '):''),head:['Data','Hora','Tipo','Cliente','Forma','Quem','Valor'],al:'llllllr',
@@ -4572,7 +4589,7 @@ function relHtml(d,forPdf){
 }
 function vRel(){
   if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
-  const k=REL.k,needP=['vendas','caixa','extrato','com','abc','dre','lucro','compras'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
+  const k=REL.k,needP=['vendas','caixa','extrato','atraso','com','abc','dre','lucro','compras'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
   const d=relBuild();
   $('#app').innerHTML=`<div class="bar"><select style="max-width:230px" onchange="REL.k=this.value;vRel()">${Object.entries(RELN).map(([v,l])=>`<option value="${v}" ${k===v?'selected':''}>${l}</option>`).join('')}</select>
   ${needP?`<input type="date" style="max-width:170px" value="${REL.from}" onchange="REL.from=this.value||REL.from;vRel()"><input type="date" style="max-width:170px" value="${REL.to}" onchange="REL.to=this.value||REL.to;vRel()">`:''}
