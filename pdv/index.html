@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.19.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.21.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -135,6 +135,18 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 @media(max-width:899px){main{padding-bottom:86px}.citem{grid-template-columns:40px minmax(0,1fr) auto 26px}.citem .lt{grid-column:2;text-align:left;grid-row:2}.citem .stp{grid-row:2;grid-column:3}.citem .rx{grid-row:1;grid-column:4}}
 body:not(.in) .pbar{display:none}
 #artv{overflow:hidden}#artv svg{overflow:hidden}
+
+/* temas (por aparelho): claro / escuro / grafite + cor de destaque */
+:root[data-theme="light"]{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#00539f;--tag:#ffc21a;--ok:#12805c;--bad:#c4321f;color-scheme:light}
+:root[data-theme="dark"]{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#263050;--pri:#2b78d6;--tag:#ffc93c;--ok:#3ecf9a;--bad:#ff7a66;color-scheme:dark}
+:root[data-theme="graphite"]{--bg:#16181c;--card:#202429;--ink:#eceef2;--mut:#a0a8b5;--line:#343a44;--pri:#2f6fcf;--brand:#2a5db0;--tag:#ffc93c;--ok:#47d6a0;--bad:#ff7d6a;color-scheme:dark}
+:root[data-theme="graphite"] .box,:root[data-theme="graphite"] .pcard{box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 6px 18px rgba(0,0,0,.35)}
+:root[data-theme="graphite"] input,:root[data-theme="graphite"] select,:root[data-theme="graphite"] textarea{background:#181b20}
+:root[data-acc="verde"]{--pri:#0e8a5f;--brand:#0b6e4c}
+:root[data-acc="roxo"]{--pri:#7048c8;--brand:#5a37a8}
+:root[data-acc="laranja"]{--pri:#c2570c;--brand:#9d4509}
+:root[data-acc="grafite"]{--pri:#475467;--brand:#344054}
+.fchips{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -162,6 +174,7 @@ const uid=()=>crypto.randomUUID(),now=()=>new Date().toISOString();
 const norm=h=>String(h??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 const digits=v=>String(v||'').replace(/\D/g,'');
 const fmtD=iso=>String(iso||'').slice(0,10).split('-').reverse().join('/');
+const fmtDH=iso=>{if(!iso)return'';if(String(iso).length<=10)return fmtD(iso);const d=new Date(iso);return isNaN(d)?fmtD(iso):d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
 const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let ME=LS.get('pdv_me',null),P=LS.get('pdv_prod',[]),Q=LS.get('pdv_q',[]),FAIL=LS.get('pdv_fail',[]),CO=LS.get('pdv_co',{}),MY=[],COM=0,view='login',cart=[],selCli=null,loginMsg='';
@@ -1026,11 +1039,20 @@ async function vArte(){
 function go(v){view=v;render()}
 const ICON={cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 001.6 1.6h7.7a2 2 0 002-1.5L21 8H6"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c.5-1 1.5-1.5 2.5-1.5 1.4 0 2.5.8 2.5 2s-1 1.7-2.5 2-2.5.8-2.5 2 1.1 2 2.5 2c1 0 2-.5 2.5-1.5"/>',img:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+
+/* ----- aparência (por aparelho) ----- */
+const ACCS=[['','Azul','#00539f'],['verde','Verde','#0e8a5f'],['roxo','Roxo','#7048c8'],['laranja','Laranja','#c2570c'],['grafite','Cinza','#475467']];
+const TEMAUI=()=>{try{const v=localStorage.mm_tema_ui;return v==='dark'||v==='light'||v==='graphite'?v:'auto'}catch(e){return'auto'}},ACC=()=>{try{return localStorage.mm_acc||''}catch(e){return''}};
+function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else localStorage.mm_tema_ui=k}catch(e){}if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);temaOpen()}
+function accSet(k){try{if(k)localStorage.mm_acc=k;else localStorage.removeItem('mm_acc')}catch(e){}if(k)document.documentElement.setAttribute('data-acc',k);else document.documentElement.removeAttribute('data-acc');temaOpen()}
+function temaOpen(){const TE=TEMAUI();modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho. Pode trocar quando quiser.</p>
+  <b>Tema</b><div class="fchips" style="margin:6px 0 12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro'],['graphite','Grafite']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
+  <b>Cor de destaque</b><div class="fchips" style="margin:6px 0 4px">${ACCS.map(([k,l,c])=>`<button class="chip ${ACC()===k?'on':''}" onclick="accSet('${k}')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join('')}</div>`)}
 function render(){
   if(!ME||view==='login'){view='login';return vLogin()}
   document.body.className='in';
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,pend=mine().length+FAIL.filter(f=>f.s._by===ME.id).length;
-  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
+  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button onclick="temaOpen()">${ic('img')}<span>Aparência</span></button><button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
   ({venda:vPdv,caixa:vCx,minhas:vMin,arte:vArte}[view]||vPdv)();
 }
 
@@ -1402,7 +1424,7 @@ function vMin(){
   ${pend.length?`<div class="box"><h3>Aguardando envio (${pend.length})</h3><p class="sm">Ficam guardadas neste aparelho e vão sozinhas quando houver internet.</p><button class="btn g s" onclick="sync()">Tentar enviar agora</button></div>`:''}
   ${fl.length?`<div class="box"><h3 class="bad">Vendas recusadas pelo servidor (${fl.length})</h3>${fl.map(f=>`<p class="sm">${fmtD(f.s.created_at)} · ${esc(f.msg)}${f.rep?' · administrador avisado':''} <button class="btn g s" onclick="failDel('${f.s.id}')">Descartar</button></p>`).join('')}<p class="sm">Fale com o administrador antes de descartar.</p></div>`:''}
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Pagamento</th><th>Itens</th><th style="text-align:right">Total</th><th></th></tr>
-  ${MY.length?MY.map(s=>`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtD(ld(s.created_at))}</td><td>${esc(s.customer||'—')}</td><td>${esc(s.pay_type==='crediario'?'Carnê':(s.method||'—'))}${s.canceled_at?' <span class="tag">cancelada</span>':''}</td><td>${(s.items||[]).reduce((a,i)=>a+ +i.qty,0)}</td><td style="text-align:right">${R(s.total)}${+s.discount>0?`<div class="sm">desconto ${R(s.discount)}</div>`:''}${+s.devolvido>0?`<div class="sm bad">devolvido ${R(s.devolvido)}</div>`:''}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="devOpen('${s.id}')">Devolver</button>`}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:14px">Nenhuma venda enviada neste mês.</td></tr>'}</table></div>`;
+  ${MY.length?MY.map(s=>`<tr${s.canceled_at?' style="opacity:.5"':''}><td>${fmtDH(s.created_at)}</td><td>${esc(s.customer||'—')}</td><td>${esc(s.pay_type==='crediario'?'Carnê':(s.method||'—'))}${s.canceled_at?' <span class="tag">cancelada</span>':''}</td><td>${(s.items||[]).reduce((a,i)=>a+ +i.qty,0)}</td><td style="text-align:right">${R(s.total)}${+s.discount>0?`<div class="sm">desconto ${R(s.discount)}</div>`:''}${+s.devolvido>0?`<div class="sm bad">devolvido ${R(s.devolvido)}</div>`:''}</td><td>${s.canceled_at?'':`<button class="btn g s" onclick="devOpen('${s.id}')">Devolver</button>`}</td></tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:14px">Nenhuma venda enviada neste mês.</td></tr>'}</table></div>`;
 }
 function failDel(id){if(!confirm('Descartar esta venda recusada? Ela não será registrada.'))return;const i=FAIL.findIndex(f=>f.s.id===id);if(i>=0)FAIL.splice(i,1);saveQ();render()}
 
@@ -1475,7 +1497,7 @@ function devOpen(id){
   if(ME.role!=='admin'&&(Date.now()-new Date(s.created_at))/864e5>dias)return alert('Prazo de devolução vencido ('+dias+' dias). Procure o administrador.');
   if(navigator.onLine===false)return alert('A devolução precisa de internet. Conecte-se e tente de novo.');
   window.devSale=s;
-  modal(`<h2>Troca / devolução</h2><p class="sm">Venda de ${fmtD(ld(s.created_at))} · ${R(s.total)}${s.devolvido>0?' · já devolvido '+R(s.devolvido):''}</p>
+  modal(`<h2>Troca / devolução</h2><p class="sm">Venda de ${fmtDH(s.created_at)} · ${R(s.total)}${s.devolvido>0?' · já devolvido '+R(s.devolvido):''}</p>
   ${s.fiscal_status==='emitida'?'<p class="bad">Atenção: já existe nota fiscal emitida. O administrador será avisado para tratar a nota.</p>':''}
   <div id="dv_l">${(s.items||[]).map((i,k)=>`<div class="citem" style="grid-template-columns:minmax(0,1fr) 90px"><div class="cn"><b>${esc(i.name)}</b><span class="sm">${i.qty} × ${R(i.price)}</span></div><input type="number" min="0" max="${i.qty}" value="0" id="dv_${k}" inputmode="numeric" aria-label="Quantidade devolvida"></div>`).join('')}</div>
   <div class="f"><div class="w"><label for="dv_r">Motivo</label><input id="dv_r" placeholder="Ex.: defeito, tamanho errado"></div>
