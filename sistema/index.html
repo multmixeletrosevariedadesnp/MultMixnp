@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.79.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.79.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1472,9 +1472,26 @@ async function ipKeys(){
   modal(`<h2>Chaves da InfinitePay</h2><p class="sm">Digite só o que for trocar. Campo em branco não altera. O valor salvo não aparece mais depois de gravado.</p>
   ${F.map(([k,l,t])=>`<label>${l} ${st[k]?'<span class="tag">configurado</span>':'<span class="tag">vazio</span>'}</label><input id="ik_${k}" type="${t}" autocomplete="off" placeholder="${st[k]?'••••••••  (deixe em branco para manter)':''}">`).join('')}
   <p><button class="btn g s" onclick="$('#ik_INFINITEPAY_WEBHOOK_TOKEN').type='text';$('#ik_INFINITEPAY_WEBHOOK_TOKEN').value=ipTok()">Gerar token aleatório</button></p>
+  <div class="bar"><button class="btn g" onclick="ipTest()">Testar agora (gera link de R$ 1,00)</button></div>
+  <div id="ip_t" class="sm" role="status"></div>
   <div class="bar"><button class="btn" onclick="ipKeysSave()">Salvar chaves</button>${Object.keys(st).length?' <button class="btn g" onclick="ipKeysDel()">Apagar todas</button>':''}</div>`);
 }
 const ipTok=()=>{const a=new Uint8Array(24);crypto.getRandomValues(a);return Array.from(a,x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')};
+async function ipTest(){
+  const o=$('#ip_t'),c=CO(),fl=[];
+  fl.push('Cobrança automática ligada: <b>'+(c.mp_pix_on?'sim':'NÃO (ligue em Empresa e salve)')+'</b>');
+  fl.push('Provedor: <b>'+(c.pix_provider==='ip'?'InfinitePay':'NÃO é InfinitePay (escolha em Empresa e salve)')+'</b>');
+  o.innerHTML=fl.join('<br>')+'<br>Gerando o link…';
+  try{
+    const r=await mpCall({action:'criar',kind:'venda',sale_ref:uid(),amount:1,payer_name:'Teste',description:'Teste de integração'});
+    o.innerHTML=fl.join('<br>')+`<br><b class="ok">Funcionou: a InfinitePay devolveu o link.</b> Pague com o celular para testar a confirmação.<div style="text-align:center">${r.checkout_url?pixSvg(r.checkout_url):''}</div><textarea rows="2" readonly onclick="this.select()" style="width:100%">${esc(r.checkout_url||'')}</textarea><div id="ip_s">Aguardando pagamento…</div>`;
+    const tm=setInterval(async()=>{
+      if(!$('#ip_s')){clearInterval(tm);mpCall({action:'cancelar',id:r.id}).catch(()=>{});return}
+      try{const x=await mpCall({action:'status',id:r.id});if(x.status==='approved'){clearInterval(tm);$('#ip_s').innerHTML='<b class="ok">Pagamento confirmado pela InfinitePay. A integração está funcionando.</b>'}
+      else if(['expired','cancelled','rejected'].includes(x.status)){clearInterval(tm);$('#ip_s').textContent='Link encerrado ('+x.status+').'}}catch(e){}
+    },3000);
+  }catch(e){o.innerHTML=fl.join('<br>')+'<br><b class="bad">Erro: '+esc(e.message)+'</b>'}
+}
 async function ipKeysSave(){
   let n=0;for(const k of ['INFINITEPAY_HANDLE','INFINITEPAY_WEBHOOK_TOKEN','INFINITEPAY_API_KEY']){
     let v=($('#ik_'+k).value||'').trim();if(!v)continue;if(k==='INFINITEPAY_HANDLE')v=v.replace(/^\$/,'');
