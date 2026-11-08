@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.24.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.25.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -933,13 +933,14 @@ function artAvatar(cx,cy,r,sel,th,F,id){
 }
 function cardSvg(o){
   if(o.tpl&&o.tpl!=='classic')return cardPro(o);
-  const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
-  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''};
+  const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.pal||{},o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
+  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},ak=n=>Math.round(n*(o.addrK||1)),FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold),x0=op.anchor==='m'?x-w/2:x;
     E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
   const fit=(s,maxW,size,bold,min)=>{while(artW(s,size,bold)>maxW&&size>min)size-=2;return[artFit(s,maxW,size,bold),size]};
   E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#bg)"/>`);
   E.push(`<circle cx="${W+40}" cy="${H*.15}" r="${H*.3}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-60" cy="${H*.9}" r="${H*.25}" fill="${th.shape}" fill-opacity=".06"/>`);
+  E.push(FX(`<rect width="${W}" height="${H}"/>`));
   const logoBox=(x,y,s)=>{if(!o.showLogo||!o.logo)return;E.push(`<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}" fill="#ffffff"/><clipPath id="lcp"><rect x="${x}" y="${y}" width="${s}" height="${s}" rx="${s*.22}"/></clipPath><image href="${o.logo}" xlink:href="${o.logo}" x="${x}" y="${y}" width="${s}" height="${s}" preserveAspectRatio="xMidYMid meet" clip-path="url(#lcp)"/>`)};
   const pill=(cx,y,w,h,fs)=>{E.push(`<rect x="${cx-w/2}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="#25d366"/>`);T('WhatsApp',cx,y+h/2+fs*.35,fs,{bold:1,color:'#ffffff',anchor:'m'})};
   const tel=fmtTel(sel.phone),qrOn=!!o.qr;
@@ -960,7 +961,7 @@ function cardSvg(o){
     logoBox(W-92-40,36,92);
     if(qrOn){E.push(qrSvg(o.qr,W-60-130,146,130,'#101828','#ffffff'));T('WhatsApp',W-60-65,296,20,{bold:1,anchor:'m',color:th.sub})}
     T(artFit(o.co.name,mw,30,true),x0,H-64,30,{bold:1});
-    if(o.co.addr)T(artFit(o.co.addr,mw,22,false),x0,H-30,22,{color:th.sub});
+    if(o.co.addr)T(artFit(o.co.addr,mw,ak(22),false),x0,H-30,ak(22),{color:th.sub});
   }else{
     const mw=W-120;
     logoBox(W/2-70,90,140);
@@ -973,7 +974,7 @@ function cardSvg(o){
     if(tel){pill(W/2,1310,400,96,48);const[t2,s2]=fit(tel,mw,124,true,60);T(t2,W/2,1560,s2,{bold:1,anchor:'m',color:th.price})}
     if(sel.extra)T(artFit(sel.extra,mw,52,false),W/2,1650,52,{anchor:'m'});
     E.push(`<rect x="0" y="${H-230}" width="${W}" height="230" fill="${th.foot}"/><rect x="0" y="${H-230}" width="${W}" height="8" fill="${th.accent}"/>`);
-    if(o.co.addr)T(artFit(o.co.addr,mw,34,false),W/2,H-110,34,{anchor:'m',color:th.footT,op:.9});
+    if(o.co.addr)T(artFit(o.co.addr,mw,ak(34),false),W/2,H-110,ak(34),{anchor:'m',color:th.footT,op:.9});
     T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:th.footT});
   }
   if(o.border)E.push(`<rect x="${V?28:30}" y="28" width="${W-(V?56:60)}" height="${H-56}" rx="${V?30:18}" fill="none" stroke="${th.accent}" stroke-opacity=".7" stroke-width="${V?5:3}"/>`);
@@ -983,12 +984,38 @@ function cardSvg(o){
 }
 
 /* ===== Cartão de visita: modelos profissionais (Executivo, Diagonal, Elegante escuro, Faixa) ===== */
+
+/* ===== Cartão: paletas de cores, fundos premium e endereço ===== */
+const cardMix=(a,b,t)=>{const n=c=>parseInt(c.slice(1),16),x=n(a),y=n(b),f=(i)=>Math.round(((x>>i)&255)*(1-t)+((y>>i)&255)*t);return'#'+[16,8,0].map(i=>f(i).toString(16).padStart(2,'0')).join('')};
+const cardPal=(n,a,b,acc,light)=>({n,a,b,text:light?'#101828':'#ffffff',sub:light?cardMix('#101828','#ffffff',.35):cardMix('#ffffff',a,.28),accent:acc,price:light?cardMix(acc,'#000000',.15):acc,badge:acc,badgeT:'#101828',shape:light?acc:'#ffffff',foot:'rgba(0,0,0,.28)',footT:light?'#101828':'#ffffff'});
+const CARD_PAL={
+  azul:cardPal('Azul MultMix','#00539f','#002b63','#ffc21a'),marinho:cardPal('Marinho e prata','#102a56','#07142b','#c9d1de'),
+  verde:cardPal('Verde','#0e7a53','#064d34','#ffd24d'),turquesa:cardPal('Turquesa','#0b8f99','#064c52','#ffd24d'),
+  roxo:cardPal('Roxo','#6d3fc2','#3b1a7a','#ffc21a'),vinho:cardPal('Vinho','#8c1c3a','#4a0e20','#f5c16c'),
+  rosa:cardPal('Rosa','#d6336c','#8f1d48','#ffe3ec'),laranja:cardPal('Laranja','#e8590c','#a63a00','#ffe08a'),
+  vermelho:cardPal('Vermelho','#d92d20','#8a1710','#ffc21a'),grafite:cardPal('Grafite','#3a4250','#171b22','#ffc21a'),
+  ouro:cardPal('Preto e dourado','#1c1c1c','#000000','#d4af37'),champ:cardPal('Champagne (claro)','#f7efe0','#e6d5b0','#8a6a1f',1),
+  branco:cardPal('Branco e azul (claro)','#ffffff','#e6edf6','#00468f',1)};
+const CARD_FX=[['liso','Liso (só o degradê)'],['linhas','Linhas diagonais'],['pontos','Pontilhado'],['ondas','Ondas'],['geo','Geométrico'],['carbono','Fibra de carbono (premium)'],['metal','Metal escovado (premium)'],['brilho','Brilho cetim (premium)']];
+function cardFx(kind,W,H,th,clip){
+  const light=(()=>{const m=/^#?([0-9a-f]{6})$/i.exec(th.a||'');if(!m)return false;const n=parseInt(m[1],16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255>.7})(),c=light?'#000000':'#ffffff',k=light?.6:1,id='fx'+Math.floor(Math.random()*1e6);
+  let d='';
+  if(kind==='linhas')d=`<pattern id="${id}p" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="26" fill="${c}" fill-opacity="${.09*k}"/></pattern><rect width="${W}" height="${H}" fill="url(#${id}p)"/>`;
+  else if(kind==='pontos')d=`<pattern id="${id}p" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2.2" fill="${c}" fill-opacity="${.16*k}"/><circle cx="18" cy="18" r="2.2" fill="${c}" fill-opacity="${.16*k}"/></pattern><rect width="${W}" height="${H}" fill="url(#${id}p)"/>`;
+  else if(kind==='ondas')d=[0,1,2,3].map(i=>`<path d="M0 ${H*(.5+i*.1)} C ${W*.25} ${H*(.38+i*.1)}, ${W*.5} ${H*(.66+i*.1)}, ${W} ${H*(.46+i*.1)} L ${W} ${H} L 0 ${H} Z" fill="${c}" fill-opacity="${.05*k}"/>`).join('');
+  else if(kind==='geo')d=`<polygon points="0,${H} ${W*.35},${H*.2} ${W*.55},${H}" fill="${c}" fill-opacity="${.06*k}"/><polygon points="${W*.3},${H} ${W*.62},0 ${W*.9},${H}" fill="${c}" fill-opacity="${.05*k}"/><polygon points="${W*.6},0 ${W},0 ${W},${H*.6}" fill="${c}" fill-opacity="${.07*k}"/>`;
+  else if(kind==='carbono')d=`<pattern id="${id}p" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="${c}" fill-opacity="${.10*k}"/><rect x="6" y="6" width="6" height="6" fill="${c}" fill-opacity="${.10*k}"/><rect x="6" width="6" height="6" fill="#000" fill-opacity=".10"/><rect y="6" width="6" height="6" fill="#000" fill-opacity=".10"/></pattern><rect width="${W}" height="${H}" fill="url(#${id}p)"/>`;
+  else if(kind==='metal')d=`<pattern id="${id}p" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="1" fill="${c}" fill-opacity="${.10*k}"/><rect y="2" width="4" height="1" fill="#000" fill-opacity=".06"/></pattern><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c}" stop-opacity="0"/><stop offset=".3" stop-color="${c}" stop-opacity="${.22*k}"/><stop offset=".48" stop-color="${c}" stop-opacity="0"/><stop offset=".72" stop-color="${c}" stop-opacity="${.16*k}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient><rect width="${W}" height="${H}" fill="url(#${id}p)"/><rect width="${W}" height="${H}" fill="url(#${id}g)"/>`;
+  else if(kind==='brilho')d=`<polygon points="${W*.5},0 ${W*.72},0 ${W*.3},${H} ${W*.08},${H}" fill="${c}" fill-opacity="${.10*k}"/><polygon points="${W*.76},0 ${W*.82},0 ${W*.40},${H} ${W*.34},${H}" fill="${c}" fill-opacity="${.08*k}"/>`;
+  else return '';
+  return `<clipPath id="${id}c">${clip}</clipPath><g clip-path="url(#${id}c)">${d}</g>`;
+}
 const CARD_TPL=[['classic','Clássico (padrão)'],['exec','Executivo (painel + fundo branco)'],['split','Moderno (painel diagonal)'],['dark','Elegante escuro'],['faixa','Faixa superior']];
 function cardPro(o){
-  const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
-  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},tp=o.tpl,dark=tp==='dark';
+  const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.pal||{},o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
+  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},tp=o.tpl,dark=tp==='dark',ak=n=>Math.round(n*(o.addrK||1)),FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
   const lum=c=>{const m=/^#?([0-9a-f]{6})$/i.exec(c||'');if(!m)return 0;const n=parseInt(m[1],16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255};
-  const brand=lum(th.a)>.7?th.accent:th.a,ink=dark?'#f4f6fa':'#101828',sub=dark?'#aab3c5':'#475467',onP=th.text;
+  const brand=lum(th.a)>.7?th.accent:th.a,acc2=!dark&&lum(th.accent)>.78?brand:th.accent,ink=dark?'#f4f6fa':'#101828',sub=dark?'#aab3c5':'#475467',onP=th.text;
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold),x0=op.anchor==='m'?x-w/2:x;
     E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||ink}" textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
   const fit=(s,maxW,size,bold,min)=>{while(artW(s,size,bold)>maxW&&size>min)size-=2;return[artFit(s,maxW,size,bold),size]};
@@ -1004,11 +1031,13 @@ function cardPro(o){
   const gid=`<defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient><linearGradient id="dg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#1a2133"/><stop offset="1" stop-color="#080b13"/></linearGradient></defs>`;
   E.push(gid);
   E.push(`<rect width="${W}" height="${H}" fill="${dark?'url(#dg)':'#ffffff'}"/>`);
+  if(dark)E.push(FX(`<rect width="${W}" height="${H}"/>`));
   if(!V){
     let x0,rb;const lx=mc&&mc.left?Math.round(mc.mw*.5)+10:0,mr=mc&&!mc.left;
     if(tp==='exec'||tp==='split'){
       const pw=(tp==='exec'?330:360)+lx;
       E.push(tp==='exec'?`<rect x="0" y="0" width="${pw}" height="${H}" fill="url(#pg)"/><rect x="${pw}" y="0" width="8" height="${H}" fill="${th.accent}"/>`:`<polygon points="0,0 ${pw},0 ${pw-60},${H} 0,${H}" fill="url(#pg)"/><line x1="${pw}" y1="0" x2="${pw-60}" y2="${H}" stroke="${th.accent}" stroke-width="7"/>`);
+      E.push(FX(tp==='exec'?`<rect width="${pw}" height="${H}"/>`:`<polygon points="0,0 ${pw},0 ${pw-60},${H} 0,${H}"/>`));
       photo((tp==='exec'?165:160)+lx,250,112,'#fff');if(o.noPhoto)lp=1,logoBox((tp==='exec'?165:160)+lx-85,165,170);
       if(o.co.name){const[cn,cs]=fit(o.co.name,pw-80-lx,28,true,18);T(cn,(tp==='exec'?165:150)+lx,H-60,cs,{bold:1,anchor:'m',color:onP})}
       x0=pw+(tp==='exec'?50:30);
@@ -1017,7 +1046,7 @@ function cardPro(o){
       if(!o.noPhoto){E.push(`<circle cx="${200+lx}" cy="250" r="146" fill="none" stroke="${th.accent}" stroke-width="5"/>`);photo(200+lx,250,130,'#fff')}
       x0=(o.noPhoto?70:390)+lx;
     }else{ // faixa
-      E.push(`<rect x="0" y="0" width="${W}" height="170" fill="url(#pg)"/><rect x="0" y="170" width="${W}" height="7" fill="${th.accent}"/>`);
+      E.push(`<rect x="0" y="0" width="${W}" height="170" fill="url(#pg)"/><rect x="0" y="170" width="${W}" height="7" fill="${th.accent}"/>`);E.push(FX(`<rect width="${W}" height="170"/>`));
       if(o.co.name){const[cn,cs]=fit(o.co.name,W-330,46,true,24);T(cn,60,98,cs,{bold:1,color:onP})}
       photo(175+lx,290,108,'#fff');
       x0=(o.noPhoto?70:330)+lx;
@@ -1027,26 +1056,27 @@ function cardPro(o){
     const mw=Math.max(260,rb-x0),yN=tp==='faixa'?250:170,k=tp==='faixa'?.9:1;
     const[nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo&&tp!=='faixa'?100:0),Math.round(64*k),true,32);T(nm,x0,yN,ns,{bold:1});
     if(sel.role)T(artFit(sel.role,mw,32,false),x0,yN+50,32,{color:sub});
-    E.push(`<rect x="${x0}" y="${yN+72}" width="110" height="7" rx="3.5" fill="${th.accent}"/>`);
+    E.push(`<rect x="${x0}" y="${yN+72}" width="110" height="7" rx="3.5" fill="${acc2}"/>`);
     if(tel){pill(x0+90,yN+104,180,48,26);const[t2,s2]=fit(tel,mw,Math.round(58*k),true,30);T(t2,x0,yN+226,s2,{bold:1,color:dark?th.accent:brand})}
     if(sel.extra)T(artFit(sel.extra,mw,30,false),x0,yN+280,30,{color:ink});
     if(tp==='dark'){E.push(`<rect x="${x0}" y="${H-92}" width="${W-x0-50}" height="2" fill="${th.accent}" fill-opacity=".5"/>`);if(o.co.name)T(artFit(o.co.name,mw,28,true),x0,H-52,28,{bold:1});}
-    else if(tp==='faixa'){if(o.co.addr)T(artFit(o.co.addr,mw,22,false),x0,H-26,22,{color:sub})}
-    else{if(o.co.addr)T(artFit(o.co.addr,mw,22,false),x0,H-30,22,{color:sub})}
-    if(tp==='dark'&&o.co.addr)T(artFit(o.co.addr,mw,20,false),x0,H-24,20,{color:sub});
+    else if(tp==='faixa'){if(o.co.addr)T(artFit(o.co.addr,mw,ak(22),false),x0,H-26,ak(22),{color:sub})}
+    else{if(o.co.addr)T(artFit(o.co.addr,mw,ak(22),false),x0,H-30,ak(22),{color:sub})}
+    if(tp==='dark'&&o.co.addr)T(artFit(o.co.addr,mw,ak(20),false),x0,H-24,ak(20),{color:sub});
     if(!lp)logoBox(W-84-36,tp==='faixa'?44:30,84);
     if(qrOn){const qy=tp==='faixa'?200:130;E.push(qrSvg(o.qr,W-50-130,qy,130,dark?'#0f1420':'#101828','#ffffff'));T('WhatsApp',W-50-65,qy+130+26,18,{bold:1,anchor:'m',color:sub})}
   }else{
     const mw=W-120;let y0=1040,PH=880;
     if(tp==='exec'||tp==='split'){
       E.push(tp==='exec'?`<rect x="0" y="0" width="${W}" height="${PH}" fill="url(#pg)"/><rect x="0" y="${PH}" width="${W}" height="10" fill="${th.accent}"/>`:`<polygon points="0,0 ${W},0 ${W},${PH-120} 0,${PH}" fill="url(#pg)"/><line x1="0" y1="${PH}" x2="${W}" y2="${PH-120}" stroke="${th.accent}" stroke-width="10"/>`);
+      E.push(FX(tp==='exec'?`<rect width="${W}" height="${PH}"/>`:`<polygon points="0,0 ${W},0 ${W},${PH-120} 0,${PH}"/>`));
       {const sh=mc?(mc.left?70:-70):0;photo(W/2+sh,410,mc?235:255,'#fff');if(o.noPhoto)lp=1,logoBox(W/2-150,230,300)}
     }else if(tp==='dark'){
       E.push(`<circle cx="${W}" cy="120" r="420" fill="${th.accent}" fill-opacity=".06"/>`);
       if(o.noPhoto)lp=1,logoBox(W/2-150,280,300);
       if(!o.noPhoto){const pr=mc?242:262,pcx=W/2+(mc?(mc.left?70:-70):0);E.push(`<circle cx="${pcx}" cy="430" r="${pr+20}" fill="none" stroke="${th.accent}" stroke-width="7"/>`);photo(pcx,430,pr,'#fff')}
     }else{
-      E.push(`<rect x="0" y="0" width="${W}" height="480" fill="url(#pg)"/><rect x="0" y="480" width="${W}" height="10" fill="${th.accent}"/>`);
+      E.push(`<rect x="0" y="0" width="${W}" height="480" fill="url(#pg)"/><rect x="0" y="480" width="${W}" height="10" fill="${th.accent}"/>`);E.push(FX(`<rect width="${W}" height="480"/>`));
       if(o.co.name){const[cn,cs]=fit(o.co.name,W-160,60,true,32);T(cn,W/2,o.showLogo&&o.logo?300:230,cs,{bold:1,anchor:'m',color:onP})}
       photo(W/2+(mc?(mc.left?70:-70):0),600,mc?210:230,'#fff');if(o.noPhoto)lp=1,logoBox(W/2-150,500,300);y0=1130;
     }
@@ -1054,12 +1084,12 @@ function cardPro(o){
     if(qrOn)E.push(qrSvg(o.qr,W-40-200,40,200,'#101828','#ffffff'));
     const[nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,y0,ns,{bold:1,anchor:'m'});
     if(sel.role)T(artFit(sel.role,mw,56,false),W/2,y0+75,56,{anchor:'m',color:sub});
-    E.push(`<rect x="${W/2-80}" y="${y0+120}" width="160" height="10" rx="5" fill="${th.accent}"/>`);
+    E.push(`<rect x="${W/2-80}" y="${y0+120}" width="160" height="10" rx="5" fill="${acc2}"/>`);
     if(tel){pill(W/2,y0+190,400,96,48);const[t2,s2]=fit(tel,mw,124,true,60);T(t2,W/2,y0+440,s2,{bold:1,anchor:'m',color:dark?th.accent:brand})}
     if(sel.extra)T(artFit(sel.extra,mw,52,false),W/2,y0+520,52,{anchor:'m'});
     E.push(`<rect x="0" y="${H-230}" width="${W}" height="230" fill="${dark?'#080b13':'url(#pg)'}"/><rect x="0" y="${H-230}" width="${W}" height="8" fill="${th.accent}"/>`);
     const ft=dark?'#ffffff':onP;
-    if(o.co.addr)T(artFit(o.co.addr,mw,34,false),W/2,H-110,34,{anchor:'m',color:ft});
+    if(o.co.addr)T(artFit(o.co.addr,mw,ak(34),false),W/2,H-110,ak(34),{anchor:'m',color:ft});
     T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:ft});
   }
   if(o.border)E.push(`<rect x="${V?28:30}" y="28" width="${W-(V?56:60)}" height="${H-56}" rx="${V?30:18}" fill="none" stroke="${th.accent}" stroke-opacity=".8" stroke-width="${V?5:3}"/>`);
@@ -1070,7 +1100,7 @@ function cardPro(o){
 function cardOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
   const s=SEL();
-  return{tpl:artVal('ctpl')||'classic',fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto')||!SELPH,qr:ck('cqr')&&waNum()?'https://wa.me/'+waNum():'',border:ck('cbor'),panel:ck('cpan'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,left:artVal('cmside')==='e',z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
+  return{tpl:artVal('ctpl')||'classic',pal:CARD_PAL[artVal('cpal')]||null,fx:artVal('cfx')||'liso',addrK:+artVal('caddsz')||1,fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr:artVal('cadd')==='no'?'':((artVal('caddt')||'').trim()||addr)},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto')||!SELPH,qr:ck('cqr')&&waNum()?'https://wa.me/'+waNum():'',border:ck('cbor'),panel:ck('cpan'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,left:artVal('cmside')==='e',z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
 }
 function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
 const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
@@ -1094,7 +1124,11 @@ async function vArte(){
   <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
   <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
 </div>
-<div style="display:contents" class="mC hid"><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cfoto" style="width:auto" checked onchange="artRender()"> Mostrar minha foto no cartão</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cqr" style="width:auto" onchange="artRender()"> QR Code do meu WhatsApp</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cbor" style="width:auto" onchange="artRender()"> Moldura fina</label></div><div class="w"><label>Modelo do cartão</label><select id="a_ctpl" onchange="artRender()">${CARD_TPL.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
+<div style="display:contents" class="mC hid"><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cfoto" style="width:auto" checked onchange="artRender()"> Mostrar minha foto no cartão</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cqr" style="width:auto" onchange="artRender()"> QR Code do meu WhatsApp</label></div><div><label style="display:flex;gap:8px;align-items:center;margin-top:22px"><input type="checkbox" id="a_cbor" style="width:auto" onchange="artRender()"> Moldura fina</label></div><div class="w"><label>Cores do cartão</label><select id="a_cpal" onchange="artRender()"><option value="">Do estilo escolhido (padrão)</option>${Object.entries(CARD_PAL).map(([k,p])=>`<option value="${k}">${p.n}</option>`).join('')}</select><div class="sm">Muda o fundo e os detalhes do cartão. Para ajustar uma cor específica, use as cores das letras em Ajustes avançados.</div></div>
+<div class="w"><label>Fundo do cartão</label><select id="a_cfx" onchange="artRender()">${CARD_FX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div>
+<div><label>Endereço no cartão</label><select id="a_cadd" onchange="artRender()"><option value="sim">Mostrar</option><option value="no">Não mostrar</option></select></div><div><label>Tamanho do endereço</label><select id="a_caddsz" onchange="artRender()"><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.25">Grande</option></select></div>
+<div class="w"><label>Endereço escrito por mim (opcional)</label><input id="a_caddt" maxlength="90" placeholder="Ex.: Av. Castelo Branco, 100 - Centro" oninput="artRender()"><div class="sm">Vazio = usa o endereço cadastrado da empresa. Escreva só o essencial para ficar maior e mais limpo.</div></div>
+<div class="w"><label>Modelo do cartão</label><select id="a_ctpl" onchange="artRender()">${CARD_TPL.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
 <div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
