@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.73.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.73.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4215,7 +4215,7 @@ async function fisEmitAll(){
   let ok=0,rec=0,falha='';
   for(const id of ids){
     setSync('emitindo '+(ok+1)+' de '+ids.length+'…');
-    try{await sync();const d=await fisCall({action:'emit',sale_id:id});ok++;if(d.recuperada)rec++}
+    try{await sync();await fisFixItems(id);const d=await fisCall({action:'emit',sale_id:id});ok++;if(d.recuperada)rec++}
     catch(e){falha=e.message;break}
   }
   await sync();FST=null;
@@ -4258,6 +4258,18 @@ function fisEditSave(id){
     if(d||'sale_dest' in o)row.sale_dest=d||null;put('sales',row) }
   closeM();vFis();
 }
+// a nota usa os dados fiscais que ficaram gravados na venda; se NCM/CFOP/CSOSN ficaram vazios ou inválidos (ex.: kit vendido antes de ter NCM), atualiza pelo cadastro atual do produto
+async function fisFixItems(id){
+  const s=db.sales.find(x=>x.id===id);if(!s||!Array.isArray(s.items))return;let ch=false;
+  const items=s.items.map(i=>{const p=db.products.find(x=>x.id===i.id);if(!p)return i;const o={...i};
+    if(digits(o.ncm).length!==8&&digits(p.ncm).length===8){o.ncm=digits(p.ncm);ch=true}
+    if(!o.cfop&&p.cfop){o.cfop=p.cfop;ch=true}
+    if(!o.csosn&&p.csosn){o.csosn=p.csosn;ch=true}
+    if(!o.unit&&p.unit){o.unit=p.unit;ch=true}
+    if(!o.cest&&p.cest){o.cest=p.cest;ch=true}
+    return o});
+  if(ch){put('sales',{...s,items});await sync()}
+}
 async function fisCall(body){
   if(!sb)throw new Error('Emissão exige conexão com o Supabase.');
   const{data,error}=await sb.functions.invoke('fiscal',{body});
@@ -4268,7 +4280,7 @@ async function fisEmit(id){
   const sv=db.sales.find(x=>x.id===id)||{},cl=db.customers.find(x=>x.id===sv.customer_id)||{};
   if(!confirm(`Emitir ${DOC[sv.doc_type]||'NF-e'} de ${R(sv.total)} para ${cl.name||'consumidor'}?\n\n${window.__amb===1?'AMBIENTE DE PRODUÇÃO: a nota vale de verdade e só se desfaz cancelando-a na SEFAZ (dentro do prazo).':window.__amb===2?'Ambiente de homologação: a nota não tem valor fiscal.':'Depois de autorizada, só se desfaz cancelando a nota na SEFAZ (dentro do prazo).'}`))return;
   setSync('emitindo nota…');
-  try{await sync();const d=await fisCall({action:'emit',sale_id:id});await sync();alert((d.recuperada?'A SEFAZ já tinha autorizado esta nota; o sistema recuperou o XML sem emitir de novo':'Nota emitida')+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
+  try{await sync();await fisFixItems(id);const d=await fisCall({action:'emit',sale_id:id});await sync();alert((d.recuperada?'A SEFAZ já tinha autorizado esta nota; o sistema recuperou o XML sem emitir de novo':'Nota emitida')+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
   catch(e){await sync();alert('Não foi possível emitir:\n'+e.message)}
   vFis();
 }
