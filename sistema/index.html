@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.72.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.73.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -251,6 +251,34 @@ a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
 :root[data-acc="roxo"]{--pri:#7048c8;--brand:#5a37a8}
 :root[data-acc="laranja"]{--pri:#c2570c;--brand:#9d4509}
 :root[data-acc="grafite"]{--pri:#475467;--brand:#344054}
+
+/* DUAS COLUNAS (só ≥900px): faixa de grupos + lista do grupo */
+@media(min-width:900px){
+ body.in.L-duo.duo{display:block;padding-left:300px}
+ body.in.L-duo.duo header{position:fixed;left:0;top:0;bottom:0;width:76px;height:100vh;padding:12px 6px;overflow:visible;z-index:25;align-items:stretch}
+ .L-duo.duo .brand{padding:0 0 10px;justify-content:center}.L-duo.duo .brand h1,.L-duo.duo .appv,.L-duo.duo .ibtn{display:none}
+ .L-duo.duo .sync{font-size:10px;padding:0;text-align:center;word-break:break-word}
+ .L-duo.duo nav{overflow:visible;gap:4px}
+ .L-duo.duo nav>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 2px;text-align:center;font-size:10.5px;line-height:1.15;border-radius:10px}
+ .L-duo.duo nav>button .bdg{position:absolute;top:2px;right:6px;font-size:10px;padding:0 5px;margin:0}
+ .L-duo.duo nav>button.on,.L-duo.duo nav>button.rl.on{background:rgba(255,255,255,.2);box-shadow:inset 3px 0 0 var(--tag)}
+ .L-duo.duo nav .out{margin-top:auto;border-top:1px solid rgba(255,255,255,.2);border-radius:10px}
+ .duop{position:fixed;left:76px;top:0;bottom:0;width:224px;background:#002e68;color:#fff;padding:16px 10px;overflow-y:auto;z-index:24;display:flex;flex-direction:column;gap:2px;box-shadow:4px 0 18px rgba(0,0,0,.18)}
+ .duoh{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.65;padding:2px 12px 10px}
+ .duop button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:#fff;font:inherit;padding:10px 12px;border-radius:10px;cursor:pointer;opacity:.85}
+ .duop button:hover{opacity:1;background:rgba(255,255,255,.14)}.duop button.on{opacity:1;background:rgba(255,255,255,.2);box-shadow:inset 3px 0 0 var(--tag)}
+ :root[data-theme="graphite"] .duop{background:#1c2026}
+}
+/* MODO FOCO: sem menu; barra fina com ☰ Menu e Buscar */
+.fbtn{display:none}
+body.in.L-foco{display:block}
+body.in.L-foco header{position:sticky;top:0;height:auto;align-self:auto;flex-direction:row;align-items:center;flex-wrap:nowrap;padding:6px 14px;gap:10px;overflow:visible;z-index:20}
+body.in.L-foco .brand{padding:0}.L-foco .brand h1,.L-foco nav,.L-foco .appv,.L-foco .ibtn{display:none}
+body.in.L-foco .brand .lg{width:30px;height:30px}
+body.in.L-foco .fbtn{display:inline-block;background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:10px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+body.in.L-foco .fbtn:hover{background:rgba(255,255,255,.28)}
+body.in.L-foco .sync{margin:0 0 0 auto;padding:0}
+body:not(.in) .fbtn{display:none!important}
 </style>
 </head>
 <body>
@@ -258,6 +286,7 @@ a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
 <header>
   <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1></div>
   <nav id="nav"></nav>
+  <button type="button" class="fbtn" onclick="moreOpen()" aria-label="Abrir menu">☰ Menu</button><button type="button" class="fbtn" onclick="searchOpen()" aria-label="Buscar">Buscar</button>
   <button class="ibtn" data-install hidden>Instalar app</button>
   <span class="sync" id="sync" role="status" aria-live="polite"></span>
   <button type="button" class="appv" data-appver></button>
@@ -1630,9 +1659,9 @@ function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else
   if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);layoutOpen()}
 
 /* ========= Layout do menu (por aparelho) ========= */
-const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.']};
+const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],duo:['Duas colunas','Faixa fina só com os grupos (Vendas, Gestão, Conta) e, ao lado, a lista do grupo escolhido. O menu fica curto e organizado. Só em tela grande; no celular usa a lateral.'],foco:['Modo foco','Sem menu na tela: só uma barra fina com ☰ Menu e Buscar (Ctrl+K). O menu abre por cima quando precisa. Dá a tela inteira para a venda e os relatórios.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.']};
 const LAY=()=>{try{const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
-const LAYSVG={side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
+const LAYSVG={duo:'<rect x="2" y="2" width="12" height="56" rx="3" fill="#00468f"/><rect x="17" y="2" width="26" height="56" rx="3" fill="#9fb4d3"/><rect x="46" y="2" width="52" height="56" rx="3" fill="#cfd8e6"/>',foco:'<rect x="2" y="2" width="96" height="9" rx="3" fill="#00468f"/><rect x="2" y="14" width="96" height="44" rx="3" fill="#cfd8e6"/>',side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
 function layoutOpen(){
   const TE=TEMAUI();
   modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
@@ -1796,7 +1825,10 @@ async function masterOk(){
 
 /* ========= Navegação ========= */
 let view='login',cat='Todos',q='';
-function go(v){view=v;render()}
+let DUOS=null;
+function go(v){DUOS=null;view=v;render()}
+function duoSel(i){DUOS=i;render()}
+try{matchMedia('(min-width:900px)').addEventListener('change',()=>{if(LAY()==='duo'&&view!=='login')render()})}catch(e){}
 const NN=()=>db.orders.filter(o=>o.status==='novo').length;
 const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.5-6.9A2 2 0 0016.8 4H7.2a2 2 0 00-1.7 1.1z"/>',bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/>',box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
@@ -1812,7 +1844,7 @@ function render(){
   if(sb&&!role&&view!=='login')view='login';
   if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal'].includes(view)&&!ADM())view='pdv';
   document.body.className=(isAdmin()?'in':'out')+' L-'+LAY();
-  const grp=(t,inner,cls)=>`<div class="ng ${cls||''}"><div class="grp" onclick="ngTog(event,this)">${t}</div><div class="nd">${inner}</div></div>`,
+  const GR=[],grp=(t,inner,cls)=>(GR.push({t,inner,cls}),`<div class="ng ${cls||''}"><div class="grp" onclick="ngTog(event,this)">${t}</div><div class="nd">${inner}</div></div>`),
     item=(v,l,i)=>`<button class="${view===v?'on':''}" title="${l.replace(/<[^>]*>/g,'').trim()}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
   let h='';
@@ -1825,6 +1857,12 @@ function render(){
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   NAVFULL=h;
+  if(LAY()==='duo'&&isAdmin()&&innerWidth>=900){
+    const gi=GR.findIndex(g=>g.inner.includes(`go('${view}')`)),ai=DUOS!=null&&GR[DUOS]?DUOS:(gi>=0?gi:0),GI={Vendas:'cart','Gestão':'wallet',Conta:'shield'};
+    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
+    h=top+GR.map((g,i)=>`<button class="rl ${i===ai?'on':''}" onclick="duoSel(${i})" title="${esc(g.t)}">${ic(GI[g.t]||'box')}<span>${esc(g.t)}</span></button>`).join('')+out+`<div class="duop"><div class="duoh">${esc(GR[ai].t)}</div>${GR[ai].inner}</div>`;
+    document.body.className+=' duo';
+  }
   if(LAY()==='bot'&&isAdmin()){
     const bell=(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0];
     h=bell+item('ini','Início','wallet')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','receipt'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
