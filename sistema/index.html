@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.77.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.78.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1465,6 +1465,27 @@ function coLine(){
 const EMP=[['legal_name','Razão social',1],['trade_name','Nome fantasia',1],['cnpj','CNPJ'],['ie','Inscrição estadual'],['regime','Regime tributário','sel'],
  ['cep','CEP'],['street','Rua / logradouro',1],['number','Número'],['complement','Complemento'],['district','Bairro'],['city','Cidade'],['uf','UF'],['ibge','Código IBGE do município'],
  ['phone','Telefone'],['whatsapp','WhatsApp (com DDD)'],['email','E-mail'],['hours','Horário de atendimento',1],['instagram','Instagram (sem @)'],['nfe_series','Série da NF-e (padrão 1)'],['nfce_series','Série da NFC-e (padrão 1)']];
+async function ipKeys(){
+  const{data,error}=await sb.rpc('segredo_status');
+  if(error)return alert(/segredo_status|schema cache|does not exist/.test(error.message)?'Rode o supabase-v44.sql no Supabase e tente de novo.':error.message);
+  const st=data||{},F=[['INFINITEPAY_HANDLE','InfiniteTag (sem o $)','text'],['INFINITEPAY_WEBHOOK_TOKEN','Token do aviso de pagamento (texto longo inventado)','password'],['INFINITEPAY_API_KEY','Chave da API InfinitePay (se a sua conta exigir)','password']];
+  modal(`<h2>Chaves da InfinitePay</h2><p class="sm">Digite só o que for trocar. Campo em branco não altera. O valor salvo não aparece mais depois de gravado.</p>
+  ${F.map(([k,l,t])=>`<label>${l} ${st[k]?'<span class="tag">configurado</span>':'<span class="tag">vazio</span>'}</label><input id="ik_${k}" type="${t}" autocomplete="off" placeholder="${st[k]?'••••••••  (deixe em branco para manter)':''}">`).join('')}
+  <p><button class="btn g s" onclick="$('#ik_INFINITEPAY_WEBHOOK_TOKEN').type='text';$('#ik_INFINITEPAY_WEBHOOK_TOKEN').value=ipTok()">Gerar token aleatório</button></p>
+  <div class="bar"><button class="btn" onclick="ipKeysSave()">Salvar chaves</button>${Object.keys(st).length?' <button class="btn g" onclick="ipKeysDel()">Apagar todas</button>':''}</div>`);
+}
+const ipTok=()=>{const a=new Uint8Array(24);crypto.getRandomValues(a);return Array.from(a,x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')};
+async function ipKeysSave(){
+  let n=0;for(const k of ['INFINITEPAY_HANDLE','INFINITEPAY_WEBHOOK_TOKEN','INFINITEPAY_API_KEY']){
+    let v=($('#ik_'+k).value||'').trim();if(!v)continue;if(k==='INFINITEPAY_HANDLE')v=v.replace(/^\$/,'');
+    const{error}=await sb.rpc('segredo_set',{p_key:k,p_value:v});if(error)return alert(error.message);n++}
+  closeM();alert(n?'Chaves salvas no servidor. Depois de republicar a função mp-pix (v44), já valem.':'Nada foi alterado.');
+}
+async function ipKeysDel(){
+  if(!confirm('Apagar as chaves da InfinitePay guardadas no servidor?'))return;
+  for(const k of ['INFINITEPAY_HANDLE','INFINITEPAY_WEBHOOK_TOKEN','INFINITEPAY_API_KEY']){const{error}=await sb.rpc('segredo_set',{p_key:k,p_value:''});if(error)return alert(error.message)}
+  closeM();
+}
 function vEmp(){
   const c=CO();
   $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Dados da empresa</h2>
@@ -1500,10 +1521,13 @@ function vEmp(){
   <div class="f"><div><label>Multa (%)</label><input id="e_cob_multa" type="number" step="0.01" min="0" max="2" value="${CFG.MULTA}"></div>
   <div><label>Juros ao mês (%)</label><input id="e_cob_juro" type="number" step="0.01" min="0" max="1" value="${CFG.JURO_MES}"></div>
   <div><label>Dias de tolerância</label><input id="e_cob_car" type="number" step="1" min="0" max="10" value="${CFG.CARENCIA||0}"></div></div></div>
-  <div style="margin:14px 0"><b>Cobrança automática (Mercado Pago ou InfinitePay)</b>
-  <p class="sm" style="margin:2px 0 8px">Gera o QR Code Pix pelo Mercado Pago e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até criar a aplicação no Mercado Pago, publicar a função <code>mp-pix</code> e conferir a tarifa na sua conta (veja supabase/functions/mp-pix/README.md).</p>
+  <div style="margin:14px 0"><b>Cobrança automática (InfinitePay)</b>
+  <p class="sm" style="margin:2px 0 8px">Gera um link de pagamento da InfinitePay (Pix ou cartão) e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até cadastrar as chaves abaixo, publicar a função <code>mp-pix</code> e fazer um teste de R$ 1,00. Escolha o provedor <b>InfinitePay</b> na lista.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
   <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option></select></div></div></div>
+  ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
+  <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
+  <button class="btn g s" onclick="unlockUntil=0;master(ipKeys)">Abrir chaves (pede senha)</button></div>`:''}
   <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
