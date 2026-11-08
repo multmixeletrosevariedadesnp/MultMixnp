@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.69.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.70.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4456,8 +4456,8 @@ async function ctrVer(id){
   ctrView(data.html.replace('</body>',blk+'</body>'),data.sale_id,'Contrato assinado');
 }
 /* ========= Relatórios (PDF) ========= */
-let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
-const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',atraso:'Média de atraso por cliente',extrato:'Extrato de recebimentos (caixa)',com:'Comissões'};
+let REL={psit:'',pest:'',pcat:'',fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
+const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',atraso:'Média de atraso por cliente',produtos:'Produtos (ativos, inativos, com/sem estoque)',extrato:'Extrato de recebimentos (caixa)',com:'Comissões'};
 function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
@@ -4532,6 +4532,17 @@ function relBuild(){
       rows:A.map((o,i)=>[i+1,o.n,o.cl,Math.round(o.q),R(o.f),...(by==='lucro'?[o.sc&&!o.l?'sem custo':R(o.l)]:[]),pc1(o.pc),pc1(o.ac)]),
       foot:['','Total','',Math.round(A.reduce((a,o)=>a+o.q,0)),R(A.reduce((a,o)=>a+o.f,0)),...(by==='lucro'?[R(A.reduce((a,o)=>a+o.l,0))]:[]),'100%',''],
       sum:[[cli?'Clientes que compraram':'Produtos vendidos',A.length],...['A','B','C'].map(c=>['Classe '+c,cls(c).length+' ('+(A.length?Math.round(cls(c).length/A.length*100):0)+'%) · '+pc1(cls(c).reduce((a,o)=>a+o.pc,0))+' do total'])]};
+  }
+  if(k==='produtos'){
+    const SN={ati:'só ativos',ina:'só inativos'},EN={com:'com estoque',sem:'sem estoque (zero)',neg:'estoque negativo',baixo:'estoque baixo'},st=p=>+kitSt(p)||0;
+    let L=db.products.filter(p=>(!REL.psit||(REL.psit==='ina'?p.active===false:p.active!==false))&&(!REL.pest||(REL.pest==='com'?st(p)>0:REL.pest==='sem'?st(p)===0:REL.pest==='neg'?st(p)<0:(st(p)>0&&st(p)<=stockMin())))
+      &&(!REL.pcat||(REL.pcat==='__sem'?!String(p.category||'').trim():String(p.category||'').trim()===REL.pcat)))
+      .sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''),'pt-BR')||String(a.name).localeCompare(b.name,'pt-BR'));
+    const vc=sum(L,p=>Math.max(0,st(p))*(+p.cost||0)),vv=sum(L,p=>Math.max(0,st(p))*(+p.price_cash||0)),fl=[SN[REL.psit],EN[REL.pest],REL.pcat&&(REL.pcat==='__sem'?'sem categoria':REL.pcat)].filter(Boolean);
+    return{title:RELN[k],sub:'Posição em '+fmtD(ld(now()))+' · '+(fl.length?fl.join(' · '):'todos os produtos'),head:['Cód.','Produto','Categoria','Situação','Qtd','Custo','Preço à vista','Valor a custo'],al:'llllrrrr',
+      rows:L.map(p=>[p.internal_code||'—',p.name+(kitArr(p).length?' (kit)':''),p.category||'—',p.active===false?'Inativo':'Ativo',st(p),p.cost?R(p.cost):'—',R(p.price_cash),R(Math.max(0,st(p))*(+p.cost||0))]),
+      foot:['','Total','','',sum(L,p=>st(p)),'','',R(vc)],
+      sum:[['Produtos',L.length],['Ativos',L.filter(p=>p.active!==false).length],['Inativos',L.filter(p=>p.active===false).length],['Sem estoque',L.filter(p=>st(p)===0).length],['Estoque negativo',L.filter(p=>st(p)<0).length],['Valor a custo',R(vc)],['Valor a preço à vista',R(vv)]]};
   }
   if(k==='estoque'){
     let L=db.products.filter(p=>p.active!==false&&p.active!==0).sort((a,b)=>String(a.category||'').localeCompare(String(b.category||''),'pt-BR')||String(a.name).localeCompare(b.name,'pt-BR'));
@@ -4623,6 +4634,7 @@ function vRel(){
   ${k==='extrato'?`<select style="max-width:170px" onchange="EX.forma=this.value;vRel()">${exOpts(exLines(REL.from,REL.to),'m',EX.forma,'Todas as formas')}</select><select style="max-width:190px" onchange="EX.tipo=this.value;vRel()"><option value="">Todos os tipos</option>${Object.entries(EXT).map(([kk,v])=>`<option value="${kk}" ${EX.tipo===kk?'selected':''}>${v}</option>`).join('')}</select><select style="max-width:170px" onchange="EX.user=this.value;vRel()">${exOpts(exLines(REL.from,REL.to),'user',EX.user,'Todos que receberam')}</select>`:''}
   ${k==='fluxo'?`<select style="max-width:170px" onchange="REL.fx=+this.value;vRel()">${[30,60,90].map(n=>`<option value="${n}" ${REL.fx===n?'selected':''}>Próximos ${n} dias</option>`).join('')}</select>`:''}
   ${k==='compras'?`<select style="max-width:200px" onchange="REL.cob=+this.value;vRel()">${[15,30,45,60].map(n=>`<option value="${n}" ${REL.cob===n?'selected':''}>Cobrir ${n} dias</option>`).join('')}</select>`:''}
+  ${k==='produtos'?`<select style="max-width:150px" onchange="REL.psit=this.value;vRel()"><option value="">Ativos e inativos</option><option value="ati" ${REL.psit==='ati'?'selected':''}>Só ativos</option><option value="ina" ${REL.psit==='ina'?'selected':''}>Só inativos</option></select><select style="max-width:180px" onchange="REL.pest=this.value;vRel()"><option value="">Todo estoque</option><option value="com" ${REL.pest==='com'?'selected':''}>Com estoque</option><option value="sem" ${REL.pest==='sem'?'selected':''}>Sem estoque (zero)</option><option value="neg" ${REL.pest==='neg'?'selected':''}>Estoque negativo</option><option value="baixo" ${REL.pest==='baixo'?'selected':''}>Estoque baixo</option></select><select style="max-width:190px" onchange="REL.pcat=this.value;vRel()"><option value="">Todas as categorias</option>${cats().map(c=>`<option value="${esc(c)}" ${REL.pcat===c?'selected':''}>${esc(c)}</option>`).join('')}<option value="__sem" ${REL.pcat==='__sem'?'selected':''}>Sem categoria</option></select>`:''}
   ${k==='estoque'?`<label class="sm"><input type="checkbox" style="width:auto" ${REL.low?'checked':''} onchange="REL.low=this.checked;vRel()"> Só estoque baixo</label>`:''}
   ${k==='receber'?`<select style="max-width:200px" onchange="REL.cr=this.value;vRel()"><option value="atraso" ${REL.cr==='atraso'?'selected':''}>Só em atraso</option><option value="todas" ${REL.cr==='todas'?'selected':''}>Todas em aberto</option></select>`:''}
   ${k==='pagar'?`<select style="max-width:200px" onchange="REL.pg=this.value;vRel()"><option value="abertas" ${REL.pg==='abertas'?'selected':''}>Em aberto</option><option value="pagas" ${REL.pg==='pagas'?'selected':''}>Pagas no período</option></select>`:''}
