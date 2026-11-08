@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.71.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.72.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -241,6 +241,16 @@ a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,
 .moreg .grp{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:12px 6px 2px}
 .moreg .ng,.moreg .nd{display:block}
 #artv{overflow:hidden}#artv svg{overflow:hidden}
+
+/* tema Grafite (alto contraste, menos cansativo) e cores de destaque */
+:root[data-theme="graphite"]{--bg:#16181c;--card:#202429;--ink:#eceef2;--mut:#a0a8b5;--line:#343a44;--pri:#2f6fcf;--brand:#2a5db0;--tag:#ffc93c;--ok:#47d6a0;--bad:#ff7d6a;color-scheme:dark}
+:root[data-theme="graphite"] .box,:root[data-theme="graphite"] .pcard,:root[data-theme="graphite"] .card{box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 6px 18px rgba(0,0,0,.35)}
+:root[data-theme="graphite"] input,:root[data-theme="graphite"] select,:root[data-theme="graphite"] textarea{background:#181b20}
+:root[data-theme="graphite"] th{background:#272c33}
+:root[data-acc="verde"]{--pri:#0e8a5f;--brand:#0b6e4c}
+:root[data-acc="roxo"]{--pri:#7048c8;--brand:#5a37a8}
+:root[data-acc="laranja"]{--pri:#c2570c;--brand:#9d4509}
+:root[data-acc="grafite"]{--pri:#475467;--brand:#344054}
 </style>
 </head>
 <body>
@@ -1612,7 +1622,10 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'&&isAdmin()){e.preventDefault();if($('#modal').classList.contains('open')&&$('#kq'))return;searchOpen()}
 });
 /* tema claro/escuro (por aparelho) */
-const TEMAUI=()=>{try{const v=localStorage.mm_tema_ui;return v==='dark'||v==='light'?v:'auto'}catch(e){return'auto'}};
+const TEMAUI=()=>{try{const v=localStorage.mm_tema_ui;return v==='dark'||v==='light'||v==='graphite'?v:'auto'}catch(e){return'auto'}};
+const ACCS=[['','Azul','#00539f'],['verde','Verde','#0e8a5f'],['roxo','Roxo','#7048c8'],['laranja','Laranja','#c2570c'],['grafite','Cinza','#475467']];
+const ACC=()=>{try{return localStorage.mm_acc||''}catch(e){return''}};
+function accSet(k){try{if(k)localStorage.mm_acc=k;else localStorage.removeItem('mm_acc')}catch(e){}if(k)document.documentElement.setAttribute('data-acc',k);else document.documentElement.removeAttribute('data-acc');layoutOpen()}
 function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else localStorage.mm_tema_ui=k}catch(e){}
   if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);layoutOpen()}
 
@@ -1623,7 +1636,8 @@ const LAYSVG={side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468
 function layoutOpen(){
   const TE=TEMAUI();
   modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
-  <b>Tema</b><div class="fchips" style="margin-bottom:12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
+  <b>Tema</b><div class="fchips" style="margin-bottom:12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro'],['graphite','Grafite']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
+  <b>Cor de destaque</b><div class="fchips" style="margin-bottom:12px">${ACCS.map(([k,l,c])=>`<button class="chip ${ACC()===k?'on':''}" onclick="accSet('${k}')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join('')}</div>
   <b>Layout do menu</b>
   <div style="display:grid;gap:10px;margin-top:6px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
 }
