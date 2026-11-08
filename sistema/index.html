@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.74.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.77.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4752,8 +4752,8 @@ function relCsv(){
 
 
 /* ========= Balcão (PDV): caixas dos vendedores, avisos, devoluções, descontos e configurações (administrador) ========= */
-let BAL={tab:'cx'},PEV=[];
-const BALT=[['cx','Caixas'],['av','Avisos'],['dv','Devoluções'],['ds','Descontos'],['cf','Configurações']];
+let BAL={tab:'cx',day:''},PEV=[];
+const BALT=[['cx','Caixas'],['tm','Terminais'],['av','Avisos'],['dv','Devoluções'],['ds','Descontos'],['cf','Configurações']];
 const EVN={venda_recusada:'Venda recusada',devolucao:'Devolução / troca',caixa_diferenca:'Diferença no caixa'};
 const pevNew=()=>PEV.filter(e=>!e.seen_at);
 async function loadPev(){
@@ -4764,23 +4764,59 @@ const v27msg='<p class="bad">Não foi possível ler os dados. Rode o <b>supabase
 function vBal(){
   const nNew=pevNew().length;
   $('#app').innerHTML=`<div class="bar">${BALT.map(([k,l])=>`<button class="btn ${BAL.tab===k?'':'g'} s" onclick="BAL.tab='${k}';vBal()">${l}${k==='av'&&nNew?` (${nNew})`:''}</button>`).join('')}</div><div id="balv"><p class="sm">Carregando…</p></div>`;
-  ({cx:balCx,av:balAv,dv:balDv,ds:balDs,cf:balCf}[BAL.tab]||balCx)();
+  ({cx:balCx,tm:balTm,av:balAv,dv:balDv,ds:balDs,cf:balCf}[BAL.tab]||balCx)();
 }
 const balBox=h=>{const e=$('#balv');if(e)e.innerHTML=h};
+function balDia(data,chk){
+  const day=BAL.day||ld(now()),L=(data||[]).filter(x=>ld(x.opened_at)===day),open=L.filter(x=>!x.closed_at),cl=L.filter(x=>x.closed_at);
+  const sum=k=>cl.reduce((a,x)=>a+(+x[k]||0),0),rec={};
+  L.forEach(x=>Object.entries((x.summary||{}).recebido||{}).forEach(([m,v])=>rec[m]=(rec[m]||0)+(+v||0)));
+  const dif=sum('diff'),ck=chk&&chk.day===day?chk:null;
+  return`<div class="box" style="max-width:none;margin-bottom:12px"><div class="row" style="margin:0 0 8px;align-items:center"><h3 style="margin:0">Fechamento geral do dia</h3><input type="date" style="max-width:160px" value="${day}" onchange="BAL.day=this.value||'';balCx()"></div>
+  ${L.length?`<div class="prices"><div class="pr"><span>Caixas no dia</span><b>${L.length}</b></div><div class="pr ${open.length?'bad':''}"><span>Ainda abertos</span><b>${open.length}</b></div><div class="pr"><span>Dinheiro esperado</span><b>${R(sum('expected'))}</b></div><div class="pr"><span>Dinheiro contado</span><b>${R(sum('counted'))}</b></div><div class="pr ${Math.abs(dif)<0.01?'k':'bad'}"><span>Diferença total</span><b>${Math.abs(dif)<0.01?'confere':(dif<0?'falta ':'sobra ')+R(Math.abs(dif))}</b></div></div>
+  ${Object.keys(rec).length?`<p class="sm">Recebido nos caixas por forma: ${Object.entries(rec).map(([m,v])=>esc(m)+' <b>'+R(v)+'</b>').join(' · ')}</p>`:''}
+  ${open.length?`<p class="bad">Ainda há caixa aberto: ${open.map(x=>esc((x.terminal?x.terminal+' · ':'')+(x.seller_name||''))).join(', ')}. Peça para fechar antes de conferir o dia.</p>`:''}
+  ${ck?`<p class="ok"><b>Dia conferido</b> por ${esc(ck.checked_name||'')} em ${new Date(ck.checked_at).toLocaleString('pt-BR')}${ck.note?' · '+esc(ck.note):''}</p><button class="btn g s" onclick="balConf('${day}',true)">Refazer conferência</button>`:`<div class="row" style="margin:0;align-items:center"><input id="bc_n" placeholder="Observação (opcional)" style="max-width:320px"><button class="btn" ${open.length?'disabled title="Há caixa aberto"':''} onclick="balConf('${day}')">Conferir o dia</button></div>`}`:'<p class="sm">Nenhum caixa aberto neste dia.</p>'}</div>`;
+}
+async function balConf(day,redo){
+  const L=(window.BALCX||[]).filter(x=>ld(x.opened_at)===day&&x.closed_at);
+  const note=redo?'':(($('#bc_n')||{}).value||'').trim(),dif=L.reduce((a,x)=>a+(+x.diff||0),0);
+  if(Math.abs(dif)>=0.01&&!confirm('Há diferença de '+R(dif)+' no dia. Confirmar a conferência mesmo assim?'))return;
+  const row={day,checked_by:me&&me.id,checked_name:(me&&me.name)||'',checked_at:now(),note:note||null,sessions:L.length,total_expected:L.reduce((a,x)=>a+(+x.expected||0),0),total_counted:L.reduce((a,x)=>a+(+x.counted||0),0),total_diff:dif};
+  const{error}=await sb.from('cash_checks').upsert(row);if(error)return alert(/cash_checks/.test(error.message)?'Rode o supabase-v41.sql no Supabase e tente de novo.':error.message);
+  balCx();
+}
+async function balTm(){
+  const{data,error}=await sb.from('cash_terminals').select('*').order('created_at');
+  if(error)return balBox('<p class="bad">Rode o <b>supabase-v43.sql</b> no Supabase (depois do v42) e tente de novo.</p>');
+  const nw=Date.now();
+  balBox(`<p class="sm">Cadastre cada caixa da loja (Caixa 01, 02…). Cada um recebe um <b>código que vale 30 minutos</b>: digite-o no PDV do aparelho, em Caixa > Vincular este aparelho. Enquanto houver terminal ativo, só aparelhos vinculados abrem caixa.</p>
+  <div class="row" style="align-items:center"><input id="tm_n" placeholder="Nome do caixa, ex.: Caixa 01" maxlength="30" style="max-width:260px"><button class="btn" onclick="tmNovo()">Criar e gerar código</button></div>
+  <div style="overflow:auto"><table><tr><th>Caixa</th><th>Situação</th><th>Código</th><th></th></tr>
+  ${(data||[]).map(t=>{const cd=t.code&&new Date(t.code_expires)>nw;return`<tr><td><b>${esc(t.name)}</b></td><td>${!t.active?'<span class="tag">desativado</span>':t.device_id?'vinculado'+(t.paired_name?' por '+esc(t.paired_name):'')+' em '+new Date(t.paired_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'<span class="tag">aguardando aparelho</span>'}</td>
+  <td>${cd?`<b style="font-size:1.3em;letter-spacing:.15em">${esc(t.code)}</b> <span class="sm">até ${new Date(t.code_expires).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`:'—'}</td>
+  <td><button class="btn g s" onclick="tmCod('${t.id}')">${t.device_id?'Trocar aparelho (novo código)':'Novo código'}</button> <button class="btn g s" onclick="tmAtivo('${t.id}',${!t.active})">${t.active?'Desativar':'Reativar'}</button> <button class="btn g s" onclick="tmDel('${t.id}')">Excluir</button></td></tr>`}).join('')||'<tr><td colspan="4">Nenhum terminal cadastrado. Sem terminais, qualquer aparelho abre caixa normalmente.</td></tr>'}</table></div>`);
+}
+async function tmNovo(){const n=($('#tm_n').value||'').trim();if(n.length<2)return alert('Informe o nome do caixa.');const{error}=await sb.rpc('terminal_novo',{p_name:n});if(error)return alert(error.message);balTm()}
+async function tmCod(id){const{error}=await sb.rpc('terminal_novo_codigo',{p_id:id});if(error)return alert(error.message);balTm()}
+async function tmAtivo(id,v){const{error}=await sb.from('cash_terminals').update({active:v}).eq('id',id);if(error)return alert(error.message);balTm()}
+async function tmDel(id){if(!confirm('Excluir este caixa? O aparelho vinculado deixa de abrir caixa por ele. Caixas já registrados continuam no histórico.'))return;const{error}=await sb.from('cash_terminals').delete().eq('id',id);if(error)return alert(error.message);balTm()}
 async function balCx(){
   const{data,error}=await sb.from('cash_sessions').select('*').order('opened_at',{ascending:false}).limit(60);
   if(error)return balBox(v27msg);
-  balBox(`<p class="sm">Cada linha é um caixa aberto por um vendedor. A diferença é o dinheiro contado menos o esperado.</p><div style="overflow:auto"><table><tr><th>Vendedor</th><th>Abertura</th><th>Fechamento</th><th>Inicial</th><th>Esperado</th><th>Contado</th><th>Diferença</th><th></th></tr>
-  ${(data||[]).map(s=>`<tr><td>${esc(s.seller_name||'')}</td><td>${new Date(s.opened_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+  window.BALCX=data||[];
+  let chk=null;try{const r=await sb.from('cash_checks').select('*').eq('day',BAL.day||ld(now())).maybeSingle();chk=r.data}catch(e){}
+  balBox(balDia(data,chk)+`<p class="sm">Cada linha é um caixa aberto por um vendedor. A diferença é o dinheiro contado menos o esperado.</p><div style="overflow:auto"><table><tr><th>Caixa</th><th>Vendedor</th><th>Abertura</th><th>Fechamento</th><th>Inicial</th><th>Esperado</th><th>Contado</th><th>Diferença</th><th></th></tr>
+  ${(data||[]).map(s=>`<tr><td>${esc(s.terminal||'—')}</td><td>${esc(s.seller_name||'')}</td><td>${new Date(s.opened_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
    <td>${s.closed_at?new Date(s.closed_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'<span class="tag">aberto</span>'}</td><td>${R(s.opening)}</td><td>${s.closed_at?R(s.expected):'—'}</td><td>${s.closed_at?R(s.counted):'—'}</td>
-   <td>${s.closed_at?`<b class="${Math.abs(+s.diff)<0.01?'ok':'bad'}">${Math.abs(+s.diff)<0.01?'confere':(+s.diff<0?'falta ':'sobra ')+R(Math.abs(+s.diff))}</b>`:'—'}</td><td><button class="btn g s" onclick="balCxDet('${s.id}')">Detalhes</button></td></tr>`).join('')||'<tr><td colspan="8">Nenhum caixa aberto ainda.</td></tr>'}</table></div>`);
+   <td>${s.closed_at?`<b class="${Math.abs(+s.diff)<0.01?'ok':'bad'}">${Math.abs(+s.diff)<0.01?'confere':(+s.diff<0?'falta ':'sobra ')+R(Math.abs(+s.diff))}</b>`:'—'}</td><td><button class="btn g s" onclick="balCxDet('${s.id}')">Detalhes</button></td></tr>`).join('')||'<tr><td colspan="9">Nenhum caixa aberto ainda.</td></tr>'}</table></div>`);
   window.BALCX=data||[];
 }
 async function balCxDet(id){
   const s=(window.BALCX||[]).find(x=>x.id===id);if(!s)return;
   const{data:mv}=await sb.from('cash_moves').select('*').eq('session_id',id).order('created_at');
   const k=s.summary||{},rec=k.recebido||{};
-  modal(`<h2>Caixa de ${esc(s.seller_name||'')}</h2><p class="sm">${new Date(s.opened_at).toLocaleString('pt-BR')}${s.closed_at?' até '+new Date(s.closed_at).toLocaleString('pt-BR'):' (ainda aberto)'}</p>
+  modal(`<h2>${s.terminal?esc(s.terminal)+' · ':''}Caixa de ${esc(s.seller_name||'')}</h2><p class="sm">${new Date(s.opened_at).toLocaleString('pt-BR')}${s.closed_at?' até '+new Date(s.closed_at).toLocaleString('pt-BR'):' (ainda aberto)'}</p>
   <table><tr><td>Valor inicial</td><td style="text-align:right">${R(s.opening)}</td></tr>${Object.entries(rec).map(([m,v])=>`<tr><td>Vendas em ${esc(m)}</td><td style="text-align:right">${R(v)}</td></tr>`).join('')}
   ${Object.entries(k.estornos||{}).map(([m,v])=>`<tr><td>Estorno (${esc(m)})</td><td style="text-align:right">−${R(v)}</td></tr>`).join('')}${Object.entries(k.devolucoes||{}).map(([m,v])=>`<tr><td>Devolução (${esc(m)})</td><td style="text-align:right">−${R(v)}</td></tr>`).join('')}
   ${s.closed_at?`<tr><td><b>Dinheiro esperado</b></td><td style="text-align:right"><b>${R(s.expected)}</b></td></tr><tr><td>Contado</td><td style="text-align:right">${R(s.counted)}</td></tr><tr><td><b>Diferença</b></td><td style="text-align:right"><b>${R(s.diff)}</b></td></tr>`:''}</table>
