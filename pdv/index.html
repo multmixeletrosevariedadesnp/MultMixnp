@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.25.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.26.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -934,7 +934,7 @@ function artAvatar(cx,cy,r,sel,th,F,id){
 function cardSvg(o){
   if(o.tpl&&o.tpl!=='classic')return cardPro(o);
   const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.pal||{},o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
-  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},ak=n=>Math.round(n*(o.addrK||1)),FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
+  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},ak=n=>Math.round(n*(o.addrK||1)),nk=o.nk||1,pk=o.pk||1,tz=n=>Math.round(n*(o.tk||1)),TG=`<g transform="translate(${o.tdx||0},${o.tdy||0})">`,FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold),x0=op.anchor==='m'?x-w/2:x;
     E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
   const fit=(s,maxW,size,bold,min)=>{while(artW(s,size,bold)>maxW&&size>min)size-=2;return[artFit(s,maxW,size,bold),size]};
@@ -953,11 +953,13 @@ function cardSvg(o){
     if(!o.noPhoto){if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="40" y="40" width="330" height="520" rx="28"/></clipPath><rect x="32" y="32" width="346" height="536" rx="34" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="40" y="40" width="330" height="520" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="45" y="25" width="340" height="550" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(215,300,135,sel,th,F,'c'))}
     if(lx&&!o.noPhoto)E.push('</g>');
     const x0=(o.noPhoto?70:410)+lx,rb=Math.min(W-60,mr?mc.x-(o.panel?Math.round(mc.mw*.12):0)-24:W,qrOn?W-60-130-24:W),mw=Math.max(260,rb-x0);
-    let [nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo?110:0),66,true,34);T(nm,x0,185,ns,{bold:1});
-    if(sel.role)T(artFit(sel.role,mw,34,false),x0,236,34,{color:th.sub});
+    E.push(TG);
+    let [nm,ns]=fit(sel.name||'Seu nome',(mw-(o.showLogo&&o.logo?110:0))*Math.max(1,nk),Math.round(66*nk),true,34);T(nm,x0,185,ns,{bold:1});
+    if(sel.role)T(artFit(sel.role,mw,tz(34),false),x0,236,tz(34),{color:th.sub});
     E.push(`<rect x="${x0}" y="262" width="120" height="8" rx="4" fill="${th.accent}"/>`);
-    if(tel){pill(x0+95,298,190,52,28);const[t2,s2]=fit(tel,mw,62,true,34);T(t2,x0,424,s2,{bold:1,color:th.price})}
-    if(sel.extra)T(artFit(sel.extra,mw,30,false),x0,474,30,{color:th.text});
+    if(tel){pill(x0+95,298,190,52,28);const[t2,s2]=fit(tel,mw*Math.max(1,pk),Math.round(62*pk),true,34);T(t2,x0,424,s2,{bold:1,color:th.price})}
+    if(sel.extra)T(artFit(sel.extra,mw,tz(30),false),x0,474,tz(30),{color:th.text});
+    E.push('</g>');
     logoBox(W-92-40,36,92);
     if(qrOn){E.push(qrSvg(o.qr,W-60-130,146,130,'#101828','#ffffff'));T('WhatsApp',W-60-65,296,20,{bold:1,anchor:'m',color:th.sub})}
     T(artFit(o.co.name,mw,30,true),x0,H-64,30,{bold:1});
@@ -968,11 +970,13 @@ function cardSvg(o){
     if(qrOn){E.push(qrSvg(o.qr,W-40-230,40,230,'#101828','#ffffff'))}
     T(artFit(o.co.name,mw,56,true),W/2,o.showLogo&&o.logo?300:170,56,{bold:1,anchor:'m'});
     if(!o.noPhoto){if(sel.kind==='foto'&&sel.fmt==='ret'&&sel.photo)E.push(`<clipPath id="rcp"><rect x="${W/2-270}" y="330" width="540" height="770" rx="40"/></clipPath><rect x="${W/2-280}" y="320" width="560" height="790" rx="46" fill="#fff"/><image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-270}" y="330" width="540" height="770" preserveAspectRatio="xMidYMin slice" clip-path="url(#rcp)"/>`);else if(sel.kind==='corpo'&&sel.photo)E.push(`<image href="${sel.photo}" xlink:href="${sel.photo}" x="${W/2-200}" y="330" width="400" height="700" preserveAspectRatio="xMidYMid meet"/>`);else E.push(artAvatar(W/2,700,280,sel,th,F,'c'))}
-    let [nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,1120,ns,{bold:1,anchor:'m'});
-    if(sel.role)T(artFit(sel.role,mw,56,false),W/2,1195,56,{anchor:'m',color:th.sub});
+    E.push(TG);
+    let [nm,ns]=fit(sel.name||'Seu nome',(mw)*Math.max(1,nk),Math.round(112*nk),true,48);T(nm,W/2,1120,ns,{bold:1,anchor:'m'});
+    if(sel.role)T(artFit(sel.role,mw,tz(56),false),W/2,1195,tz(56),{anchor:'m',color:th.sub});
     E.push(`<rect x="${W/2-80}" y="1240" width="160" height="10" rx="5" fill="${th.accent}"/>`);
-    if(tel){pill(W/2,1310,400,96,48);const[t2,s2]=fit(tel,mw,124,true,60);T(t2,W/2,1560,s2,{bold:1,anchor:'m',color:th.price})}
-    if(sel.extra)T(artFit(sel.extra,mw,52,false),W/2,1650,52,{anchor:'m'});
+    if(tel){pill(W/2,1310,400,96,48);const[t2,s2]=fit(tel,mw*Math.max(1,pk),Math.round(124*pk),true,60);T(t2,W/2,1560,s2,{bold:1,anchor:'m',color:th.price})}
+    if(sel.extra)T(artFit(sel.extra,mw,tz(52),false),W/2,1650,tz(52),{anchor:'m'});
+    E.push('</g>');
     E.push(`<rect x="0" y="${H-230}" width="${W}" height="230" fill="${th.foot}"/><rect x="0" y="${H-230}" width="${W}" height="8" fill="${th.accent}"/>`);
     if(o.co.addr)T(artFit(o.co.addr,mw,ak(34),false),W/2,H-110,ak(34),{anchor:'m',color:th.footT,op:.9});
     T('Chame no WhatsApp',W/2,H-160,44,{bold:1,anchor:'m',color:th.footT});
@@ -1013,7 +1017,7 @@ function cardFx(kind,W,H,th,clip){
 const CARD_TPL=[['classic','Clássico (padrão)'],['exec','Executivo (painel + fundo branco)'],['split','Moderno (painel diagonal)'],['dark','Elegante escuro'],['faixa','Faixa superior']];
 function cardPro(o){
   const th=Object.assign({},ART_TH[o.theme]||ART_TH.azul,o.pal||{},o.cols||{}),F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
-  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},tp=o.tpl,dark=tp==='dark',ak=n=>Math.round(n*(o.addrK||1)),FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
+  const V=o.fmt==='v',W=V?1080:1050,H=V?1920:600,sel=o.sel||{name:'',role:'',phone:'',extra:''},tp=o.tpl,dark=tp==='dark',ak=n=>Math.round(n*(o.addrK||1)),nk=o.nk||1,pk=o.pk||1,tz=n=>Math.round(n*(o.tk||1)),TG=`<g transform="translate(${o.tdx||0},${o.tdy||0})">`,FX=cl=>o.fx&&o.fx!=='liso'?cardFx(o.fx,W,H,th,cl):'';
   const lum=c=>{const m=/^#?([0-9a-f]{6})$/i.exec(c||'');if(!m)return 0;const n=parseInt(m[1],16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255};
   const brand=lum(th.a)>.7?th.accent:th.a,acc2=!dark&&lum(th.accent)>.78?brand:th.accent,ink=dark?'#f4f6fa':'#101828',sub=dark?'#aab3c5':'#475467',onP=th.text;
   const T=(s,x,y,size,op={})=>{s=String(s);const w=artW(s,size,op.bold),x0=op.anchor==='m'?x-w/2:x;
@@ -1054,11 +1058,13 @@ function cardPro(o){
     const topY=tp==='faixa'?0:0;
     rb=Math.min(W-50,mr?mc.x-(o.panel?Math.round(mc.mw*.12):0)-20:W,qrOn?W-50-130-20:W);
     const mw=Math.max(260,rb-x0),yN=tp==='faixa'?250:170,k=tp==='faixa'?.9:1;
-    const[nm,ns]=fit(sel.name||'Seu nome',mw-(o.showLogo&&o.logo&&tp!=='faixa'?100:0),Math.round(64*k),true,32);T(nm,x0,yN,ns,{bold:1});
-    if(sel.role)T(artFit(sel.role,mw,32,false),x0,yN+50,32,{color:sub});
+    E.push(TG);
+    const[nm,ns]=fit(sel.name||'Seu nome',(mw-(o.showLogo&&o.logo&&tp!=='faixa'?100:0))*Math.max(1,nk),Math.round(Math.round(64*k)*nk),true,32);T(nm,x0,yN,ns,{bold:1});
+    if(sel.role)T(artFit(sel.role,mw,tz(32),false),x0,yN+50,tz(32),{color:sub});
     E.push(`<rect x="${x0}" y="${yN+72}" width="110" height="7" rx="3.5" fill="${acc2}"/>`);
-    if(tel){pill(x0+90,yN+104,180,48,26);const[t2,s2]=fit(tel,mw,Math.round(58*k),true,30);T(t2,x0,yN+226,s2,{bold:1,color:dark?th.accent:brand})}
-    if(sel.extra)T(artFit(sel.extra,mw,30,false),x0,yN+280,30,{color:ink});
+    if(tel){pill(x0+90,yN+104,180,48,26);const[t2,s2]=fit(tel,mw*Math.max(1,pk),Math.round(Math.round(58*k)*pk),true,30);T(t2,x0,yN+226,s2,{bold:1,color:dark?th.accent:brand})}
+    if(sel.extra)T(artFit(sel.extra,mw,tz(30),false),x0,yN+280,tz(30),{color:ink});
+    E.push('</g>');
     if(tp==='dark'){E.push(`<rect x="${x0}" y="${H-92}" width="${W-x0-50}" height="2" fill="${th.accent}" fill-opacity=".5"/>`);if(o.co.name)T(artFit(o.co.name,mw,28,true),x0,H-52,28,{bold:1});}
     else if(tp==='faixa'){if(o.co.addr)T(artFit(o.co.addr,mw,ak(22),false),x0,H-26,ak(22),{color:sub})}
     else{if(o.co.addr)T(artFit(o.co.addr,mw,ak(22),false),x0,H-30,ak(22),{color:sub})}
@@ -1082,11 +1088,13 @@ function cardPro(o){
     }
     if(!lp){if(tp!=='faixa')logoBox(40,40,120);else logoBox(W/2-60,60,120)}
     if(qrOn)E.push(qrSvg(o.qr,W-40-200,40,200,'#101828','#ffffff'));
-    const[nm,ns]=fit(sel.name||'Seu nome',mw,112,true,48);T(nm,W/2,y0,ns,{bold:1,anchor:'m'});
-    if(sel.role)T(artFit(sel.role,mw,56,false),W/2,y0+75,56,{anchor:'m',color:sub});
+    E.push(TG);
+    const[nm,ns]=fit(sel.name||'Seu nome',(mw)*Math.max(1,nk),Math.round(112*nk),true,48);T(nm,W/2,y0,ns,{bold:1,anchor:'m'});
+    if(sel.role)T(artFit(sel.role,mw,tz(56),false),W/2,y0+75,tz(56),{anchor:'m',color:sub});
     E.push(`<rect x="${W/2-80}" y="${y0+120}" width="160" height="10" rx="5" fill="${acc2}"/>`);
-    if(tel){pill(W/2,y0+190,400,96,48);const[t2,s2]=fit(tel,mw,124,true,60);T(t2,W/2,y0+440,s2,{bold:1,anchor:'m',color:dark?th.accent:brand})}
-    if(sel.extra)T(artFit(sel.extra,mw,52,false),W/2,y0+520,52,{anchor:'m'});
+    if(tel){pill(W/2,y0+190,400,96,48);const[t2,s2]=fit(tel,mw*Math.max(1,pk),Math.round(124*pk),true,60);T(t2,W/2,y0+440,s2,{bold:1,anchor:'m',color:dark?th.accent:brand})}
+    if(sel.extra)T(artFit(sel.extra,mw,tz(52),false),W/2,y0+520,tz(52),{anchor:'m'});
+    E.push('</g>');
     E.push(`<rect x="0" y="${H-230}" width="${W}" height="230" fill="${dark?'#080b13':'url(#pg)'}"/><rect x="0" y="${H-230}" width="${W}" height="8" fill="${th.accent}"/>`);
     const ft=dark?'#ffffff':onP;
     if(o.co.addr)T(artFit(o.co.addr,mw,ak(34),false),W/2,H-110,ak(34),{anchor:'m',color:ft});
@@ -1097,10 +1105,12 @@ function cardPro(o){
   if(mc&&mc.img)E.push(`<ellipse cx="${(mc.x+mc.mw*.5).toFixed(0)}" cy="${(mc.y+mc.mh-4).toFixed(0)}" rx="${(mc.mw*.36).toFixed(0)}" ry="10" fill="#000" fill-opacity=".22"/><image href="${mc.img}" xlink:href="${mc.img}" x="${mc.x.toFixed(0)}" y="${mc.y.toFixed(0)}" width="${mc.mw.toFixed(0)}" height="${mc.mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`);
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${E.join('')}</svg>`;
 }
+function cardSl(e,u){const t=$('#'+e.id+'v');if(t)t.textContent=(+e.value===(u==='%'?100:0))?'padrão':(u==='%'?e.value+'%':(+e.value>0?'+':'')+e.value+' px');artRender()}
+function cardTxtReset(){[['cnk',100],['cpk',100],['ctk',100],['ctx',0],['cty',0]].forEach(([i,v])=>{const e=$('#a_'+i);if(e){e.value=v;const t=$('#a_'+i+'v');if(t)t.textContent='padrão'}});artRender()}
 function cardOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'',ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
   const s=SEL();
-  return{tpl:artVal('ctpl')||'classic',pal:CARD_PAL[artVal('cpal')]||null,fx:artVal('cfx')||'liso',addrK:+artVal('caddsz')||1,fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr:artVal('cadd')==='no'?'':((artVal('caddt')||'').trim()||addr)},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto')||!SELPH,qr:ck('cqr')&&waNum()?'https://wa.me/'+waNum():'',border:ck('cbor'),panel:ck('cpan'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,left:artVal('cmside')==='e',z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
+  return{tpl:artVal('ctpl')||'classic',pal:CARD_PAL[artVal('cpal')]||null,fx:artVal('cfx')||'liso',addrK:+artVal('caddsz')||1,nk:(+artVal('cnk')||100)/100,pk:(+artVal('cpk')||100)/100,tk:(+artVal('ctk')||100)/100,tdx:+artVal('ctx')||0,tdy:+artVal('cty')||0,fmt:artVal('cfmt')||'h',theme:artTheme,font:artVal('font')||undefined,cols:artCols(),sel:{...s,phone:s.phone,photo:SELPH,kind:SELKIND,fmt:SELFMT},co:{name:co.trade_name||co.legal_name||'MultMix',addr:artVal('cadd')==='no'?'':((artVal('caddt')||'').trim()||addr)},logo:artLogo,showLogo:ck('logo'),noPhoto:!ck('cfoto')||!SELPH,qr:ck('cqr')&&waNum()?'https://wa.me/'+waNum():'',border:ck('cbor'),panel:ck('cpan'),mascot:(ck('cmon')&&ART_MASD[artVal('mas')])?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,left:artVal('cmside')==='e',z:(+artVal('cmz')||100)/100,dx:+artVal('cmx')||0,dy:+artVal('cmy')||0}:null};
 }
 function cardCaption(){const s=SEL(),co=CO||{};return `Olá! Sou *${s.name||'o vendedor'}*${s.role?', '+s.role:''} da ${co.trade_name||co.legal_name||'MultMix'}.\n`+(waNum()?'Chame no WhatsApp: https://wa.me/'+waNum():'')}
 const curSvg=()=>MODE==='card'?cardSvg(cardOpts()):artSvg(artOpts());
@@ -1128,6 +1138,7 @@ async function vArte(){
 <div class="w"><label>Fundo do cartão</label><select id="a_cfx" onchange="artRender()">${CARD_FX.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div>
 <div><label>Endereço no cartão</label><select id="a_cadd" onchange="artRender()"><option value="sim">Mostrar</option><option value="no">Não mostrar</option></select></div><div><label>Tamanho do endereço</label><select id="a_caddsz" onchange="artRender()"><option value="0.8">Pequeno</option><option value="1" selected>Normal</option><option value="1.25">Grande</option></select></div>
 <div class="w"><label>Endereço escrito por mim (opcional)</label><input id="a_caddt" maxlength="90" placeholder="Ex.: Av. Castelo Branco, 100 - Centro" oninput="artRender()"><div class="sm">Vazio = usa o endereço cadastrado da empresa. Escreva só o essencial para ficar maior e mais limpo.</div></div>
+<div class="w"><label style="font-weight:700">Textos do cartão (nome, cargo, telefone)</label><div class="f" style="margin-top:4px"><div><label>Tamanho do nome: <b id="a_cnkv">100</b></label><input type="range" id="a_cnk" min="60" max="150" step="5" value="100" oninput="cardSl(this,'%')"></div><div><label>Tamanho do telefone: <b id="a_cpkv">100</b></label><input type="range" id="a_cpk" min="60" max="150" step="5" value="100" oninput="cardSl(this,'%')"></div><div><label>Tamanho do cargo e extra: <b id="a_ctkv">100</b></label><input type="range" id="a_ctk" min="60" max="150" step="5" value="100" oninput="cardSl(this,'%')"></div><div><label>Mover textos: esquerda / direita: <b id="a_ctxv">padrão</b></label><input type="range" id="a_ctx" min="-300" max="300" step="10" value="0" oninput="cardSl(this,'px')"></div><div><label>Mover textos: subir / descer: <b id="a_ctyv">padrão</b></label><input type="range" id="a_cty" min="-200" max="200" step="10" value="0" oninput="cardSl(this,'px')"></div></div><div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="cardTxtReset()">Textos no padrão</button></div><div class="sm">Se o mascote ou a foto cobrir algum texto, diminua o nome ou mova os textos para o lado livre.</div></div>
 <div class="w"><label>Modelo do cartão</label><select id="a_ctpl" onchange="artRender()">${CARD_TPL.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select></div><div><label>Formato do cartão</label><select id="a_cfmt" onchange="artRender()"><option value="h">Horizontal (impressão)</option><option value="v">Vertical (Status)</option></select></div></div>
 <div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
