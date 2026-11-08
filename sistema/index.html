@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.64.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.65.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2095,33 +2095,68 @@ function xmlView(){
   ${x.items.map((i,ix)=>`<tr><td>${esc(i.name)}<div class="sm">${i.ean?'EAN '+i.ean+' · ':''}cód. ${esc(i.code)}</div></td><td><input type="number" min="0" value="${i.qty}" style="width:72px" onchange="XML.items[${ix}].qty=Math.max(0,Math.round(+this.value||0));xmlView()"></td><td>${R(i.cost)}</td>
   <td><select onchange="XML.items[${ix}].pid=this.value;xmlView()"><option value="novo" ${i.pid==='novo'?'selected':''}>Cadastrar produto novo</option><option value="ignorar" ${i.pid==='ignorar'?'selected':''}>Ignorar este item</option>
   ${[...db.products].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(p=>`<option value="${p.id}" ${i.pid===p.id?'selected':''}>${esc(p.name)} (estoque ${p.stock})</option>`).join('')}</select></td></tr>`).join('')}</table></div>
+  ${xmlKitsUi()}
   <p><label><input type="checkbox" id="xml_cost" checked style="width:auto"> Atualizar o custo dos produtos</label></p>
   ${x.dups.length?`<p><label><input type="checkbox" id="xml_pay" ${x.hasPay?'':'checked'} style="width:auto"> Lançar em <b>Contas a pagar</b> as ${x.dups.length} parcela(s) da nota</label>${x.hasPay?' <span class="sm bad">(já existem parcelas desta nota em Contas a pagar; marque só se faltar)</span>':''}</p>
   <div class="sm">${x.dups.map(d=>`${esc(d.n||'—')}: vence ${fmtD(d.venc)} · ${R(d.v)}`).join('<br>')}</div>`:'<p class="sm">Esta nota não traz parcelas (pagamento à vista), então não gera conta a pagar.</p>'}
   <button class="btn" onclick="xmlApply()">Dar entrada no estoque</button>`;
 }
+/* kit na entrada: peças que vêm separadas na nota (ex.: condensadora + evaporadora) e são vendidas juntas como UM produto */
+function xmlKitsUi(){
+  const x=XML,ks=x.kits||[],its=x.items.map((i,ix)=>({i,ix})).filter(o=>o.i.pid!=='ignorar'&&o.i.qty>0);
+  return`<details class="adv" ${ks.length?'open':''} style="margin:10px 0"><summary>Montar KIT com itens desta nota (ex.: condensadora + evaporadora vendidas juntas)</summary>
+  <p class="sm" style="margin:8px 0">Cada peça continua cadastrada com o seu estoque. O kit é um produto à parte (um item só na venda e na nota) e, ao vender, baixa uma de cada peça. Precisa do SQL v40.</p>
+  ${ks.map((k,ki)=>`<div class="kitbox" style="margin:8px 0"><div class="f"><div class="w"><label>Nome do kit</label><input value="${esc(k.name||'')}" placeholder="Ex.: Ar-condicionado Split 12000 BTU" onchange="XML.kits[${ki}].name=this.value.trim()"></div>
+   <div><label>Preço à vista (R$)</label><input inputmode="decimal" value="${esc(k.price||'')}" placeholder="0,00" onchange="XML.kits[${ki}].price=this.value"></div>
+   <div><label>NCM do kit (do produto completo)</label><input inputmode="numeric" value="${esc(k.ncm||'')}" placeholder="igual ao da 1ª peça" onchange="XML.kits[${ki}].ncm=this.value.replace(/\D/g,'')"></div></div>
+   <div class="sm" style="margin:4px 0">Peças do kit (quantas de cada entram em 1 kit):</div>
+   ${its.map(({i,ix})=>`<div class="row" style="margin:0 0 4px;flex-wrap:nowrap;align-items:center"><label style="display:flex;gap:6px;align-items:center;flex:1;min-width:0;font-weight:400"><input type="checkbox" style="width:auto" ${k.parts&&k.parts[ix]?'checked':''} onchange="xmlKitPart(${ki},${ix},this.checked,this)"> <span style="overflow:hidden;text-overflow:ellipsis">${esc(i.name)}</span></label><input type="number" min="1" value="${(k.parts&&k.parts[ix])||1}" style="width:64px" aria-label="Quantidade desta peça em 1 kit" onchange="xmlKitQty(${ki},${ix},this.value)"></div>`).join('')}
+   <button type="button" class="btn g s" onclick="XML.kits.splice(${ki},1);xmlView()">Remover este kit</button></div>`).join('')}
+  <button type="button" class="btn g s" onclick="(XML.kits=XML.kits||[]).push({name:'',price:'',ncm:'',parts:{}});xmlView()">+ Novo kit</button></details>`;
+}
+function xmlKitPart(ki,ix,on,el){const k=XML.kits[ki];k.parts=k.parts||{};if(on)k.parts[ix]=Math.max(1,Math.round(+el.closest('.row').querySelector('input[type=number]').value||1));else delete k.parts[ix]}
+function xmlKitQty(ki,ix,v){const k=XML.kits[ki];if(k.parts&&k.parts[ix])k.parts[ix]=Math.max(1,Math.round(+v||1))}
+function xmlKitCheck(x){
+  for(const [ki,k] of (x.kits||[]).entries()){
+    const ps=Object.keys(k.parts||{}).map(Number);
+    if(!k.name&&!ps.length&&!k.price)continue; // kit em branco: ignora
+    if(!k.name)return'Kit '+(ki+1)+': informe o nome do kit.';
+    if(ps.length<1)return'Kit "'+k.name+'": marque as peças que fazem parte dele.';
+    for(const ix of ps){const i=x.items[ix];if(!i||i.pid==='ignorar'||!(i.qty>0))return'Kit "'+k.name+'": a peça "'+(i?i.name:'?')+'" está ignorada ou sem quantidade.';
+      const p=i.pid!=='novo'&&db.products.find(y=>y.id===i.pid);if(p&&kitArr(p).length)return'Kit "'+k.name+'": "'+p.name+'" já é um kit e não pode ser peça de outro kit.'}
+  }
+  return'';
+}
 function xmlCore(x,upd,pay){
-  let a=0,n=0,cp=0;
+  let a=0,n=0,cp=0,kn=0;
+  x.items.forEach(i=>{if(i.pid==='novo'&&!i.nid)i.nid=uid()});
   x.items.forEach(i=>{
     if(i.pid==='ignorar'||!(i.qty>0))return;
     if(i.pid==='novo'){
-      put('products',{id:uid(),name:i.name,category:'',description:'',price_cash:0,price_card:null,price_credit:null,max_inst:10,stock:i.qty,active:false,ncm:i.ncm,cfop:'5102',unit:i.un,cest:i.cest,csosn:'102',specs:[],photos:[],ean:i.ean||null,supplier_code:i.code||null,cost:i.cost||null});n++;
+      put('products',{id:i.nid,name:i.name,category:'',description:'',price_cash:0,price_card:null,price_credit:null,max_inst:10,stock:i.qty,active:false,ncm:i.ncm,cfop:'5102',unit:i.un,cest:i.cest,csosn:'102',specs:[],photos:[],ean:i.ean||null,supplier_code:i.code||null,cost:i.cost||null});n++;
     }else{
       const p=db.products.find(y=>y.id===i.pid);if(!p)return;
       put('products',{...p,stock:(+p.stock||0)+i.qty,ean:p.ean||i.ean||null,supplier_code:p.supplier_code||i.code||null,ncm:p.ncm||i.ncm,...(upd&&i.cost?{cost:i.cost}:{})});a++;
     }
   });
+  (x.kits||[]).forEach(k=>{ // cria os kits depois das peças, para calcular o estoque
+    const ps=Object.keys(k.parts||{}).map(Number);if(!k.name||!ps.length)return;
+    const kit=ps.map(ix=>{const i=x.items[ix];return{id:i.pid==='novo'?i.nid:i.pid,qty:k.parts[ix]}}),first=x.items[ps[0]],price=num(k.price||'0'),
+      cost=+kit.reduce((t,c,j)=>t+(x.items[ps[j]].cost||0)*c.qty,0).toFixed(2);
+    put('products',{id:uid(),name:k.name,category:'',description:'',price_cash:price,price_card:null,price_credit:null,max_inst:10,stock:kitSt({kit}),active:price>0,ncm:k.ncm||first.ncm||'',cfop:'5102',unit:'UN',cest:first.cest||'',csosn:'102',specs:[],photos:[],ean:null,supplier_code:null,cost:cost||null,kit});kn++;
+  });
   if(pay)x.dups.forEach(d=>{put('payables',{id:uid(),supplier:x.forn,supplier_cnpj:x.cnpj,doc:x.num,parcel:d.n,due_date:d.venc,amount:d.v,paid_at:null,source:'xml',nfe_key:x.key||null,created_at:now()});cp++});
   if(x.key){const l=xmlDone();l.push(x.key);localStorage.mmxml=JSON.stringify(l.slice(-1000));if(sb&&role)Promise.resolve(sb.from('dfe_notas').update({entrada_at:now()}).eq('chave',x.key)).catch(()=>{})}
-  return{a,n,cp};
+  return{a,n,cp,kn};
 }
 function xmlApply(){
   const x=XML;if(!x)return;
   const upd=$('#xml_cost').checked,pay=$('#xml_pay')&&$('#xml_pay').checked&&ADM();
-  const{a,n,cp}=xmlCore(x,upd,pay);
+  const err=xmlKitCheck(x);if(err)return alert(err);
+  const{a,n,cp,kn}=xmlCore(x,upd,pay);
   if(x.relanc&&x.key)confMark(x.key,true);
   closeM();XML=null;render();dfeLoad();
-  alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
+  alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${kn?`\n${kn} kit(s) criado(s): confira preço e NCM do kit na lista de produtos.`:''}${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
 }
 function impModel(){
   const csv='nome;categoria;preço à vista;preço cartão;preço carnê;estoque;ncm;unidade;parcelas;descrição;especificações;fotos\n'+
@@ -2170,10 +2205,21 @@ function prodToggle(id,fromForm){
 }
 const kitArr=p=>Array.isArray(p&&p.kit)?p.kit.filter(c=>c&&c.id):[];
 function kitSt(p){const k=kitArr(p);if(!k.length)return +p.stock||0;return Math.min(...k.map(c=>{const q=db.products.find(x=>x.id===c.id);return q?Math.floor((+q.stock||0)/Math.max(1,+c.qty||1)):0}))}
-function kitOpts(self,sel){return db.products.filter(x=>x.id!==self&&!kitArr(x).length).sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR')).map(x=>`<option value="${x.id}" ${x.id===sel?'selected':''}>${esc((x.internal_code?x.internal_code+' · ':'')+x.name)} (estoque ${+x.stock||0})</option>`).join('')}
-function kitRow(self,c){return`<div class="row kitr" style="margin:0 0 6px;align-items:center;flex-wrap:nowrap"><select class="kp" style="flex:1;min-width:0" onchange="kitUi()"><option value="">Escolha a peça</option>${kitOpts(self,c&&c.id)}</select><input class="kq" type="number" min="1" value="${c?+c.qty||1:1}" style="width:68px" aria-label="Quantidade da peça no kit" oninput="kitUi()"><button type="button" class="btn g s" onclick="this.parentNode.remove();kitUi()">Remover</button></div>`}
-function kitAdd(self){$('#kitrows').insertAdjacentHTML('beforeend',kitRow(self,null));kitUi()}
-function kitRead(){const o=[];document.querySelectorAll('#kitrows .kitr').forEach(r=>{const id=r.querySelector('.kp').value,q=Math.max(1,Math.floor(+r.querySelector('.kq').value||1));if(id)o.push({id,qty:q})});return o}
+function kitRow(self,c){const q=db.products.find(x=>x.id===c.id);return`<div class="row kitr" data-id="${esc(c.id)}" style="margin:0 0 6px;align-items:center;flex-wrap:nowrap;border:1px solid var(--line);border-radius:10px;padding:6px 8px"><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q?esc(q.name):'(produto removido)'}</b><span class="sm">${q?(q.internal_code?'cód. '+q.internal_code+' · ':'')+'estoque '+(+q.stock||0):''}</span></div><label class="sm" style="white-space:nowrap">qtd no kit <input class="kq" type="number" min="1" value="${+c.qty||1}" style="width:60px" oninput="kitUi()"></label><button type="button" class="btn g s" onclick="this.closest('.kitr').remove();kitUi()">Remover</button></div>`}
+function kitFind(self){
+  const raw=($('#kitq')||{}).value||'',k=norm(raw),d=digits(raw),have=new Set(kitRead().map(c=>c.id));
+  if(!k.trim()&&!d)return[];
+  return db.products.filter(x=>x.id!==self&&!have.has(x.id)&&!kitArr(x).length&&x.active!==false&&(
+    norm([x.name,x.category,x.internal_code,x.supplier_code,x.ncm].join(' ')).includes(k)||(d.length>=3&&(String(x.ean||'')===d||digits(String(x.internal_code||""))===d||String(x.ean||'').includes(d)))))
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name),'pt-BR')).slice(0,8);
+}
+function kitSearch(self){
+  const l=kitFind(self),box=$('#kitres'),has=($('#kitq').value||'').trim();
+  box.innerHTML=l.length?l.map(x=>`<button type="button" class="pri" onclick="kitPick('${x.id}')"><span style="flex:1;min-width:0;text-align:left"><b style="display:block">${esc(x.name)}</b><span class="sm">${x.internal_code?'cód. '+x.internal_code+' · ':''}${x.category?esc(x.category)+' · ':''}estoque ${+x.stock||0}</span></span><span class="btn s">Adicionar</span></button>`).join(''):(has?'<p class="sm" style="margin:4px 2px">Nenhum produto encontrado (kit só aceita produtos ativos que não sejam kit).</p>':'');
+}
+function kitPick(id){$('#kitrows').insertAdjacentHTML('beforeend',kitRow('',{id,qty:1}));const q=$('#kitq');q.value='';$('#kitres').innerHTML='';kitUi();q.focus()}
+function kitEnter(self,e){if(e.key!=='Enter')return;e.preventDefault();const l=kitFind(self);if(l.length)kitPick(l[0].id)}
+function kitRead(){const o=[];document.querySelectorAll('#kitrows .kitr').forEach(r=>{const id=r.dataset.id,q=Math.max(1,Math.floor(+r.querySelector('.kq').value||1));if(id)o.push({id,qty:q})});return o}
 function kitUi(){
   const on=$('#f_iskit').checked,box=$('#kitbox'),st=$('#f_stock');box.classList.toggle('off',!on);
   if(!on){st.disabled=false;return}
@@ -2213,9 +2259,9 @@ function prodForm(id){
    <div><label>CST IBS/CBS (3 dígitos, opcional)</label><input id="f_ibs_cst" maxlength="3" inputmode="numeric" value="${v('ibs_cst')}" placeholder="usa a regra se vazio"></div>
    <div><label>cClassTrib (6 dígitos, opcional)</label><input id="f_ibs_cclass" maxlength="6" inputmode="numeric" value="${v('ibs_cclass')}"></div>
    <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f_is_aplica" style="width:auto" ${p.is_aplica?'checked':''}> Sujeito ao Imposto Seletivo (IS)</label></div>
-   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f_iskit" style="width:auto" ${kitArr(p).length?'checked':''} onchange="kitUi();if(this.checked&&!$('#kitrows').children.length)kitAdd('${p.id||''}')"> Este produto é um KIT (peças separadas vendidas como um item só)</label>
+   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="f_iskit" style="width:auto" ${kitArr(p).length?'checked':''} onchange="kitUi();if(this.checked)$('#kitq').focus()"> Este produto é um KIT (peças separadas vendidas como um item só)</label>
    <div id="kitbox" class="kitbox ${kitArr(p).length?'':'off'}"><p class="sm">Cadastre antes cada peça como produto (com o seu estoque). Ao vender 1 kit, o sistema baixa o estoque de cada peça, e o estoque do kit é calculado sozinho. Na nota fiscal e no carnê o kit aparece como um item só. Precisa do SQL v40 no Supabase.</p>
-   <div id="kitrows">${kitArr(p).map(c=>kitRow(p.id||'',c)).join('')}</div><button type="button" class="btn g s" onclick="kitAdd('${p.id||''}')">+ Adicionar peça</button><div class="sm" id="kitst" style="margin-top:6px"></div></div></div>
+   <div id="kitrows">${kitArr(p).map(c=>kitRow(p.id||'',c)).join('')}</div><label style="margin-top:6px">Buscar peça (nome, código interno, código de barras, código do fornecedor ou categoria)</label><input id="kitq" type="search" autocomplete="off" placeholder="Digite para buscar e toque na peça para adicionar" oninput="kitSearch('${p.id||''}')" onkeydown="kitEnter('${p.id||''}',event)"><div id="kitres" class="pres"></div><div class="sm" id="kitst" style="margin-top:6px"></div></div></div>
    <div><label>No catálogo?</label><select id="f_active"><option value="true" ${p.active!==false?'selected':''}>Sim</option><option value="false" ${p.active===false?'selected':''}>Não</option></select></div></div>
    <button class="btn" onclick="saveProd('${p.id||''}')">Salvar produto</button>${p.id?` <button class="btn g" onclick="prodToggle('${p.id}',true)">${p.active===false?'Reativar produto':'Inativar produto'}</button>`:''}`);
   prodMarg();kitUi();
