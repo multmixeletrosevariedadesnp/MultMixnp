@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.78.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.79.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2433,7 +2433,7 @@ function vPdv(){
    <div class="cact"><button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></div>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
-   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${sb&&CO().mp_pix_on&&CO().pix_provider==='ip'?'<option value="__ip">Pix InfinitePay (QR automático)</option>':''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
    ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
@@ -2576,7 +2576,32 @@ function cartView(){
 }
 
 const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p.stock||0)+d;save()}};
-function finish(){
+/* ----- QR da InfinitePay na Nova venda (só aparece com a cobrança automática ligada e provedor InfinitePay) ----- */
+let ipRes=null,ipTm=null,ipId2=null;
+function ipStop(v){clearInterval(ipTm);ipTm=null;if(ipRes){const r=ipRes;ipRes=null;if(v===false&&ipId2)mpCall({action:'cancelar',id:ipId2}).then(()=>{},()=>{});r(v)}}
+async function ipSalePay(sale,tot,nome){
+  let r;
+  try{r=await mpCall({action:'criar',kind:'venda',sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no Sistema'})}
+  catch(e){return confirm('Não consegui gerar o QR da InfinitePay:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
+  ipId2=r.id;
+  return await new Promise(res=>{
+    ipRes=res;
+    modal(`<h2>Pix InfinitePay · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão). A venda só é registrada quando o pagamento for confirmado.</p>
+    <div style="text-align:center">${pixSvg(r.checkout_url)}</div>
+    <textarea id="ipcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||'')}</textarea>
+    <p id="ipst" class="sm" role="status">Aguardando o pagamento…</p>
+    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Link copiado.'">Copiar link</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
+    ipTm=setInterval(async()=>{
+      if(!document.getElementById('ipst')){ipStop(false);return}
+      try{
+        const x=await mpCall({action:'status',id:r.id});
+        if(x.status==='approved'){clearInterval(ipTm);ipTm=null;const f=ipRes;ipRes=null;closeM();f({id:r.id})}
+        else if(['expired','cancelled','rejected'].includes(x.status)){clearInterval(ipTm);ipTm=null;ipst.textContent='Este link não vale mais ('+x.status+'). Cancele e refaça a venda.'}
+      }catch(e){}
+    },3000);
+  });
+}
+async function finish(){
   if(!cart.length)return alert('Adicione ao menos um produto.');
   const t=s_t.value,tot=total(),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;
   let cid=null;
@@ -2584,11 +2609,17 @@ function finish(){
     let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});const pc=window.preCli;if(pc&&digits(pc.cpf)===digits(c_c.value)){Object.entries(pc).forEach(([k,v])=>{if(v&&k!=='name'&&k!=='phone'&&!c[k])c[k]=v});if(!c.address&&c.street)c.address=`${c.street}, ${c.number||'s/n'} - ${c.district||''}, ${c.city||''}/${c.uf||''}`;if(pc.name&&!c.trade_name)c.trade_name=pc.trade_name||''}window.preCli=null;window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
-  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
+  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value==='__ip'?'Pix':s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
   const low=cart.filter(i=>{const p=db.products.find(x=>x.id===i.id);return(+p.stock||0)<i.qty}).map(i=>db.products.find(x=>x.id===i.id).name);
   if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
+  let ipId=null;
+  if(s_m.value==='__ip'&&t!=='crediario'){
+    if(navigator.onLine===false)return alert('Sem internet: não dá para gerar o QR da InfinitePay. Escolha Pix comum.');
+    const r=await ipSalePay(sale,tot,c_n.value.trim());if(r===false)return;if(r&&r.id)ipId=r.id;
+  }
   put('sales',sale);
+  if(ipId)mpCall({action:'aplicado',id:ipId,note:'venda '+sale.id}).catch(()=>{});
   cart.forEach(i=>stockAdj(i.id,-i.qty)); // a baixa oficial é feita no servidor ao sincronizar a venda
   if(t==='crediario'){
     const per=Math.floor((tot-e)/n*100)/100;let d=new Date(s_d.value+'T12:00');
@@ -3109,6 +3140,26 @@ function carnePag(sid){ // histórico de recebimentos desta venda, com recibo e 
   return`<h3>Pagamentos recebidos</h3><div class="tw"><table><tr><th>Data</th><th>Parcelas</th><th>Recebido</th><th></th></tr>${rids.map(rid=>{const D=reciboDados(rid);if(!D)return'';
   return`<tr><td>${dBR(D.t0)}${D.canc?' <span class="tag bad">estornado</span>':''}</td><td>${D.rows.map(r=>r.n+'/'+r.of).join(', ')}</td><td>${R(D.tot)}${D.dsc?`<div class="sm">abatimento ${R(D.dsc)}${D.motivo?' · '+esc(D.motivo):''}</div>`:''}<div class="sm">${esc(D.meio||'')}</div></td>
   <td style="white-space:nowrap"><button class="btn g s" onclick="reciboPos('${rid}','${sid}')">Recibo</button>${D.canc?'':` <button class="btn g s" onclick="reciboEstorna('${rid}','${sid}')">Estornar</button>`}</td></tr>`}).join('')}</table></div>`;
+}
+function payAlt(id){
+  const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at)return;
+  if(s.pay_type==='crediario')return alert('Venda no carnê não tem forma de pagamento única. Altere pelas parcelas.');
+  if(s.fiscal_status==='emitida'||s.fiscal_status==='cancelada')return alert('Esta venda já tem nota fiscal. A forma de pagamento não pode mais ser trocada aqui.');
+  master(()=>{
+    modal(`<h2>Trocar forma de pagamento</h2><p class="sm">${R(s.total)} · hoje está como <b>${esc(s.method||'Não informado')}</b></p>
+    <p class="sm">Use para corrigir um erro de lançamento (ex.: foi Pix mas saiu Dinheiro). O caixa passa a contar pela nova forma. <b>Não troque</b> uma venda paga por link/QR automático da InfinitePay: o dinheiro entrou por lá.</p>
+    <div class="f"><div><label>Nova forma</label><select id="pa_m">${METHODS.replace('<option>'+(s.method||'').replace(/[&<>]/g,'')+'</option>','<option selected>'+(s.method||'').replace(/[&<>]/g,'')+'</option>')}</select></div>
+    <div class="w"><label>Motivo</label><input id="pa_r" placeholder="Ex.: vendedor marcou a forma errada"></div></div>
+    <button class="btn" onclick="payAltOk('${id}')">Salvar troca</button>`);
+  });
+}
+function payAltOk(id){
+  const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at||s.fiscal_status==='emitida')return;
+  const m=pa_m.value,r=pa_r.value.trim();
+  if(m===(s.method||''))return alert('Escolha uma forma diferente da atual.');
+  if(r.length<3)return alert('Informe o motivo.');
+  put('sales',{...s,method:m,method_prev:s.method_prev||s.method||'',method_alt_at:now(),method_alt_by:(me&&me.name)||'',method_alt_reason:r});
+  closeM();alert('Forma de pagamento trocada para '+m+'.');render();
 }
 function cancelSale(id){
   const s=db.sales.find(x=>x.id===id);if(!s||s.canceled_at)return;
@@ -4180,7 +4231,7 @@ function vCx(){
   <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
   <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
   ${exHtml()}
-  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td><button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> ${s.canceled_at?'':`<button class="btn g s" onclick="cancelSale('${s.id}')">Cancelar</button>`}</td></tr>`).join('')}</table>`:''}
+  ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td><button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> ${s.canceled_at?'':`${s.pay_type!=='crediario'&&s.fiscal_status!=='emitida'?`<button class="btn g s" onclick="payAlt('${s.id}')">Pagamento</button> `:''}<button class="btn g s" onclick="cancelSale('${s.id}')">Estornar</button>`}</td></tr>`).join('')}</table>`:''}
   ${devs.length?`<p class="sm">Devoluções de hoje: ${devs.map(s=>R(s.refund_amount)+' ('+esc(s.refund_method||'—')+')').join(' · ')}</p>`:''}`;
 }
 
@@ -4228,7 +4279,7 @@ function vFis(){
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${vis.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${fmtDH(s.created_at)}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="pill bad">Venda cancelada</span><div class="sm">Cancele esta nota na SEFAZ</div>':s.fiscal_status==='cancelada'?'<span class="pill mut">Nota cancelada</span>':em?`<span class="pill ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="pill warn">${p.length} pendência(s)</span><ul class="pend">${p.map(t=>`<li><span>${esc(t)}</span>${fisFix(t,s)}</li>`).join('')}</ul>`:'<span class="pill ok">Pronta para emitir</span>'}</td>
-  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisZap('${s.id}')">WhatsApp</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>${vis.length?'':empty('Nenhuma venda neste filtro',fisFl==='todas'?'As vendas aparecem aqui para emitir a nota.':'Escolha outro filtro acima.')}`;
+  <td>${s.fiscal_status==='cancelada'?'':em?`<button class="btn g s" onclick="fisFile('${s.id}','danfe')">DANFE (PDF)</button> <button class="btn g s" onclick="fisFile('${s.id}','xml')">XML</button> <button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisZap('${s.id}')">WhatsApp</button>${ADM()?` <button class="btn g s" onclick="fisCancel('${s.id}')">Cancelar nota</button>`:''}`:s.canceled_at?'':`<button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> <button class="btn g s" onclick="fisEdit('${s.id}')">Documento</button> ${s.pay_type!=='crediario'?`<button class="btn g s" onclick="payAlt('${s.id}')">Pagamento</button> `:''}<button class="btn g s" onclick="cancelSale('${s.id}')">Estornar</button> ${c.id?`<button class="btn g s" onclick="cliForm('${c.id}')">Cliente</button> `:''}<button class="btn s" ${p.length?'disabled title="Resolva as pendências"':''} onclick="fisEmit('${s.id}')">Emitir nota</button> <button class="btn g s" onclick="fisAsk('${s.id}')">Marcar emitida</button>`}${!em&&s.fiscal_error?`<div class="sm bad">${esc(s.fiscal_error)}</div>`:''}</td></tr>`}).join('')}</table></div>${vis.length?'':empty('Nenhuma venda neste filtro',fisFl==='todas'?'As vendas aparecem aqui para emitir a nota.':'Escolha outro filtro acima.')}`;
   fisStatus();
 }
 let FST=null;
