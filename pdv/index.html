@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.26.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.28.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1602,11 +1602,13 @@ function paintCx(){
   if(!c){
     $('#app').innerHTML=`<div class="box" style="max-width:520px"><h2>Caixa fechado</h2><p class="sm">Conte o dinheiro que está na gaveta e informe o valor inicial (troco). ${(ME.cfg||{}).exige_caixa?'<b>Para vender, o caixa precisa estar aberto.</b>':''}</p>
     ${off?'<p class="bad">Sem internet: não dá para abrir o caixa agora.</p>':''}
+    ${LS.get('pdv_tid')?`<p><b>Este aparelho é o ${esc(LS.get('pdv_term')||'')}</b> <span class="tag">vinculado</span></p>`:`<label for="cx_t">Número deste caixa (terminal)</label><input id="cx_t" maxlength="30" value="${esc(LS.get('pdv_term')||'')}" placeholder="Ex.: Caixa 01">
+    <div class="f"><div><label for="cx_k">Ou vincule com o código do administrador</label><input id="cx_k" maxlength="8" placeholder="Código de 6 letras" autocapitalize="characters" style="text-transform:uppercase"></div></div><div class="bar"><button class="btn g s" onclick="cxVinc()" ${off?'disabled':''}>Vincular este aparelho</button></div>`}
     <label for="cx_o">Valor inicial na gaveta (R$)</label><input id="cx_o" type="number" step="0.01" min="0" value="0" inputmode="decimal">
     <div class="bar"><button class="btn" onclick="cxAbrir()" ${off?'disabled':''}>Abrir caixa</button></div></div>`;return;
   }
   const k=c.calc||{},rec=k.recebido||{},tot=Object.values(rec).reduce((a,b)=>a+ +b,0);
-  $('#app').innerHTML=`<div class="prices"><div class="pr"><span>Aberto desde</span><b>${new Date(c.aberto_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>
+  $('#app').innerHTML=`<div class="prices">${LS.get('pdv_term')?`<div class="pr"><span>Caixa</span><b>${esc(LS.get('pdv_term'))}</b></div>`:''}<div class="pr"><span>Aberto desde</span><b>${new Date(c.aberto_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>
    <div class="pr"><span>Valor inicial</span><b>${R(k.abertura)}</b></div><div class="pr"><span>Vendido neste caixa</span><b>${R(tot)}</b></div><div class="pr"><span>Retiradas (sangria)</span><b>${R(k.sangrias)}</b></div></div>
   ${off?'<p class="bad">Sem internet: os números abaixo podem estar desatualizados e o caixa não pode ser fechado agora.</p>':''}
   <div class="box"><h3>Recebido por forma de pagamento</h3><table>${mtxt(rec)}</table>
@@ -1618,9 +1620,17 @@ function paintCx(){
    <div class="f"><div><label for="cx_c">Dinheiro contado na gaveta (R$)</label><input id="cx_c" type="number" step="0.01" min="0" inputmode="decimal"></div><div class="w"><label for="cx_n">Observação (opcional)</label><input id="cx_n"></div></div>
    <div class="bar"><button class="btn" onclick="cxFechar()" ${off?'disabled':''}>Fechar caixa</button></div></div>`;
 }
+function devId(){let d=LS.get('pdv_dev');if(!d){d=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));LS.set('pdv_dev',d)}return d}
+async function cxVinc(){
+  const c=($('#cx_k').value||'').trim();if(c.length<4)return alert('Digite o código que o administrador gerou.');
+  const{data,error}=await sb.rpc('pdv_terminal_vincular',{p_code:c,p_device:devId()});if(error)return alert(/schema cache|does not exist/.test(error.message)?'Rode o supabase-v43.sql no Supabase e tente de novo.':error.message);
+  LS.set('pdv_tid',data.id);LS.set('pdv_term',data.name);alert('Aparelho vinculado: '+data.name);paintCx();
+}
 async function cxAbrir(){
   const v=+$('#cx_o').value;if(!(v>=0))return alert('Informe o valor inicial (pode ser zero).');
-  const{error}=await sb.rpc('pdv_caixa_abrir',{p_opening:v});if(error)return alert(error.message);
+  const tid=LS.get('pdv_tid')||null,t=tid?null:(($('#cx_t')||{}).value||'').trim();if(!tid)LS.set('pdv_term',t);
+  const{error}=await sb.rpc('pdv_caixa_abrir',{p_opening:v,p_terminal:t||null,p_terminal_id:tid,p_device:tid?devId():null});
+  if(error){if(tid&&/não está mais vinculado/.test(error.message)){LS.set('pdv_tid','');LS.set('pdv_term','')}return alert(/p_terminal|schema cache/.test(error.message)?'Rode o supabase-v43.sql no Supabase e tente de novo.':error.message)}
   await loadCx();render();
 }
 function cxMov(kind){
