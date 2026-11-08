@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.21.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.22.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -147,12 +147,26 @@ body:not(.in) .pbar{display:none}
 :root[data-acc="laranja"]{--pri:#c2570c;--brand:#9d4509}
 :root[data-acc="grafite"]{--pri:#475467;--brand:#344054}
 .fchips{display:flex;gap:8px;flex-wrap:wrap}
+
+/* MODO FOCO (opcional em Aparência): sem menu lateral; barra fina com ☰ Menu */
+.fbtn{display:none}
+body.in.L-foco{display:block}
+body.in.L-foco header{position:sticky;top:0;height:auto;align-self:auto;flex-direction:row;align-items:center;flex-wrap:nowrap;padding:6px 14px;gap:10px;overflow:visible;z-index:20}
+body.in.L-foco .brand{padding:0}body.in.L-foco .brand h1,body.in.L-foco nav,body.in.L-foco .appv,body.in.L-foco .ibtn{display:none}
+body.in.L-foco .brand .lg{width:30px;height:30px}
+body.in.L-foco .fbtn{display:inline-block;background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:10px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+body.in.L-foco .fbtn:hover{background:rgba(255,255,255,.28)}
+body.in.L-foco .sync{margin:0 0 0 auto;padding:0}
+.moreg button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:inherit;padding:13px 6px;cursor:pointer}
+.moreg button:hover{background:var(--bg)}.moreg button.on{font-weight:700;color:var(--pri)}
+.lay2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}.lay2 .btn{white-space:normal;text-align:left}
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span> PDV</h1></div>
   <nav id="nav"></nav>
+  <button type="button" class="fbtn" onclick="moreOpen()" aria-label="Abrir menu">☰ Menu</button>
   <button class="ibtn" data-install hidden>Instalar app</button>
   <span class="sync" id="sync"></span>
   <button type="button" class="appv" data-appver></button>
@@ -1045,12 +1059,16 @@ const ACCS=[['','Azul','#00539f'],['verde','Verde','#0e8a5f'],['roxo','Roxo','#7
 const TEMAUI=()=>{try{const v=localStorage.mm_tema_ui;return v==='dark'||v==='light'||v==='graphite'?v:'auto'}catch(e){return'auto'}},ACC=()=>{try{return localStorage.mm_acc||''}catch(e){return''}};
 function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else localStorage.mm_tema_ui=k}catch(e){}if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);temaOpen()}
 function accSet(k){try{if(k)localStorage.mm_acc=k;else localStorage.removeItem('mm_acc')}catch(e){}if(k)document.documentElement.setAttribute('data-acc',k);else document.documentElement.removeAttribute('data-acc');temaOpen()}
+const LAY=()=>{try{return localStorage.mm_layout==='foco'?'foco':'side'}catch(e){return'side'}};
+function layoutSet(k){try{if(k==='foco')localStorage.mm_layout='foco';else localStorage.removeItem('mm_layout')}catch(e){}closeM();render()}
+function moreOpen(){const h=($('#nav').innerHTML||'').replace(/onclick="go\(/g,'onclick="closeM();go(').replace(/onclick="temaOpen\(\)"/g,'onclick="temaOpen()"').replace(/onclick="logout\(\)"/g,'onclick="closeM();logout()"');modal('<h2>Menu</h2><div class="moreg">'+h+'</div>')}
 function temaOpen(){const TE=TEMAUI();modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho. Pode trocar quando quiser.</p>
   <b>Tema</b><div class="fchips" style="margin:6px 0 12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro'],['graphite','Grafite']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
+  <b>Layout do menu</b><div class="lay2" style="margin-bottom:12px"><button class="btn ${LAY()==='side'?'':'g'}" onclick="layoutSet('side')"><b>Lateral${LAY()==='side'?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">Menu fixo à esquerda. É o padrão.</span></button><button class="btn ${LAY()==='foco'?'':'g'}" onclick="layoutSet('foco')"><b>Modo foco${LAY()==='foco'?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">Sem menu na tela: só ☰ Menu no topo. Mais espaço para produtos e carrinho.</span></button></div>
   <b>Cor de destaque</b><div class="fchips" style="margin:6px 0 4px">${ACCS.map(([k,l,c])=>`<button class="chip ${ACC()===k?'on':''}" onclick="accSet('${k}')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join('')}</div>`)}
 function render(){
   if(!ME||view==='login'){view='login';return vLogin()}
-  document.body.className='in';
+  document.body.className='in L-'+LAY();
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,pend=mine().length+FAIL.filter(f=>f.s._by===ME.id).length;
   $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button onclick="temaOpen()">${ic('img')}<span>Aparência</span></button><button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
   ({venda:vPdv,caixa:vCx,minhas:vMin,arte:vArte}[view]||vPdv)();
