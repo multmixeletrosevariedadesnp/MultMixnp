@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.66.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light")document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script><script>window.APP_VERSION='1.67.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4000,6 +4000,48 @@ function pagPayOk(id){
 
 /* ========= Caixa e relatórios ========= */
 let cxd=ld(now());
+/* ===== Extrato de recebimentos (Caixa + Relatórios) ===== */
+let EX={from:'',to:'',forma:'',tipo:'',user:''};
+const EXT={venda:'Venda à vista/cartão',entrada:'Entrada de carnê',parcela:'Parcela de carnê',dev:'Devolução (saída)'};
+function exLines(f,t){ // todas as entradas/saídas do caixa entre f e t (datas locais), mesmas regras do "Recebido no dia"
+  const inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,L=[],cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão';
+  SV().forEach(s=>{
+    if(inP(s.created_at)){const v=s.pay_type==='crediario'?+s.entry:+s.total;
+      if(v)L.push({at:s.created_at,tipo:s.pay_type==='crediario'?'entrada':'venda',cust:cn(s.customer_id),method:s.method||'Não informado',amount:v,user:s.seller_name||'',sid:s.id,canc:!!s.canceled_at,det:s.canceled_at?'venda cancelada':''})}
+    if(s.canceled_at&&inP(s.canceled_at)&&+s.refund_amount>0)
+      L.push({at:s.canceled_at,tipo:'dev',cust:cn(s.customer_id),method:s.refund_method||'Não informado',amount:-s.refund_amount,user:s.canceled_by_name||s.canceled_by||'',sid:s.id,det:'devolução / cancelamento'});
+  });
+  const ok=db.parcel_payments.filter(p=>!p.canceled_at),has=new Set(ok.map(p=>p.installment_id)),ins=id=>db.installments.find(i=>i.id===id)||{};
+  const nIns=i=>{const n=db.installments.filter(x=>x.sale_id===i.sale_id).length;return i.number?('parcela '+i.number+'/'+n):'parcela'};
+  ok.filter(p=>+p.amount>0&&inP(p.paid_at)).forEach(p=>{const i=ins(p.installment_id),sid=p.sale_id||i.sale_id,sl=db.sales.find(x=>x.id===sid)||{};
+    L.push({at:p.paid_at,tipo:'parcela',cust:cn(p.customer_id||sl.customer_id),method:p.method||'Não informado',amount:+p.amount,user:p.user_name||'',sid,det:nIns(i)+(p.quit===false?' (parcial)':'')})});
+  db.installments.filter(i=>i.paid_at&&!has.has(i.id)&&inP(i.paid_at)).forEach(i=>{const sl=db.sales.find(x=>x.id===i.sale_id)||{};
+    L.push({at:i.paid_at,tipo:'parcela',cust:cn(sl.customer_id),method:i.method||'Não informado',amount:+i.paid_amount||+i.amount,user:'',sid:i.sale_id,det:nIns(i)+' (registro antigo)',old:1})});
+  return L.sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+}
+function exFilter(L,F){return L.filter(r=>(!F.forma||r.method===F.forma)&&(!F.tipo||r.tipo===F.tipo)&&(!F.user||(r.user||'—')===F.user))}
+const exHora=r=>r.old&&String(r.at).length<=10?'—':new Date(r.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+function exInit(){if(!EX.from||!EX.to||EX.from>EX.to){EX.from=EX.to=cxd}}
+function exOpts(L,key,cur,all){const v=[...new Set(L.map(r=>key==='user'?(r.user||'—'):r.method))].sort();return`<option value="">${all}</option>`+v.map(x=>`<option value="${esc(x)}" ${cur===x?'selected':''}>${esc(x)}</option>`).join('')}
+function exSum(L){const by={};L.forEach(r=>by[r.method]=(by[r.method]||0)+r.amount);return{by,tot:L.reduce((a,r)=>a+r.amount,0)}}
+function exHtml(){
+  exInit();const base=exLines(EX.from,EX.to),L=exFilter(base,EX),S=exSum(L);
+  const row=r=>`<tr><td style="white-space:nowrap">${fmtD(ld(r.at))} ${exHora(r)}</td><td>${EXT[r.tipo]}${r.det?`<br><span class="sm">${esc(r.det)}</span>`:''}</td><td>${esc(r.cust)}</td><td>${esc(r.method)}</td><td>${esc(r.user||'—')}</td><td style="text-align:right;white-space:nowrap" class="${r.amount<0?'bad':''}">${r.canc?`<s>${R(r.amount)}</s>`:R(r.amount)}</td><td>${r.sid?`<button class="btn g s" onclick="${r.tipo==='venda'?`cupom('${r.sid}')`:`carne('${r.sid}')`}">${r.tipo==='venda'?'Cupom':'Carnê'}</button>`:''}</td></tr>`;
+  return`<h3>Extrato de recebimentos</h3><div class="bar">
+  <input type="date" style="max-width:160px" value="${EX.from}" onchange="EX.from=this.value||EX.from;if(EX.to<EX.from)EX.to=EX.from;vCx()"><input type="date" style="max-width:160px" value="${EX.to}" onchange="EX.to=this.value||EX.to;if(EX.to<EX.from)EX.from=EX.to;vCx()">
+  <select style="max-width:150px" onchange="exPer(this.value)"><option value="">Atalho…</option><option value="dia">Dia selecionado</option><option value="sem">Últimos 7 dias</option><option value="mes">Mês do dia selecionado</option></select>
+  <select style="max-width:170px" onchange="EX.forma=this.value;vCx()">${exOpts(base,'m',EX.forma,'Todas as formas')}</select>
+  <select style="max-width:190px" onchange="EX.tipo=this.value;vCx()"><option value="">Todos os tipos</option>${Object.entries(EXT).map(([k,v])=>`<option value="${k}" ${EX.tipo===k?'selected':''}>${v}</option>`).join('')}</select>
+  <select style="max-width:170px" onchange="EX.user=this.value;vCx()">${exOpts(base,'user',EX.user,'Todos que receberam')}</select>
+  <button class="btn" onclick="exRel()">Gerar relatório / PDF</button></div>
+  <div class="prices"><div class="pr k"><span>Total do extrato</span><b>${R(S.tot)}</b></div>${Object.entries(S.by).map(([m,v])=>`<div class="pr"><span>${esc(m)}</span><b>${R(v)}</b></div>`).join('')}<div class="pr"><span>Lançamentos</span><b>${L.length}</b></div></div>
+  <div style="overflow:auto"><table><tr><th>Data / hora</th><th>Tipo</th><th>Cliente</th><th>Forma</th><th>Quem</th><th style="text-align:right">Valor</th><th></th></tr>${L.length?L.map(row).join(''):'<tr><td colspan="7" class="sm" style="text-align:center">Nenhum recebimento neste filtro.</td></tr>'}</table></div>
+  <p class="sm">Mesmas regras do "Recebido no dia": vendas à vista/cartão, entradas de carnê, parcelas recebidas e devoluções (negativas). Registros antigos de parcela podem não ter hora nem quem recebeu.</p>`;
+}
+function exPer(v){const d=new Date(cxd+'T12:00:00');
+  if(v==='dia'){EX.from=EX.to=cxd}else if(v==='sem'){EX.to=cxd;d.setDate(d.getDate()-6);EX.from=ld(d.toISOString())}else if(v==='mes'){EX.from=cxd.slice(0,8)+'01';EX.to=cxd}
+  vCx()}
+function exRel(){exInit();REL.k='extrato';REL.from=EX.from;REL.to=EX.to;go('rel')}
 function vCx(){
   const day=iso=>iso&&ld(iso)===cxd,by={},add=(m,v)=>by[m]=(by[m]||0)+v;
   const sd=SV().filter(s=>day(s.created_at)),sdOk=sd.filter(s=>!s.canceled_at),devs=SV().filter(s=>s.canceled_at&&day(s.canceled_at)&&+s.refund_amount>0);
@@ -4009,13 +4051,14 @@ function vCx(){
   const tot=Object.values(by).reduce((a,b)=>a+b,0),today=ld(now()),mes=cxd.slice(0,7);
   const open=db.installments.filter(i=>!i.paid_at&&!i.canceled_at),late=open.filter(i=>i.due_date<today),sum=a=>a.reduce((s,i)=>s+i.amount,0);
   const vm=SV().filter(s=>!s.canceled_at&&ld(s.created_at).slice(0,7)===mes).reduce((s,x)=>s+ +x.total,0);
-  $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value;vCx()"><button class="btn g s" onclick="cupomCfg()">Configurar cupom</button></div>
+  $('#app').innerHTML=`<div class="bar"><input type="date" style="max-width:200px" value="${cxd}" onchange="cxd=this.value||cxd;EX.from=EX.to=cxd;vCx()"><button class="btn g s" onclick="cupomCfg()">Configurar cupom</button></div>
   <div class="prices"><div class="pr k"><span>Recebido no dia</span><b>${R(tot)}</b></div>
   ${Object.keys(by).map(m=>`<div class="pr"><span>${esc(m)}</span><b>${R(by[m])}</b></div>`).join('')}
   <div class="pr"><span>Vendas do dia</span><b>${sdOk.length}</b></div>
   <div class="pr"><span>Vendido no mês (${mes.split('-').reverse().join('/')})</span><b>${R(vm)}</b></div>
   <div class="pr"><span>Carnês a receber</span><b>${R(sum(open))}</b></div>
   <div class="pr"><span class="bad">Em atraso (${late.length} parcelas)</span><b class="bad">${R(sum(late))}</b></div></div>
+  ${exHtml()}
   ${sd.length?`<h3>Vendas do dia</h3><table>${sd.map(s=>`<tr><td>${new Date(s.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc((db.customers.find(c=>c.id===s.customer_id)||{}).name||'Balcão')}</td><td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê'}[s.pay_type]}</td><td>${s.canceled_at?`<s>${R(s.total)}</s> <span class="tag">cancelada</span>`:R(s.total)}</td><td><button class="btn g s" onclick="cupom('${s.id}')">Cupom</button> ${s.canceled_at?'':`<button class="btn g s" onclick="cancelSale('${s.id}')">Cancelar</button>`}</td></tr>`).join('')}</table>`:''}
   ${devs.length?`<p class="sm">Devoluções de hoje: ${devs.map(s=>R(s.refund_amount)+' ('+esc(s.refund_method||'—')+')').join(' · ')}</p>`:''}`;
 }
@@ -4388,7 +4431,7 @@ async function ctrVer(id){
 }
 /* ========= Relatórios (PDF) ========= */
 let REL={fx:30,cob:30,abcBy:'fat',abcFor:'prod',k:'vendas',from:'',to:'',sel:'todos',low:false,pg:'abertas',cr:'atraso'};
-const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',com:'Comissões'};
+const RELN={vendas:'Vendas por período',fluxo:'Fluxo de caixa previsto',dre:'Resultado do período (DRE simples)',lucro:'Lucro por produto',compras:'Sugestão de compra',abc:'Curva ABC',estoque:'Estoque',receber:'Carnês a receber',pagar:'Contas a pagar',caixa:'Caixa por dia',extrato:'Extrato de recebimentos (caixa)',com:'Comissões'};
 function relBuild(){
   const k=REL.k,f=REL.from,t=REL.to,inP=iso=>iso&&ld(iso)>=f&&ld(iso)<=t,per=fmtD(f)+' a '+fmtD(t);
   const cn=id=>(db.customers.find(c=>c.id===id)||{}).name||'Balcão',sum=(a,fn)=>a.reduce((x,y)=>x+fn(y),0);
@@ -4492,6 +4535,12 @@ function relBuild(){
       rows:L.map(p=>[p.supplier||'—',(p.doc?'NF '+p.doc:'—')+(p.parcel?' · '+p.parcel:''),fmtD(p.due_date),REL.pg==='pagas'?fmtD(p.paid_at)+(p.method?' · '+p.method:'')+(p.bank?' · '+p.bank:'')+(p.receipt?' · comp. '+p.receipt:''):(dleft(p.due_date)<0?'Vencida':'A vencer'),R(amt(p))]),
       foot:['Total','','','',R(sum(L,amt))],sum:[['Contas',L.length],['Total',R(sum(L,amt))],...(REL.pg==='pagas'?[]:[['Vencidas',lt.length+' · '+R(sum(lt,amt))]])]};
   }
+  if(k==='extrato'){
+    const base=exLines(f,t),L=exFilter(base,EX),S=exSum(L),fl=[EX.forma&&'forma: '+EX.forma,EX.tipo&&'tipo: '+EXT[EX.tipo],EX.user&&'recebido por: '+EX.user].filter(Boolean);
+    return{title:RELN[k],sub:'Período: '+per+(fl.length?' · '+fl.join(' · '):''),head:['Data','Hora','Tipo','Cliente','Forma','Quem','Valor'],al:'llllllr',
+      rows:L.map(r=>[fmtD(ld(r.at)),exHora(r),EXT[r.tipo]+(r.det?' · '+r.det:''),r.cust,r.method,r.user||'—',R(r.amount)]),
+      foot:['','','','','','Total',R(S.tot)],sum:[['Total recebido',R(S.tot)],['Lançamentos',L.length],...Object.entries(S.by).map(([m,v])=>[m,R(v)])]};
+  }
   if(k==='caixa'){
     const rows=[],tm={};
     for(let d=new Date(f+'T12:00:00');ld(d.toISOString())<=t&&rows.length<400;d.setDate(d.getDate()+1)){
@@ -4523,11 +4572,12 @@ function relHtml(d,forPdf){
 }
 function vRel(){
   if(!REL.from){const n=ld(now());REL.from=n.slice(0,8)+'01';REL.to=n}
-  const k=REL.k,needP=['vendas','caixa','com','abc','dre','lucro','compras'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
+  const k=REL.k,needP=['vendas','caixa','extrato','com','abc','dre','lucro','compras'].includes(k)||(k==='pagar'&&REL.pg==='pagas');
   const d=relBuild();
   $('#app').innerHTML=`<div class="bar"><select style="max-width:230px" onchange="REL.k=this.value;vRel()">${Object.entries(RELN).map(([v,l])=>`<option value="${v}" ${k===v?'selected':''}>${l}</option>`).join('')}</select>
   ${needP?`<input type="date" style="max-width:170px" value="${REL.from}" onchange="REL.from=this.value||REL.from;vRel()"><input type="date" style="max-width:170px" value="${REL.to}" onchange="REL.to=this.value||REL.to;vRel()">`:''}
   ${k==='abc'?`<select style="max-width:150px" onchange="REL.abcFor=this.value;vRel()"><option value="prod" ${REL.abcFor==='prod'?'selected':''}>Produtos</option><option value="cli" ${REL.abcFor==='cli'?'selected':''}>Clientes</option></select><select style="max-width:170px" onchange="REL.abcBy=this.value;vRel()"><option value="fat" ${REL.abcBy==='fat'?'selected':''}>Por faturamento</option><option value="qtd" ${REL.abcBy==='qtd'?'selected':''}>Por quantidade</option>${REL.abcFor==='prod'?`<option value="lucro" ${REL.abcBy==='lucro'?'selected':''}>Por lucro</option>`:''}</select>`:''}
+  ${k==='extrato'?`<select style="max-width:170px" onchange="EX.forma=this.value;vRel()">${exOpts(exLines(REL.from,REL.to),'m',EX.forma,'Todas as formas')}</select><select style="max-width:190px" onchange="EX.tipo=this.value;vRel()"><option value="">Todos os tipos</option>${Object.entries(EXT).map(([kk,v])=>`<option value="${kk}" ${EX.tipo===kk?'selected':''}>${v}</option>`).join('')}</select><select style="max-width:170px" onchange="EX.user=this.value;vRel()">${exOpts(exLines(REL.from,REL.to),'user',EX.user,'Todos que receberam')}</select>`:''}
   ${k==='fluxo'?`<select style="max-width:170px" onchange="REL.fx=+this.value;vRel()">${[30,60,90].map(n=>`<option value="${n}" ${REL.fx===n?'selected':''}>Próximos ${n} dias</option>`).join('')}</select>`:''}
   ${k==='compras'?`<select style="max-width:200px" onchange="REL.cob=+this.value;vRel()">${[15,30,45,60].map(n=>`<option value="${n}" ${REL.cob===n?'selected':''}>Cobrir ${n} dias</option>`).join('')}</select>`:''}
   ${k==='estoque'?`<label class="sm"><input type="checkbox" style="width:auto" ${REL.low?'checked':''} onchange="REL.low=this.checked;vRel()"> Só estoque baixo</label>`:''}
