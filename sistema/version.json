@@ -1,5 +1,5 @@
 {
- "version": "1.65.1",
+ "version": "1.66.0",
  "date": "2026-11-06",
- "notes": "Kit: busca de peças por nome, código e categoria."
+ "notes": "Hora da venda ao lado da data nas listas e relatórios."
 }
