@@ -11,24 +11,80 @@ main{max-width:520px;margin:0 auto;padding:16px}h1{font-size:20px;margin:8px 0 2
 button{font:inherit;font-weight:800;padding:18px;border:0;border-radius:14px;background:var(--pri);color:#fff;width:100%;font-size:19px}
 button.ok{background:var(--ok)}
 textarea{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
-ol{padding-left:20px;margin:8px 0}li{margin:4px 0}
+ol{padding-left:20px;margin:8px 0}li{margin:4px 0}#qr svg{width:240px;height:240px;max-width:100%;display:block;margin:8px auto}
 </style></head><body><main>
-<h1 id="loja">Pagamento por Pix</h1><div class="m" id="sub"></div>
+<h1>Pagamento por Pix</h1><div class="m" id="sub"></div>
 <div class="card"><div class="m">Valor</div><div class="v" id="val">—</div>
 <button id="bt" type="button">Copiar código Pix</button>
 <p class="m" id="ok" role="status" style="margin:10px 0 0"></p></div>
-<div class="card"><b>Como pagar</b><ol><li>Toque em <b>Copiar código Pix</b>.</li><li>Abra o aplicativo do seu banco e escolha <b>Pix</b> e depois <b>Pix Copia e Cola</b>.</li><li>Cole o código, <b>confira o nome do recebedor</b> e confirme.</li></ol></div>
-<div class="card"><div class="m">Se não copiar sozinho, toque no texto abaixo, segure e escolha Copiar:</div><textarea id="cd" rows="5" readonly></textarea></div>
+<div class="card"><b>Pagando neste aparelho</b><ol><li>Toque em <b>Copiar código Pix</b>.</li><li>Abra o app do banco, escolha <b>Pix</b> e depois <b>Pix Copia e Cola</b>.</li><li>Cole, <b>confira o nome do recebedor</b> e confirme.</li></ol></div>
+<div class="card"><b>Pagando em outro aparelho</b><div class="m">Abra o app do banco no outro celular, escolha <b>Pix</b> e <b>Ler QR Code</b>, e aponte para este QR:</div><div id="qr"></div></div>
+<div class="card"><div class="m">Se o botão não copiar, toque no texto abaixo, segure e escolha Copiar:</div><textarea id="cd" rows="5" readonly></textarea></div>
 <script>
+const QR=(()=>{
+  const ECC=[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const BLK=[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const raw=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
+  const gmul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z};
+  const rsGen=d=>{const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=gmul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=gmul(root,2)}return r};
+  const rsRem=(data,gen)=>{const r=new Array(gen.length).fill(0);for(const b of data){const f=b^r.shift();r.push(0);gen.forEach((c,i)=>r[i]^=gmul(c,f))}return r};
+  const bit=(x,i)=>((x>>>i)&1)!==0;
+  function make(text){
+    const bytes=[...new TextEncoder().encode(text)];
+    let ver=1;
+    for(;ver<=40;ver++){const cc=ver<10?8:16;if(4+cc+bytes.length*8<=(Math.floor(raw(ver)/8)-ECC[ver]*BLK[ver])*8)break}
+    if(ver>40)throw new Error('Texto grande demais para o QR Code');
+    const cap=Math.floor(raw(ver)/8)-ECC[ver]*BLK[ver],bits=[],put=(v,n)=>{for(let i=n-1;i>=0;i--)bits.push((v>>>i)&1)};
+    put(4,4);put(bytes.length,ver<10?8:16);bytes.forEach(b=>put(b,8));
+    put(0,Math.min(4,cap*8-bits.length));while(bits.length%8)bits.push(0);
+    const data=[];for(let i=0;i<bits.length;i+=8)data.push(parseInt(bits.slice(i,i+8).join(''),2));
+    for(let p=0xEC;data.length<cap;p^=0xEC^0x11)data.push(p);
+    const nb=BLK[ver],eb=ECC[ver],rawCW=Math.floor(raw(ver)/8),ns=nb-rawCW%nb,sl=Math.floor(rawCW/nb),gen=rsGen(eb),blocks=[];
+    for(let i=0,k=0;i<nb;i++){const dat=data.slice(k,k+sl-eb+(i<ns?0:1));k+=dat.length;const ecc=rsRem(dat,gen);if(i<ns)dat.push(0);blocks.push(dat.concat(ecc))}
+    const cw=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==sl-eb||j>=ns)cw.push(b[i])});
+    const size=ver*4+17,m=Array.from({length:size},()=>new Array(size).fill(false)),fn=Array.from({length:size},()=>new Array(size).fill(false));
+    const setFn=(x,y,v)=>{m[y][x]=v;fn[y][x]=true};
+    for(let i=0;i<size;i++){setFn(6,i,i%2===0);setFn(i,6,i%2===0)}
+    const finder=(x,y)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy)),xx=x+dx,yy=y+dy;if(xx>=0&&xx<size&&yy>=0&&yy<size)setFn(xx,yy,d!==2&&d!==4)}};
+    finder(3,3);finder(size-4,3);finder(3,size-4);
+    const na=ver===1?0:Math.floor(ver/7)+2,al=[];
+    if(na){const step=ver===32?26:Math.ceil((ver*4+4)/(na*2-2))*2;al.push(6);for(let p=size-7;al.length<na;p-=step)al.splice(1,0,p)}
+    al.forEach((a,i)=>al.forEach((b,j)=>{if((i===0&&j===0)||(i===0&&j===na-1)||(i===na-1&&j===0))return;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)setFn(a+dx,b+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}));
+    const fmt=mask=>{
+      const d=0<<3|mask;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const b=(d<<10|r)^0x5412;
+      for(let i=0;i<=5;i++)setFn(8,i,bit(b,i));setFn(8,7,bit(b,6));setFn(8,8,bit(b,7));setFn(7,8,bit(b,8));for(let i=9;i<15;i++)setFn(14-i,8,bit(b,i));
+      for(let i=0;i<8;i++)setFn(size-1-i,8,bit(b,i));for(let i=8;i<15;i++)setFn(8,size-15+i,bit(b,i));setFn(8,size-8,true);
+    };
+    fmt(0);
+    if(ver>=7){let r=ver;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=ver<<12|r;for(let i=0;i<18;i++){const c=bit(b,i),a=size-11+i%3,bb=Math.floor(i/3);setFn(a,bb,c);setFn(bb,a,c)}}
+    let k=0;
+    for(let right=size-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<size;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?size-1-vert:vert;if(!fn[y][x]&&k<cw.length*8){m[y][x]=bit(cw[k>>>3],7-(k&7));k++}}}
+    const mask=(mk)=>{for(let y=0;y<size;y++)for(let x=0;x<size;x++){let inv;switch(mk){case 0:inv=(x+y)%2===0;break;case 1:inv=y%2===0;break;case 2:inv=x%3===0;break;case 3:inv=(x+y)%3===0;break;case 4:inv=(Math.floor(x/3)+Math.floor(y/2))%2===0;break;case 5:inv=x*y%2+x*y%3===0;break;case 6:inv=(x*y%2+x*y%3)%2===0;break;default:inv=((x+y)%2+x*y%3)%2===0}if(!fn[y][x]&&inv)m[y][x]=!m[y][x]}};
+    const pen=()=>{
+      let p=0;
+      const line=a=>{let run=1;for(let i=1;i<=a.length;i++){if(i<a.length&&a[i]===a[i-1])run++;else{if(run>=5)p+=3+run-5;run=1}}
+        for(let i=0;i+11<=a.length;i++){const s=a.slice(i,i+11).map(Number).join('');if(s==='10111010000'||s==='00001011101')p+=40}};
+      for(let y=0;y<size;y++){line(m[y]);line(m.map(r=>r[y]))}
+      for(let y=0;y<size-1;y++)for(let x=0;x<size-1;x++)if(m[y][x]===m[y][x+1]&&m[y][x]===m[y+1][x]&&m[y][x]===m[y+1][x+1])p+=3;
+      const dark=m.flat().filter(Boolean).length,tot=size*size;p+=(Math.ceil(Math.abs(dark*20-tot*10)/tot)-1)*10;return p;
+    };
+    let best=0,bp=1e9;
+    for(let mk=0;mk<8;mk++){mask(mk);fmt(mk);const p=pen();if(p<bp){bp=p;best=mk}mask(mk)}
+    mask(best);fmt(best);
+    return{size,get:(x,y)=>m[y][x],version:ver};
+  }
+  return{make};
+})();
 const q=new URLSearchParams(location.search),code=(q.get('c')||'').trim();
 function tlv(s){const o={};let i=0;while(i+4<=s.length){const t=s.slice(i,i+2),l=+s.slice(i+2,i+4);if(!(l>=0))break;o[t]=s.slice(i+4,i+4+l);i+=4+l}return o}
+function svg(p){const k=QR.make(p),n=k.size,b=4;let d='';for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(k.get(x,y))d+=`M${x+b} ${y+b}h1v1h-1z`;return`<svg viewBox="0 0 ${n+2*b} ${n+2*b}" role="img" aria-label="QR Code Pix" style="background:#fff;border-radius:8px;shape-rendering:crispEdges"><path d="${d}" fill="#000"/></svg>`}
 const ok=/^000201/.test(code)&&code.length>40&&code.length<700;
 if(!ok){document.getElementById('sub').textContent='Link inválido. Peça um novo à loja.';document.getElementById('bt').style.display='none'}
 else{
   const f=tlv(code),nome=f['59']||'',cid=f['60']||'',v=+f['54']||0;
-  document.getElementById('loja').textContent='Pagamento por Pix';
   document.getElementById('sub').textContent='Recebedor: '+nome+(cid?' · '+cid:'');
   document.getElementById('val').textContent=v?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'valor no código';
+  document.getElementById('qr').innerHTML=svg(code);
   const cd=document.getElementById('cd');cd.value=code;cd.addEventListener('click',()=>cd.select());
   document.getElementById('bt').onclick=async()=>{
     const b=document.getElementById('bt'),m=document.getElementById('ok');
