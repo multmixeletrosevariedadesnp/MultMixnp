@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3357,7 +3357,7 @@ function mpShow(r,iid,sid,desc){
   },4000);
 }
 function mpOkMsg(iid,sid,v){
-  modal(`<h2 class="ok">Pix recebido!</h2><p><b>${R(v)}</b> confirmado pelo Mercado Pago e baixado na parcela.</p><button class="btn" onclick="carne('${sid}')">Ver o carnê</button>`);
+  modal(`<h2 class="ok">Pix recebido!</h2><p><b>${R(v)}</b> confirmado e baixado na parcela.</p><button class="btn" onclick="carne('${sid}')">Ver o carnê</button>`);
   render();
 }
 async function mpCancel(id,iid,sid){
@@ -3387,7 +3387,7 @@ async function mpCheckAll(){ // confere Pix de parcela ainda sem baixa (pagos co
     }
   }catch(e){}
   mpBusy=false;
-  if(n){render();alert('Pix Mercado Pago: '+n+' parcela'+(n>1?'s':'')+' recebida'+(n>1?'s':'')+' e baixada'+(n>1?'s':'')+' ('+R(tot)+').')}
+  if(n){render();alert('Pagamento automático: '+n+' parcela'+(n>1?'s':'')+' recebida'+(n>1?'s':'')+' e baixada'+(n>1?'s':'')+' ('+R(tot)+').')}
 }
 setInterval(()=>{try{mpCheckAll()}catch(e){}},60000);
 /* ========= Recebimentos do crediário: pagamento parcial, abatimento, recibo, vários de uma vez e extrato ========= */
