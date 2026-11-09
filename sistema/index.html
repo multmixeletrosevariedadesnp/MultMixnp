@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.5'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3312,7 +3312,7 @@ function pixAtual(iid,sid,charge){
   <p class="sm">Uma única mensagem já leva tudo: o link abre uma página com o botão <b>Copiar código Pix</b> e o <b>QR Code</b> (para pagar em outro aparelho). O botão <b>Enviar só o código</b> é opcional.</p>
   ${co.mp_pix_on&&sb?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar link de pagamento InfinitePay (baixa sozinho)':'Gerar Pix Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:''}
   <p id="pxok" class="sm ok" role="status"></p>
-  <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo do Mercado Pago e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
+  <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo da ${co.pix_provider==='ip'?'InfinitePay':'conta do Mercado Pago'} e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
   <button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button>`);
 }
 /* ========= Pix Mercado Pago: gera o QR, reconhece o pagamento e dá baixa na parcela (desligado até ligar na aba Empresa) ========= */
@@ -3320,18 +3320,18 @@ async function mpCall(body){
   if(!sb)throw new Error('Precisa de conexão com o Supabase.');
   const{data,error}=await sb.functions.invoke('smart-service',{body});
   if(error){let m=error.message;try{const j=await error.context.json();if(j&&j.erro)m=j.erro}catch(e){}throw new Error(m)}
-  if(data&&data.ok===false)throw new Error(data.erro||'Erro no Pix Mercado Pago.');
+  if(data&&data.ok===false)throw new Error(data.erro||'Erro na cobrança automática.');
   return data;
 }
 async function mpCobrar(iid,sid,valor,desc){
   const i=db.installments.find(x=>x.id===iid),s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{};
   if(!i||i.paid_at||i.canceled_at)return alert('Esta parcela não está em aberto.');
-  modal('<h2>Gerando Pix…</h2><p class="sm">Falando com o Mercado Pago.</p>');
+  modal('<h2>Gerando Pix…</h2><p class="sm">Falando com a '+(CO().pix_provider==='ip'?'InfinitePay':'Mercado Pago')+'.</p>');
   try{
     const r=await mpCall({action:'criar',kind:'parcela',installment_id:iid,amount:+valor,disc:+desc||0,payer_name:c.name||'',payer_email:c.email||'',description:'Parcela '+i.number+' do carnê'});
     if(r.status==='approved'){await mpBaixa(r.id,iid,r.amount,+desc||0);return mpOkMsg(iid,sid,r.amount)}
     mpShow(r,iid,sid,+desc||0);
-  }catch(e){alert('Não foi possível gerar o Pix Mercado Pago: '+e.message);pixAtual(iid,sid,Math.max(0,+(valor-i.amount).toFixed(2)))}
+  }catch(e){alert('Não foi possível gerar a cobrança '+(CO().pix_provider==='ip'?'da InfinitePay':'do Mercado Pago')+': '+e.message);pixAtual(iid,sid,Math.max(0,+(valor-i.amount).toFixed(2)))}
 }
 function mpShow(r,iid,sid,desc){
   const i=db.installments.find(x=>x.id===iid)||{},s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO();
@@ -3362,7 +3362,7 @@ function mpOkMsg(iid,sid,v){
 }
 async function mpCancel(id,iid,sid){
   clearInterval(window.mpTm);window.mpCh=null;
-  try{await mpCall({action:'cancelar',id})}catch(e){if(/acabou de pagar/.test(e.message)){alert(e.message+' A baixa será feita agora.');return mpCheckAll()}alert('Não consegui cancelar no Mercado Pago: '+e.message)}
+  try{await mpCall({action:'cancelar',id})}catch(e){if(/acabou de pagar/.test(e.message)){alert(e.message+' A baixa será feita agora.');return mpCheckAll()}alert('Não consegui cancelar a cobrança: '+e.message)}
   carne(sid);
 }
 async function mpBaixa(id,iid,paid,desc){ // reserva a baixa primeiro (só um aparelho aplica), depois grava a parcela
