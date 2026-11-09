@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.79.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.80.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2453,6 +2453,8 @@ function vPdv(){
    <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${sb&&CO().mp_pix_on&&CO().pix_provider==='ip'?'<option value="__ip">Pix InfinitePay (QR automático)</option>':''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
    ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
+   ${ADM()?`<div class="cr"><label>Preço do carnê</label><select id="s_pm" onchange="cartView()"><option value="carne">Preço de carnê (tabela)</option><option value="avista">Usar preço à vista</option><option value="custom">Valor combinado (digitar o total)</option></select></div>
+   <div class="cr" id="s_ctw"><label>Valor total combinado (R$)</label><input id="s_ct" type="number" step="0.01" min="0" oninput="cartView()" placeholder="Ex.: 1.800,00"></div>`:''}
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
    <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
    <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c');pdvCnpj()"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
@@ -2467,7 +2469,14 @@ const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Da
 const promoAt=(v,p)=>{const x=promoPct(p);return x?+(v*(1-x/100)).toFixed(2):+v};
 const unit0=(p,t)=>t==='avista'?p.price_cash:t==='cartao'?(p.price_card||p.price_cash):(p.price_credit||p.price_card||p.price_cash);
 const unit=(p,t)=>promoAt(+unit0(p,t),p);
-const total=()=>cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),$('#s_t')?.value||'avista')*i.qty,0);
+/* Carnê com preço à vista ou valor combinado (cliente bom) — só administrador */
+const priceT=()=>{const t=$('#s_t')?.value||'avista';return t==='crediario'&&$('#s_pm')?.value==='avista'?'avista':t};
+const ctCustom=()=>{const v=Math.round((+$('#s_ct')?.value||0)*100)/100;return($('#s_t')?.value==='crediario'&&$('#s_pm')?.value==='custom'&&v>0)?v:0};
+const adjF=()=>{const v=ctCustom();if(!v)return 1;const b=cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),'crediario')*i.qty,0);return b>0?v/b:1};
+const unitE=p=>{const f=adjF(),u=unit(p,priceT());return f===1?u:Math.round(u*f*100)/100};
+const carneBase=()=>cart.reduce((s,i)=>s+unit(db.products.find(p=>p.id===i.id),'crediario')*i.qty,0);
+const carneDesc=()=>{if(($('#s_t')?.value)!=='crediario')return 0;const d=Math.round((carneBase()-total())*100)/100;return d>0.004?d:0};
+const total=()=>ctCustom()||cart.reduce((s,i)=>s+unitE(db.products.find(p=>p.id===i.id))*i.qty,0);
 const pPhoto=p=>(p.photos&&p.photos[0])||'';
 function pdvList(){
   const k=norm($('#p_q').value),d=digits($('#p_q').value);
@@ -2580,14 +2589,15 @@ function cartView(){
   pdvSearch();
   const t=$('#s_t').value,tot=total(),e=+$('#s_e').value||0,n=+$('#s_n').value||1,un=cart.reduce((a,i)=>a+i.qty,0);
   document.querySelectorAll('.cr').forEach(d=>d.style.display=t==='crediario'?'':'none');
+  if($('#s_ctw'))$('#s_ctw').style.display=t==='crediario'&&$('#s_pm').value==='custom'?'':'none';
   if(t==='cartao'&&!/Cartão/.test(s_m.value))s_m.value='Cartão crédito';
-  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);if(!p)return'';const u=unit(p,t),pr=promoPct(p);return`<div class="citem">
+  $('#cartv').innerHTML=(cart.length?`<div class="citems">${cart.map((i,ix)=>{const p=db.products.find(x=>x.id===i.id);if(!p)return'';const u=unitE(p),pr=promoPct(p);return`<div class="citem">
     ${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=cthumb>·</span>'">`:'<span class="cthumb">·</span>'}
     <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(u)} un.${pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''}</span></div>
     <div class="stp"><button type="button" aria-label="Diminuir" onclick="cartQty(${ix},-1)">−</button><span>${i.qty}</span><button type="button" aria-label="Aumentar" onclick="cartQty(${ix},1)">+</button></div>
     <b class="lt">${R(u*i.qty)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
    :'<p class="cempty">Carrinho vazio.<br><span class="sm">Busque, toque num produto ou escaneie o código de barras.</span></p>')
-   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div><span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
+   +`<div class="ctot"><span>${un} ${un===1?'item':'itens'}</span><div><span class="sm">Total</span><b>${R(tot)}</b>${t==='crediario'&&carneDesc()?`<span class="sm">Tabela do carnê <s>${R(carneBase())}</s> · desconto ${R(carneDesc())}</span>`:''}${t==='crediario'&&tot?`<span class="sm">restante ${n}x de ${R((tot-e)/n)}</span>`:''}</div></div>`;
   const pb=$('#pbt');if(pb)pb.textContent=R(tot)+(un?` · ${un} ${un===1?'item':'itens'}`:'');
   const bf=$('#btnfin');if(bf)bf.textContent=tot?'Finalizar venda · '+R(tot):'Finalizar venda';
 }
@@ -2596,6 +2606,11 @@ const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p
 /* ----- QR da InfinitePay na Nova venda (só aparece com a cobrança automática ligada e provedor InfinitePay) ----- */
 let ipRes=null,ipTm=null,ipId2=null;
 function ipStop(v){clearInterval(ipTm);ipTm=null;if(ipRes){const r=ipRes;ipRes=null;if(v===false&&ipId2)mpCall({action:'cancelar',id:ipId2}).then(()=>{},()=>{});r(v)}}
+function ipWa(v){
+  let d=String(($('#ipwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
+  const loja=(CO().trade_name||CO().legal_name||'MultMix');
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este link (Pix ou cartão):\n${($('#ipcode')||{}).value}`),'_blank','noopener');
+}
 async function ipSalePay(sale,tot,nome){
   let r;
   try{r=await mpCall({action:'criar',kind:'venda',sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no Sistema'})}
@@ -2606,8 +2621,9 @@ async function ipSalePay(sale,tot,nome){
     modal(`<h2>Pix InfinitePay · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão). A venda só é registrada quando o pagamento for confirmado.</p>
     <div style="text-align:center">${pixSvg(r.checkout_url)}</div>
     <textarea id="ipcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||'')}</textarea>
+    <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="ipwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="ipst" class="sm" role="status">Aguardando o pagamento…</p>
-    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Link copiado.'">Copiar link</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
+    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Link copiado.'">Copiar link</button><button class="btn g" onclick="ipWa(${+tot.toFixed(2)})">Enviar por WhatsApp</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
     ipTm=setInterval(async()=>{
       if(!document.getElementById('ipst')){ipStop(false);return}
       try{
@@ -2620,14 +2636,21 @@ async function ipSalePay(sale,tot,nome){
 }
 async function finish(){
   if(!cart.length)return alert('Adicione ao menos um produto.');
-  const t=s_t.value,tot=total(),e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;
+  const t=s_t.value,e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;let tot=total();
+  if(t==='crediario'&&$('#s_pm')&&$('#s_pm').value==='custom'&&!ctCustom())return alert('Digite o valor total combinado.');
+  if(t==='crediario'&&ctCustom()&&tot-e<=0)return alert('A entrada não pode ser maior ou igual ao valor combinado.');
   let cid=null;
   if(c_n.value.trim()){
     let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});const pc=window.preCli;if(pc&&digits(pc.cpf)===digits(c_c.value)){Object.entries(pc).forEach(([k,v])=>{if(v&&k!=='name'&&k!=='phone'&&!c[k])c[k]=v});if(!c.address&&c.street)c.address=`${c.street}, ${c.number||'s/n'} - ${c.district||''}, ${c.city||''}/${c.uf||''}`;if(pc.name&&!c.trade_name)c.trade_name=pc.trade_name||''}window.preCli=null;window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value==='__ip'?'Pix':s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
-   items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unit(p,t),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
+   items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unitE(p),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
+  if(ctCustom()){ // acerta os centavos do arredondamento nas linhas, para a soma dos itens bater com o total combinado
+    let res=Math.round((tot-sale.items.reduce((a,i)=>a+i.price*i.qty,0))*100)/100;
+    if(Math.abs(res)>=0.005){const it=sale.items.find(i=>i.qty===1)||sale.items[sale.items.length-1];it.price=Math.round((it.price+res/it.qty)*100)/100;tot=Math.round(sale.items.reduce((a,i)=>a+i.price*i.qty,0)*100)/100;sale.total=tot}
+  }
+  if(t==='crediario'){const d=Math.round((carneBase()-tot)*100)/100;if(d>0.004){sale.discount=d;if(me&&me.id)sale.discount_auth_by=me.id}}
   const low=cart.filter(i=>{const p=db.products.find(x=>x.id===i.id);return(+p.stock||0)<i.qty}).map(i=>db.products.find(x=>x.id===i.id).name);
   if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
   let ipId=null;
