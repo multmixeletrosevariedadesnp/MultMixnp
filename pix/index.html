@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pagar com Pix · MultMix</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#123a6b">
+<style>
+:root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#d0d5dd;--pri:#123a6b;--ok:#0a7a3d}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1220;--card:#161d30;--ink:#eef1f8;--mut:#98a2b8;--line:#334066;--pri:#6f8cff;--ok:#2fbf71}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,Segoe UI,Arial,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px}h1{font-size:20px;margin:8px 0 2px}.m{color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.v{font-size:34px;font-weight:800;margin:4px 0}
+button{font:inherit;font-weight:800;padding:18px;border:0;border-radius:14px;background:var(--pri);color:#fff;width:100%;font-size:19px}
+button.ok{background:var(--ok)}
+textarea{width:100%;font:13px/1.4 ui-monospace,Consolas,monospace;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+ol{padding-left:20px;margin:8px 0}li{margin:4px 0}
+</style></head><body><main>
+<h1 id="loja">Pagamento por Pix</h1><div class="m" id="sub"></div>
+<div class="card"><div class="m">Valor</div><div class="v" id="val">—</div>
+<button id="bt" type="button">Copiar código Pix</button>
+<p class="m" id="ok" role="status" style="margin:10px 0 0"></p></div>
+<div class="card"><b>Como pagar</b><ol><li>Toque em <b>Copiar código Pix</b>.</li><li>Abra o aplicativo do seu banco e escolha <b>Pix</b> e depois <b>Pix Copia e Cola</b>.</li><li>Cole o código, <b>confira o nome do recebedor</b> e confirme.</li></ol></div>
+<div class="card"><div class="m">Se não copiar sozinho, toque no texto abaixo, segure e escolha Copiar:</div><textarea id="cd" rows="5" readonly></textarea></div>
+<script>
+const q=new URLSearchParams(location.search),code=(q.get('c')||'').trim();
+function tlv(s){const o={};let i=0;while(i+4<=s.length){const t=s.slice(i,i+2),l=+s.slice(i+2,i+4);if(!(l>=0))break;o[t]=s.slice(i+4,i+4+l);i+=4+l}return o}
+const ok=/^000201/.test(code)&&code.length>40&&code.length<700;
+if(!ok){document.getElementById('sub').textContent='Link inválido. Peça um novo à loja.';document.getElementById('bt').style.display='none'}
+else{
+  const f=tlv(code),nome=f['59']||'',cid=f['60']||'',v=+f['54']||0;
+  document.getElementById('loja').textContent='Pagamento por Pix';
+  document.getElementById('sub').textContent='Recebedor: '+nome+(cid?' · '+cid:'');
+  document.getElementById('val').textContent=v?v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'valor no código';
+  const cd=document.getElementById('cd');cd.value=code;cd.addEventListener('click',()=>cd.select());
+  document.getElementById('bt').onclick=async()=>{
+    const b=document.getElementById('bt'),m=document.getElementById('ok');
+    try{await navigator.clipboard.writeText(code)}catch(e){cd.select();try{document.execCommand('copy')}catch(_){}}
+    b.textContent='Copiado ✓';b.className='ok';m.textContent='Agora abra o app do seu banco > Pix > Pix Copia e Cola e cole.';
+  };
+}
+</script></main></body></html>
