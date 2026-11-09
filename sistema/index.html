@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.80.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2366,6 +2366,7 @@ function prodForm(id){
    <div><label>CFOP</label><input id="f_cfop" value="${v('cfop')}"></div>
    <div><label>Unidade</label><input id="f_unit" value="${v('unit')}"></div>
    <div><label>CEST (opcional)</label><input id="f_cest" value="${v('cest')}"></div>
+   <div><label>Identificação por unidade</label><select id="f_serial_kind"><option value="">Nenhuma</option><option value="imei" ${v('serial_kind')==='imei'?'selected':''}>IMEI (celular, tablet com chip)</option><option value="serie" ${v('serial_kind')==='serie'?'selected':''}>Nº de série (notebook, tablet…)</option><option value="quadro" ${v('serial_kind')==='quadro'?'selected':''}>Nº do quadro / chassi (bicicleta)</option></select></div>
    <div class="w"><label>Código de barras (EAN)</label><div class="pwd"><input id="f_ean" inputmode="numeric" autocomplete="off" value="${v('ean')}" placeholder="Digite, use o leitor ou escaneie"><button type="button" class="btn g s" onclick="scanOpen(c=>{$('#f_ean').value=c})">Escanear</button></div></div>
    <div><label>CSOSN / CST</label><input id="f_csosn" value="${v('csosn')||'102'}"></div>
    <div><label>CST IBS/CBS (3 dígitos, opcional)</label><input id="f_ibs_cst" maxlength="3" inputmode="numeric" value="${v('ibs_cst')}" placeholder="usa a regra se vazio"></div>
@@ -2399,7 +2400,7 @@ function saveProd(id){
   if(!g('name')||!g('price_cash'))return alert('Informe nome e preço à vista.');
   const row={...(db.products.find(x=>x.id===id)||{}),id:id||uid(),name:g('name'),category:g('category'),description:g('description'),
    cost:+g('cost')||null,price_cash:+g('price_cash'),price_card:+g('price_card')||null,price_credit:+g('price_credit')||null,
-   max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),
+   max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),serial_kind:g('serial_kind')||null,
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
    photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
   { // kit: só envia a coluna se for kit (ou se deixou de ser), evita erro caso o SQL v40 ainda não tenha sido rodado
@@ -2634,9 +2635,40 @@ async function ipSalePay(sale,tot,nome){
     },3000);
   });
 }
+/* ----- IMEI / nº de série / nº do quadro por unidade vendida ----- */
+const SER_L={imei:'IMEI',serie:'Nº de série',quadro:'Nº do quadro (chassi)'};
+const luhn=s=>{let a=0;for(let i=0;i<15;i++){let d=+s[14-i];if(i%2===1){d*=2;if(d>9)d-=9}a+=d}return a%10===0};
+function serialOk(kind,v){v=String(v||'').trim();if(kind==='imei')return/^\d{15}$/.test(v)&&luhn(v);return v.length>=(kind==='quadro'?5:3)&&/^[A-Za-z0-9\-\/.]+$/.test(v)}
+function serialSold(v){const k=String(v).trim().toUpperCase();return db.sales.find(s=>!s.canceled_at&&(s.items||[]).some(i=>(i.serials||[]).some(x=>String(x).split('/').map(y=>y.trim().toUpperCase()).includes(k))))}
+async function serialAsk(){
+  const need=cart.map(i=>({i,p:db.products.find(x=>x.id===i.id)})).filter(x=>x.p&&x.p.serial_kind);
+  if(!need.length)return{};
+  return await new Promise(res=>{
+    window._serRes=res;
+    modal(`<h2>Identificação dos produtos</h2><p class="sm">Digite um por unidade. Vai para a nota fiscal, o cupom e a garantia.</p>
+    ${need.map(({i,p},n)=>Array.from({length:i.qty},(_,u)=>`<div class="f"><div class="w"><label>${esc(p.name)} · unidade ${u+1} — ${SER_L[p.serial_kind]}${p.serial_kind==='imei'?' (15 dígitos)':''}</label><input data-sp="${p.id}" data-k="${p.serial_kind}" data-u="${u}" autocomplete="off" inputmode="${p.serial_kind==='imei'?'numeric':'text'}" maxlength="${p.serial_kind==='imei'?15:40}">${p.serial_kind==='imei'?`<input data-sp2="${p.id}" data-u="${u}" autocomplete="off" inputmode="numeric" maxlength="15" placeholder="IMEI 2 (se tiver)" style="margin-top:4px">`:''}</div></div>`).join('')).join('')}
+    <p id="ser_m" class="bad" role="alert"></p>
+    <div class="bar"><button class="btn" onclick="serialOkBtn()">Confirmar</button><button class="btn g" onclick="serialCancel()">Cancelar</button></div>`);
+  });
+}
+function serialCancel(){const r=window._serRes;window._serRes=null;closeM();if(r)r(false)}
+function serialOkBtn(){
+  const out={},seen=new Set(),m=$('#ser_m');
+  for(const el of document.querySelectorAll('[data-sp]')){
+    const pid=el.dataset.sp,k=el.dataset.k,u=+el.dataset.u;let v=el.value.trim();
+    if(!serialOk(k,v)){el.focus();return m.textContent=k==='imei'?'IMEI inválido (15 dígitos, com dígito verificador correto).':'Preencha o '+SER_L[k].toLowerCase()+' de todas as unidades.'}
+    const el2=document.querySelector(`[data-sp2="${pid}"][data-u="${u}"]`);let v2=el2?el2.value.trim():'';
+    if(v2){if(!serialOk('imei',v2)){el2.focus();return m.textContent='IMEI 2 inválido.'}v+=' / '+v2}
+    for(const part of v.split('/').map(x=>x.trim().toUpperCase())){if(seen.has(part)){return m.textContent='O número '+part+' foi digitado duas vezes.'}seen.add(part)}
+    const s=serialSold(v.split('/')[0]);if(s&&!confirm('O número '+v.split('/')[0].trim()+' já consta em outra venda ativa ('+fmtDH(s.created_at)+'). Usar mesmo assim?'))return;
+    (out[pid]=out[pid]||[])[u]=v;
+  }
+  const r=window._serRes;window._serRes=null;closeM();if(r)r(out);
+}
 async function finish(){
   if(!cart.length)return alert('Adicione ao menos um produto.');
   const t=s_t.value,e=t==='crediario'?+s_e.value||0:0,n=t==='crediario'?+s_n.value||1:1;let tot=total();
+  const SER=await serialAsk();if(SER===false)return;
   if(t==='crediario'&&$('#s_pm')&&$('#s_pm').value==='custom'&&!ctCustom())return alert('Digite o valor total combinado.');
   if(t==='crediario'&&ctCustom()&&tot-e<=0)return alert('A entrada não pode ser maior ou igual ao valor combinado.');
   let cid=null;
@@ -2645,7 +2677,7 @@ async function finish(){
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});const pc=window.preCli;if(pc&&digits(pc.cpf)===digits(c_c.value)){Object.entries(pc).forEach(([k,v])=>{if(v&&k!=='name'&&k!=='phone'&&!c[k])c[k]=v});if(!c.address&&c.street)c.address=`${c.street}, ${c.number||'s/n'} - ${c.district||''}, ${c.city||''}/${c.uf||''}`;if(pc.name&&!c.trade_name)c.trade_name=pc.trade_name||''}window.preCli=null;window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
   const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value==='__ip'?'Pix':s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
-   items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unitE(p),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn}})};
+   items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unitE(p),...(t==='crediario'&&unitE(p)<unit(p,'crediario')-0.004?{list_price:unit(p,'crediario')}:{}),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn,...(p.serial_kind&&SER[p.id]?{serial_kind:p.serial_kind,serials:SER[p.id]}:{})}})};
   if(ctCustom()){ // acerta os centavos do arredondamento nas linhas, para a soma dos itens bater com o total combinado
     let res=Math.round((tot-sale.items.reduce((a,i)=>a+i.price*i.qty,0))*100)/100;
     if(Math.abs(res)>=0.005){const it=sale.items.find(i=>i.qty===1)||sale.items[sale.items.length-1];it.price=Math.round((it.price+res/it.qty)*100)/100;tot=Math.round(sale.items.reduce((a,i)=>a+i.price*i.qty,0)*100)/100;sale.total=tot}
@@ -4496,7 +4528,7 @@ function cupomHtml(sid,cfg){
   <div class="hr"></div>${cliOn?`<div class="b">CLIENTE</div>
   ${c?`<div>${esc(c.name)}</div>${cfg.cpf&&c.cpf?`<div>CPF/CNPJ: ${esc(docf(c.cpf))}</div>`:''}${cfg.cfone&&c.phone?`<div>Fone: ${esc(c.phone)}</div>`:''}${cfg.cend&&ender(c)?`<div class="sm">${esc(ender(c))}</div>`:''}`:'<div>Consumidor (balcão)</div>'}
   <div class="hr"></div>`:''}<div class="b">ITENS</div>
-  ${(s.items||[]).map((i,n)=>`<div class="it"><div>${String(n+1).padStart(2,'0')} ${esc(i.name)}</div>${cfg.unit?L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN')+' x '+R(i.price),'<b>'+R(i.qty*i.price)+'</b>'):L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN'),'<b>'+R(i.qty*i.price)+'</b>')}</div>`).join('')}
+  ${(s.items||[]).map((i,n)=>`<div class="it"><div>${String(n+1).padStart(2,'0')} ${esc(i.name)}</div>${(i.serials||[]).length?`<div style="font-size:.85em">&nbsp;&nbsp;&nbsp;${esc(SER_L[i.serial_kind]||'Série')}: ${(i.serials||[]).map(esc).join('; ')}</div>`:''}${cfg.unit?L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN')+' x '+R(i.price),'<b>'+R(i.qty*i.price)+'</b>'):L('&nbsp;&nbsp;&nbsp;'+(+i.qty)+' '+esc(i.unit||'UN'),'<b>'+R(i.qty*i.price)+'</b>')}</div>`).join('')}
   <div class="hr"></div>
   ${sub!==tot?L('Subtotal',R(sub)):''}${L('<b class="big">TOTAL</b>','<b class="big">'+R(tot)+'</b>')}${L('Pagamento',esc(pay))}
   ${s.pay_type==='crediario'?`${+s.entry>0?L('Entrada',R(s.entry)):''}${L('Restante',R(tot-(+s.entry||0)))}${cfg.inst?`<div class="hr"></div><div class="b">PARCELAS (${ins.length}x)</div>${ins.map(i=>L(String(i.number).padStart(2,'0')+'/'+ins.length+'  '+fmtD(i.due_date),R(origAmt(i)))).join('')}`:''}`:''}
