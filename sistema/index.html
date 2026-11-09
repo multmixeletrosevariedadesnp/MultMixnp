@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3291,7 +3291,7 @@ function pixAtual(iid,sid,charge){
   const det=d.fee?(ch===d.fee?` (parcela ${R(i.amount)} + multa e juros ${R(d.fee)})`:ch===0?' (sem multa e juros, condição especial)':` (parcela ${R(i.amount)} + encargos ${R(ch)}, com desconto)`):'';
   const msg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\nPassando para lembrar da parcela ${i.number}/${total} do seu carnê, `+
     (d.dl>0?`que venceu em ${fmtD(i.due_date)} (${d.dl} dia${d.dl>1?'s':''} de atraso).`:`com vencimento em ${fmtD(i.due_date)}.`)+
-    `\n\nValor para pagar hoje (${fmtD(now())}): *${R(valor)}*${det}.\n\nPara pagar por Pix, vou mandar o código *Pix copia e cola* na mensagem logo abaixo. É só segurar o dedo sobre ela, tocar em *Copiar* e colar no aplicativo do seu banco.\n\nSe já pagou, é só desconsiderar. Obrigado!`;
+    `\n\nValor para pagar hoje (${fmtD(now())}): *${R(valor)}*${det}.\n\nPara pagar por Pix, abra o link abaixo. Nele você encontra o botão *Copiar código Pix* e também o *QR Code*, caso queira pagar em outro aparelho:\n${PIX_PAGE}?c=${encodeURIComponent(payload)}\n\nSe já pagou, é só desconsiderar. Obrigado!`;
   let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
   window.pxMsg=msg;window.pxCode=payload;
   modal(`<h2>Pix atualizado · parcela ${i.number}/${total}</h2>
@@ -3307,9 +3307,9 @@ function pixAtual(iid,sid,charge){
   <p class="sm" style="text-align:center">Recebedor: <b>${esc(nome)}</b>. O cliente deve conferir o nome antes de confirmar.</p>
   <label>Pix copia e cola</label><textarea id="pxcode" rows="3" readonly onclick="this.select()">${esc(payload)}</textarea>
   <div class="row"><button class="btn" onclick="pixCopy()">Copiar código</button>
-  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">${ph?'1. Enviar a mensagem':'1. Abrir WhatsApp (sem número do cliente)'}</button>
-  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxCode),'_blank')">2. Enviar o código (mensagem separada)</button></div>
-  <p class="sm">Envie na ordem: primeiro a mensagem, depois o código sozinho. Assim o cliente segura só a mensagem do código e toca em Copiar.</p>
+  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp (sem número do cliente)'}</button>
+  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxCode),'_blank')">Enviar só o código</button></div>
+  <p class="sm">Uma única mensagem já leva tudo: o link abre uma página com o botão <b>Copiar código Pix</b> e o <b>QR Code</b> (para pagar em outro aparelho). O botão <b>Enviar só o código</b> é opcional.</p>
   ${co.mp_pix_on&&sb?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar link de pagamento InfinitePay (baixa sozinho)':'Gerar Pix Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:''}
   <p id="pxok" class="sm ok" role="status"></p>
   <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo do Mercado Pago e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
@@ -4641,6 +4641,7 @@ function contrato(sid){
   ctrView(html,sid,'Contrato do carnê');
 }
 /* ===== contrato com assinatura eletrônica por link (cliente assina no celular: CPF + assinatura + selfie) ===== */
+const PIX_PAGE='https://multmixeletrosevariedadesnp.github.io/MultMixnp/pix/';
 const SIGN_BASE='https://multmixeletrosevariedadesnp.github.io/MultMixnp/assinar/';
 async function sha256hex(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 const ctrSt=r=>r.status==='assinado'?`<span class="ok">Assinado em ${dBR(r.signed_at)}</span>`:r.status==='cancelado'?'<span class="sm">Cancelado</span>':(new Date(r.expires_at)<new Date()?'<span class="bad">Link vencido</span>':'<span style="color:#b26a00">Aguardando assinatura</span>');
