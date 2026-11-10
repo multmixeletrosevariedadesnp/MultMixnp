@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.86.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.87.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -105,6 +105,31 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:34vh;margin:0 auto}}
 .artact .btn{white-space:normal}
+/* ===== Estilos dos ícones do menu (Aparência > Estilo dos ícones) ===== */
+.icw{display:contents}
+:is(body:not(.ics-padrao) nav,.icsprev:not(.ics-padrao)) .icw{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;position:relative}
+:is(body:not(.ics-padrao) nav,.icsprev:not(.ics-padrao)) .icw .ic{width:19px;height:19px;stroke-width:2}
+.L-bot:not(.ics-padrao) nav .icw{width:30px;height:30px}
+:is(.ics-vidro nav,.icsprev.ics-vidro) .icw{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.42);box-shadow:0 4px 10px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+:is(.ics-vidro nav,.icsprev.ics-vidro) .icw .ic{stroke:#fff;fill:#fff;fill-opacity:.22;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+:is(.ics-d3 nav,.icsprev.ics-d3) .icw{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 68%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 78%,#000));box-shadow:0 4px 10px color-mix(in srgb,var(--c) 45%,transparent),inset 0 1.5px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.18)}
+:is(.ics-d3 nav,.icsprev.ics-d3) .icw::after{content:"";position:absolute;inset:2px 3px 52% 3px;border-radius:8px 8px 40% 40%;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0));pointer-events:none}
+:is(.ics-d3 nav,.icsprev.ics-d3) .icw .ic{stroke:#fff;fill:#fff;fill-opacity:.25;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+:is(.ics-suave nav,.icsprev.ics-suave) .icw{background:color-mix(in srgb,var(--c) 16%,#fff)}
+:is(.ics-suave nav,.icsprev.ics-suave) .icw .ic{stroke:var(--c);fill:var(--c);fill-opacity:.16}
+:is(.ics-neon nav,.icsprev.ics-neon) .icw{background:#0b1220;border:1px solid color-mix(in srgb,var(--c) 45%,transparent);box-shadow:inset 0 0 10px color-mix(in srgb,var(--c) 22%,transparent)}
+:is(.ics-neon nav,.icsprev.ics-neon) .icw .ic{stroke:color-mix(in srgb,var(--c) 70%,#fff);fill:var(--c);fill-opacity:.12;filter:drop-shadow(0 0 2.5px var(--c)) drop-shadow(0 0 6px color-mix(in srgb,var(--c) 70%,transparent))}
+:is(.ics-adesivo nav,.icsprev.ics-adesivo) .icw{border-radius:50%;background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--c) 75%,#fff),var(--c) 70%);box-shadow:0 0 0 2px #fff,0 3px 8px rgba(0,0,0,.25)}
+:is(.ics-adesivo nav,.icsprev.ics-adesivo) .icw .ic{stroke:#fff;fill:#fff;fill-opacity:.2}
+:is(body:not(.ics-padrao) nav) button:hover .icw{transform:translateY(-1px);transition:transform .15s}
+body:not(.ics-padrao) nav button{opacity:1}
+body:not(.ics-padrao) nav button:not(.on)>span{opacity:.82}
+body:not(.ics-padrao):not(.L-bot):not(.L-top) nav>.ng .nd>button,body:not(.ics-padrao):not(.L-bot):not(.L-top) nav>button{padding-top:6px;padding-bottom:6px}
+.icsprev{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:10px;border-radius:14px;border:2px solid transparent;background:linear-gradient(135deg,#002e68,#00468f);color:#fff;cursor:pointer;font:inherit}
+.icsprev.sel{border-color:var(--tag);box-shadow:0 0 0 3px color-mix(in srgb,var(--tag) 35%,transparent)}
+.icsprev .ip{display:flex;gap:6px;margin-bottom:4px;color:#fff}.icsprev .ip .ic{width:18px;height:18px}
+.icsprev.ics-padrao .ip .icw{display:inline-grid}
+.icsprev small{opacity:.8;font-size:11.5px;line-height:1.25}
 /* Pedidos no celular: cada pedido vira um cartão (status e botões sempre à vista) */
 @media(max-width:700px){
 table.pcards,table.pcards tbody,table.pcards tr,table.pcards td{display:block;width:100%}
@@ -1751,6 +1776,7 @@ function layoutOpen(){
   modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
   <b>Tema</b><div class="fchips" style="margin-bottom:12px">${[['auto','Automático'],['light','Claro'],['dark','Escuro'],['graphite','Grafite']].map(([k,l])=>`<button class="chip ${TE===k?'on':''}" onclick="temaSet('${k}')">${l}</button>`).join('')}</div>
   <b>Cor de destaque</b><div class="fchips" style="margin-bottom:12px">${ACCS.map(([k,l,c])=>`<button class="chip ${ACC()===k?'on':''}" onclick="accSet('${k}')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join('')}</div>
+  <b>Estilo dos ícones</b><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0 14px">${Object.entries(ICSS).map(([k,[n,d]])=>`<button class="icsprev ics-${k} ${ICS()===k?'sel':''}" onclick="icsSet('${k}')" aria-pressed="${ICS()===k}"><span class="ip">${['home','cart','nfok','chatcoin'].map(ic).join('')}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
   <b>Layout do menu</b>
   <div style="display:grid;gap:10px;margin-top:6px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
 }
@@ -1929,12 +1955,17 @@ const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a
  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
  logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 ICON.menu='<path d="M4 6h16M4 12h16M4 18h16"/>';ICON.search='<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>';
-const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+ICON.home='<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>';ICON.register='<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M6 11V7h12v4"/><path d="M9 4h6v3H9z"/><path d="M7 15h2M11 15h2M15 15h2M7 18h10"/>';ICON.clipboard='<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>';ICON.ticket='<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 8.5h16M4 14h16"/><path d="M8 5.8h4M8 11.3h4M8 16.8h4"/>';ICON.chatcoin='<path d="M4 5h16v11H9l-5 4z"/><path d="M12 7v7M14 8h-3a1.3 1.3 0 000 2.6h2a1.3 1.3 0 010 2.6h-3"/>';ICON.drawer='<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M10 7.5h4M10 16.5h4"/>';ICON.calpay='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h3M7.5 17.5h6"/>';ICON.nfok='<path d="M13 3H6a2 2 0 00-2 2v14a2 2 0 002 2h6"/><path d="M13 3l6 6v3"/><path d="M13 3v6h6"/><path d="M8 10h2M8 14h5M8 18h2"/><circle cx="17.5" cy="17.5" r="3.5"/><path d="M15.9 17.6l1.1 1.1 2.1-2.2"/>';ICON.pctdoc='<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 17l6-6"/><circle cx="9.5" cy="11.5" r="1"/><circle cx="14.5" cy="16.5" r="1"/>';ICON.docin='<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M12 11v6M9 14l3 3 3-3"/>';ICON.pct='<circle cx="12" cy="12" r="9"/><path d="M9 15l6-6"/><circle cx="9.5" cy="9.5" r="1"/><circle cx="14.5" cy="14.5" r="1"/>';ICON.history='<path d="M3 12a9 9 0 103-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 2"/>';ICON.bars='<path d="M3 21h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="13" width="3" height="5"/>';ICON.palette='<path d="M12 3a9 9 0 100 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/>';ICON.userkey='<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6 1.4 0 2.6.3 3.7.8"/><circle cx="17" cy="15" r="2.5"/><path d="M17 17.5V22M17 20h2"/>';ICON.lock='<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.5"/>';ICON.brush='<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M19 15l.8 1.7 1.7.8-1.7.8L19 20l-.8-1.7-1.7-.8 1.7-.8z"/>';
+const ICOL={"home": "#2563eb", "cart": "#16a34a", "register": "#0d9488", "clipboard": "#ea580c", "users": "#0284c7", "ticket": "#4f46e5", "chatcoin": "#d97706", "drawer": "#059669", "calpay": "#dc2626", "nfok": "#7c3aed", "pctdoc": "#c026d3", "docin": "#0891b2", "box": "#ca8a04", "pct": "#db2777", "history": "#475569", "bars": "#1d4ed8", "palette": "#e11d48", "building": "#00468f", "userkey": "#64748b", "bell": "#f59e0b", "search": "#0ea5e9", "menu": "#64748b", "logout": "#ef4444", "lock": "#334155", "brush": "#8b5cf6", "shield": "#475569", "image": "#e11d48", "wallet": "#059669", "coin": "#d97706", "receipt": "#7c3aed", "file": "#4f46e5", "inbox": "#ea580c"};
+const ic=n=>`<i class="icw" style="--c:${ICOL[n]||'#64748b'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg></i>`;
+const ICSS={padrao:['Padrão','traço fino, como sempre'],vidro:['Vidro','vidro fosco sobre o azul da marca'],d3:['3D brilhante','relevo e brilho, cada tela com sua cor'],suave:['Tinta suave','fundo claro colorido'],neon:['Neon','traço que brilha, ótimo no tema escuro'],adesivo:['Adesivo','círculo colorido com borda branca']};
+const ICS=()=>{try{const v=localStorage.mm_ics;return ICSS[v]?v:'padrao'}catch(e){return'padrao'}};
+function icsSet(k){try{localStorage.mm_ics=k}catch(e){}render();layoutOpen()}
 function render(){
   try{applyTema(CO())}catch(e){}
   if(sb&&!role&&view!=='login')view='login';
   if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal'].includes(view)&&!ADM())view='pdv';
-  document.body.className=(isAdmin()?'in':'out')+' L-'+LAY();
+  document.body.className=(isAdmin()?'in':'out')+' L-'+LAY()+' ics-'+ICS();
   const GR=[],grp=(t,inner,cls)=>(GR.push({t,inner,cls}),`<div class="ng ${cls||''}"><div class="grp" onclick="ngTog(event,this)">${t}</div><div class="nd">${inner}</div></div>`),
     item=(v,l,i)=>`<button class="${view===v?'on':''}" title="${l.replace(/<[^>]*>/g,'').trim()}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
   const NL=isAdmin()?notifs():[],nc=NL.filter(n=>n.kind==='cobrar').length,ncl=NL.some(n=>n.kind==='cobrar'&&n.days<=0),np2=NL.filter(n=>n.kind==='pagar').length,np2l=NL.some(n=>n.kind==='pagar'&&n.days<=0);
@@ -1942,9 +1973,9 @@ function render(){
   if(isAdmin()){
     h+=`<button onclick="searchOpen()" title="Buscar (Ctrl+K)">${ic('search')}<span>Buscar</span></button>`;
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
-    h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'inbox')+item('cli','Clientes','users')+item('car','Carnês','file')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'coin')+(ADM()?'':item('com','Minhas comissões','coin')));
-    if(ADM())h+=grp('Gestão',item('ini','Início','wallet')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'cart')+item('prod','Produtos','box')+item('cx','Caixa','wallet')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'receipt')+item('fis','Fiscal','receipt')+item('rtc','IBS / CBS / IS','receipt')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'inbox')+item('com','Comissões','coin')+item('aud','Auditoria','shield')+item('rel','Relatórios (PDF)','file')+item('arte','Arte do produto','image')+item('emp','Empresa','building')+item('usr','Usuários','shield'));
-    h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('shield')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('image')}<span>Aparência</span></button>`,'gconta');
+    h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'clipboard')+item('cli','Clientes','users')+item('car','Carnês','ticket')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'chatcoin')+(ADM()?'':item('com','Minhas comissões','pct')));
+    if(ADM())h+=grp('Gestão',item('ini','Início','home')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'register')+item('prod','Produtos','box')+item('cx','Caixa','drawer')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'calpay')+item('fis','Fiscal','nfok')+item('rtc','IBS / CBS / IS','pctdoc')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'docin')+item('com','Comissões','pct')+item('aud','Auditoria','history')+item('rel','Relatórios (PDF)','bars')+item('arte','Arte do produto','palette')+item('emp','Empresa','building')+item('usr','Usuários','userkey'));
+    h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('lock')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('brush')}<span>Aparência</span></button>`,'gconta');
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
   NAVFULL=h;
@@ -1956,7 +1987,7 @@ function render(){
   }
   if(LAY()==='bot'&&isAdmin()){
     const bell=(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0];
-    h=bell+item('ini','Início','wallet')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','receipt'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
+    h=bell+item('ini','Início','home')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','nfok'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
   }
   $('#nav').innerHTML=h;
   ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
