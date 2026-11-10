@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.4'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.84.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3493,10 +3493,11 @@ async function mpBaixa(id,iid,paid,desc){ // reserva a baixa primeiro (só um ap
   const r=await mpCall({action:'aplicado',id,note:i&&!i.paid_at&&!i.canceled_at?'baixa automática':'parcela já estava baixada'});
   if(!r.aplicado_agora||!i||i.paid_at||i.canceled_at)return null;
   const rid=uid();
-  parcAplica(i,{valor:paid,desc:desc||0,meio:'Pix',nota:'Pagamento automático',motivo:desc>0?'Desconto de juros combinado no Pix':'',rid});
+  let pv='';try{const{data}=await sb.from('pix_charges').select('provider').eq('id',id).maybeSingle();pv=data&&data.provider==='ip'?'InfinitePay':'Mercado Pago'}catch(e){}
+  const ap=parcAplica(i,{valor:paid,desc:desc||0,meio:'Pix',nota:'Pagamento automático'+(pv?' ('+pv+')':''),motivo:desc>0?'Desconto de juros combinado no Pix':'',rid});
   save();sync();
+  try{const o=NS(),t=ld(now());nset('seen',{d:t,ids:[...(o.seen&&o.seen.d===t?o.seen.ids:[]),'pg'+ap.pp.id]})}catch(e){} // já viu a faixa verde: não toca o bip de novo
   try{ // aviso: "Fulano pagou a parcela X pelo Mercado Pago / InfinitePay"
-    let pv='';try{const{data}=await sb.from('pix_charges').select('provider').eq('id',id).maybeSingle();pv=data&&data.provider==='ip'?'InfinitePay':'Mercado Pago'}catch(e){}
     const sl=db.sales.find(x=>x.id===i.sale_id)||{},cu=db.customers.find(x=>x.id===sl.customer_id)||{};
     const nt=db.installments.filter(x=>x.sale_id===i.sale_id&&!x.canceled_at).length;
     const msg=(cu.name||'Cliente')+' pagou a parcela '+i.number+(nt?'/'+nt:'')+' ('+R(paid)+')'+(pv?' pelo '+pv:'')+'.';
@@ -3790,6 +3791,14 @@ function notifs(){
     const n=dleft(p.due_date);if(n>aP)return;
     out.push({id:'p'+p.id+(n<0?'L':n===0?'H':'S'),kind:'pagar',days:n,title:'Pagar '+(p.supplier||'fornecedor'),sub:`${p.doc?'NF '+p.doc+' · ':''}${p.parcel?'parcela '+p.parcel+' · ':''}${dtxt(n)}`,amount:+p.amount,pid:p.id});
   });
+  if(ADM()){ // parcelas pagas sozinhas (Mercado Pago / InfinitePay) ainda não marcadas como vistas
+    const since=pgSince(),vistos=pgSeenSet();
+    db.parcel_payments.filter(x=>!x.canceled_at&&/^Pagamento automático/.test(x.note||'')&&x.paid_at>=since&&Date.now()-new Date(x.paid_at)<3*864e5&&!vistos.includes(x.id)).forEach(x=>{
+      const i=db.installments.find(y=>y.id===x.installment_id)||{},sl=db.sales.find(y=>y.id===x.sale_id)||{},c=db.customers.find(y=>y.id===sl.customer_id)||{};
+      const tot=db.installments.filter(y=>y.sale_id===x.sale_id&&!y.canceled_at).length,m=/\((.+)\)/.exec(x.note||'');
+      out.push({id:'pg'+x.id,kind:'pgto',days:1,title:(c.name||'Cliente')+' pagou a parcela '+(i.number||'?')+(tot?'/'+tot:''),sub:'Recebido '+dBR(x.paid_at)+(m?' pelo '+m[1]:'')+(+x.discount>0?' · com desconto '+R(x.discount):''),amount:+x.amount,pid:x.id,sid:x.sale_id});
+    });
+  }
   if(ADM())(window.CTRS||[]).forEach(r=>{ // clientes que assinaram o contrato pelo link e ainda não foram vistos neste aparelho
     if(ctrSeenSet().includes(r.id))return;
     const sl=db.sales.find(x=>x.id===r.sale_id)||{},c=db.customers.find(x=>x.id===sl.customer_id)||{};
@@ -3855,7 +3864,7 @@ function notifCheck(){
   lastRep=Date.now();
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'||n.kind==='pacote'||n.kind==='codigos'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),ctn=nw.filter(n=>n.kind==='contrato').length,txt=[ctn?(ctn>1?ctn+' contratos assinados':'contrato assinado pelo cliente'):'',c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado, tabela IBPT ou pacote do contador':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'||n.kind==='pacote'||n.kind==='codigos'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),ctn=nw.filter(n=>n.kind==='contrato').length,pg=nw.filter(n=>n.kind==='pgto').length,txt=[pg?(pg>1?pg+' parcelas pagas':'parcela paga pelo cliente'):'',ctn?(ctn>1?ctn+' contratos assinados':'contrato assinado pelo cliente'):'',c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado, tabela IBPT ou pacote do contador':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   avisoToast(txt);
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
@@ -3864,6 +3873,9 @@ function notifCheck(){
   if(!$('#modal').classList.contains('open'))render(); // atualiza as contagens do menu
 }
 /* ===== aviso: cliente assinou o contrato pelo link ===== */
+const pgSeenSet=()=>{try{return JSON.parse(localStorage.getItem('mm_pg_seen')||'[]')}catch(e){return[]}};
+function pgSince(){try{let v=localStorage.getItem('mm_pg_since');if(!v){v=new Date().toISOString();localStorage.setItem('mm_pg_since',v)}return v}catch(e){return '0'}} // 1ª vez: só avisa pagamentos daqui para a frente
+function pgSeen(id){try{const a=pgSeenSet();if(id==='*')notifs().filter(n=>n.kind==='pgto').forEach(n=>a.push(n.pid));else if(!a.includes(id))a.push(id);localStorage.setItem('mm_pg_seen',JSON.stringify(a.slice(-400)))}catch(e){}try{render()}catch(e){}notifOpen()}
 const ctrSeenSet=()=>{try{return JSON.parse(localStorage.getItem('mm_ctr_seen')||'[]')}catch(e){return[]}};
 function ctrSeen(id){if(!id)return;try{const a=ctrSeenSet();if(!a.includes(id)){a.push(id);localStorage.setItem('mm_ctr_seen',JSON.stringify(a.slice(-300)))}}catch(e){}try{render()}catch(e){}}
 async function ctrPoll(){
@@ -3879,10 +3891,11 @@ async function ctrPoll(){
 setInterval(()=>{try{ctrPoll()}catch(e){}},45000);setTimeout(()=>{try{ctrPoll()}catch(e){}},6000);
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='pacote'?`<button class="btn s" onclick="pacoteDoAviso('${n.ym}')">Gerar pacote</button>`:n.kind==='codigos'?`<button class="btn s" onclick="codOpen()">Ver faixas</button>`:n.kind==='contrato'?`<button class="btn s" onclick="ctrSeen('${n.cid}');carne('${n.sid}')">Ver contrato</button>`:n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind));
+    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='pacote'?`<button class="btn s" onclick="pacoteDoAviso('${n.ym}')">Gerar pacote</button>`:n.kind==='codigos'?`<button class="btn s" onclick="codOpen()">Ver faixas</button>`:n.kind==='contrato'?`<button class="btn s" onclick="ctrSeen('${n.cid}');carne('${n.sid}')">Ver contrato</button>`:n.kind==='pgto'?`<button class="btn s" onclick="pgSeen('${n.pid}')">Ok, visto</button><button class="btn g s" onclick="pgSeen('${n.pid}');carne('${n.sid}')">Ver carnê</button>`:n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const G=L.filter(n=>n.kind==='pgto'),C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
+  ${G.length?`<h3 class="ok">Pagamentos recebidos (${G.length})</h3><div class="pres">${G.map(row).join('')}</div><p><button class="btn g s" onclick="pgSeen('*')">Marcar todos como vistos</button></p>`:''}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
   ${P.length?`<h3>Para pagar (${P.length})</h3><div class="pres">${P.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('pag')">Abrir contas a pagar</button></p>`:''}
   ${B.length?`<h3>Atenção</h3><div class="pres">${B.map(row).join('')}</div>`:''}
