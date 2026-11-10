@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2693,10 +2693,11 @@ const stockAdj=(id,d)=>{const p=db.products.find(x=>x.id===id);if(p){p.stock=(+p
 /* ----- QR da InfinitePay na Nova venda (só aparece com a cobrança automática ligada e provedor InfinitePay) ----- */
 let ipRes=null,ipTm=null,ipId2=null;
 function ipStop(v){clearInterval(ipTm);ipTm=null;if(ipRes){const r=ipRes;ipRes=null;if(v===false&&ipId2)mpCall({action:'cancelar',id:ipId2}).then(()=>{},()=>{});r(v)}}
-function ipWa(v){
+function ipWa(v,modo){ // modo 'code' manda só o código; senão manda a mensagem sem o código (ele vai separado)
   let d=String(($('#ipwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
-  const loja=(CO().trade_name||CO().legal_name||'MultMix');
-  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este ${/^http/.test(($('#ipcode')||{}).value||'')?'link (Pix ou cartão)':'Pix copia e cola'}:\n${($('#ipcode')||{}).value}`),'_blank','noopener');
+  const loja=(CO().trade_name||CO().legal_name||'MultMix'),cod=($('#ipcode')||{}).value||'',lk=/^http/.test(cod);
+  const t=modo==='code'?cod:`*${loja}*\nPagamento de ${R(v)}.\nO ${lk?'link para pagar (Pix ou cartão)':'código Pix (copia e cola)'} e o QR Code vão nas próximas mensagens.`;
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(t),'_blank','noopener');
 }
 async function ipSalePay(sale,tot,nome,pv){
   pv=pv||'ip';let r;
@@ -2707,10 +2708,12 @@ async function ipSalePay(sale,tot,nome,pv){
     ipRes=res;
     modal(`<h2>${pv==='ip'?'InfinitePay':'Pix Mercado Pago'} · ${R(tot)}</h2><p class="sm">${r.checkout_url?'Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão).':'Peça ao cliente para ler o QR Code Pix.'} A venda só é registrada quando o pagamento for confirmado.</p>
     <div style="text-align:center">${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}">`:''}</div>
-    <textarea id="ipcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||r.qr_code||'')}</textarea>
+    <textarea id="ipcode" rows="2" readonly onclick="this.select()" style="${CODE_ST}">${esc(r.checkout_url||r.qr_code||'')}</textarea>
     <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="ipwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="ipst" class="sm" role="status">Aguardando o pagamento…</p>
-    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Copiado.'">Copiar link</button><button class="btn g" onclick="ipWa(${+tot.toFixed(2)})">Enviar por WhatsApp</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
+    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Copiado.'">Copiar link</button></div>
+    <p class="sm" style="margin:8px 0 4px">Enviar ao cliente, uma coisa de cada vez:</p><div class="bar"><button class="btn g" onclick="ipWa(${+tot.toFixed(2)})">1 · Mensagem</button><button class="btn g" onclick="ipWa(${+tot.toFixed(2)},'code')">2 · Só o código</button><button class="btn g" onclick="qrEnviar(ipcode.value,'QR Code para pagar')">3 · QR Code</button></div>
+    <div class="bar"><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
     ipTm=setInterval(async()=>{
       if(!document.getElementById('ipst')){ipStop(false);return}
       try{
@@ -3343,6 +3346,22 @@ function cancelSaleOk(id){
   closeM();alert('Venda cancelada. Estoque devolvido.');render();
 }
 /* ========= Pix atualizado da parcela (valor de hoje, com multa e juros) + WhatsApp ========= */
+function qrPngBlob(text){ // QR Code como imagem PNG, para mandar sozinho
+  return new Promise((ok,no)=>{try{
+    const q=QR.make(text),n=q.size,b=4,S=Math.max(6,Math.floor(900/(n+2*b))),W=(n+2*b)*S,cv=document.createElement('canvas');cv.width=cv.height=W;
+    const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,W);g.fillStyle='#000';
+    for(let yy=0;yy<n;yy++)for(let xx=0;xx<n;xx++)if(q.get(xx,yy))g.fillRect((xx+b)*S,(yy+b)*S,S,S);
+    cv.toBlob(bl=>bl?ok(bl):no(new Error('png')),'image/png')}catch(e){no(e)}});
+}
+async function qrEnviar(text,legenda){ // celular: abre o "compartilhar" com a imagem; computador: copia a imagem para colar no WhatsApp (ou baixa)
+  try{
+    const bl=await qrPngBlob(text),f=new File([bl],'qr-pix.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:legenda||''});return}
+    if(navigator.clipboard&&window.ClipboardItem){try{await navigator.clipboard.write([new ClipboardItem({'image/png':bl})]);alert('QR Code copiado. Abra a conversa do cliente no WhatsApp, cole (Ctrl+V) e envie.');return}catch(e){}}
+    const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click();alert('QR Code baixado. Anexe a imagem na conversa do cliente no WhatsApp.');
+  }catch(e){if(e&&e.name==='AbortError')return;alert('Não consegui gerar a imagem do QR Code.')}
+}
+const CODE_ST='background:#eafaf1;color:#0b5d3b;border:2px solid #12805c;border-radius:10px;font:600 13px ui-monospace,Consolas,monospace;word-break:break-all';
 function pixSvg(payload){
   const q=QR.make(payload),n=q.size,b=4;let d='';
   for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.get(x,y))d+=`M${x+b} ${y+b}h1v1h-1z`;
@@ -3392,10 +3411,12 @@ function pixAtual(iid,sid,charge){
   <button class="btn g s" onclick="pixCharge('${iid}','${sid}',px_v.value)">Aplicar</button></div></details>`:''}
   ${pixSvg(payload)}
   <p class="sm" style="text-align:center">Recebedor: <b>${esc(nome)}</b>. O cliente deve conferir o nome antes de confirmar.</p>
-  <label>Pix copia e cola</label><textarea id="pxcode" rows="3" readonly onclick="this.select()">${esc(payload)}</textarea>
-  <div class="row"><button class="btn" onclick="pixCopy()">Copiar código</button>
-  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp (sem número do cliente)'}</button>
-  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxCode),'_blank')">Enviar só o código</button></div>
+  <label>Pix copia e cola</label><textarea id="pxcode" rows="3" readonly onclick="this.select()" style="${CODE_ST}">${esc(payload)}</textarea>
+  <div class="row"><button class="btn" onclick="pixCopy()">Copiar código</button></div>
+  <p class="sm" style="margin:8px 0 4px">Enviar ao cliente, uma coisa de cada vez:</p>
+  <div class="row"><button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">1 · Mensagem</button>
+  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxCode),'_blank')">2 · Só o código</button>
+  <button class="btn g" onclick="qrEnviar(window.pxCode,'QR Code Pix')">3 · QR Code</button></div>
   <p class="sm">Uma única mensagem já leva tudo: o link abre uma página com o botão <b>Copiar código Pix</b> e o <b>QR Code</b> (para pagar em outro aparelho). O botão <b>Enviar só o código</b> é opcional.</p>
   ${co.mp_pix_on&&sb?(co.pix_provider==='both'?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'mp')">Gerar com Mercado Pago</button><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'ip')">Gerar com InfinitePay</button></div><p class="sm">Escolha por onde o cliente vai pagar. Assim que ele pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar com InfinitePay (baixa sozinho)':'Gerar com Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`):''}
   <p id="pxok" class="sm ok" role="status"></p>
@@ -3427,13 +3448,17 @@ function mpShow(r,iid,sid,desc){
   const i=db.installments.find(x=>x.id===iid)||{},s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO();
   const loja=co.trade_name||co.legal_name||'MultMix',prim=(c.name||'').trim().split(/\s+/).find(w=>!/^[\d.\/-]+$/.test(w))||'';
   let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
-  window.mpMsg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\n${r.checkout_url?`Segue o link para pagar a parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (Pix ou cartão):\n${r.checkout_url}`:`Segue o Pix da parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (válido até ${dBR(r.expires_at)}).\n\nPix copia e cola:\n${r.qr_code}`}\n\nO pagamento é reconhecido na hora. Obrigado!`;
+  window.mpMsg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\n${r.checkout_url?`Segue o link para pagar a parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (Pix ou cartão):\n${r.checkout_url}`:`Segue o Pix da parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (válido até ${dBR(r.expires_at)}).\n\nO código Pix (copia e cola) e o QR Code vão nas próximas mensagens.`}\n\nO pagamento é reconhecido na hora. Obrigado!`;
+  window.mpCodeMsg=r.checkout_url||r.qr_code;window.mpQrTxt=r.checkout_url||r.qr_code;
   window.mpCh=r.id;
   modal(`<h2>${r.checkout_url?'Link InfinitePay':'Pix Mercado Pago'} · parcela ${i.number}</h2><p class="sm">${esc(c.name||'')} · <b>${R(r.amount)}</b> · ${r.checkout_url?'combine o pagamento até':'vale até'} ${dBR(r.expires_at)}</p>
-  ${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:''}
-  <label>${r.checkout_url?'Link de pagamento':'Pix copia e cola'}</label><textarea id="mpcode" rows="3" readonly onclick="this.select()">${esc(r.checkout_url||r.qr_code)}</textarea>
-  <div class="row"><button class="btn" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar código</button>
-  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.mpMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp'}</button></div>
+  ${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:r.qr_code?pixSvg(r.qr_code):''}
+  <label>${r.checkout_url?'Link de pagamento':'Pix copia e cola'} <span class="sm">(vai em mensagem separada)</span></label><textarea id="mpcode" rows="3" readonly onclick="this.select()" style="${CODE_ST}">${esc(r.checkout_url||r.qr_code)}</textarea>
+  <div class="row"><button class="btn" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar código</button></div>
+  <p class="sm" style="margin:8px 0 4px">Enviar ao cliente, uma coisa de cada vez:</p>
+  <div class="row"><button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.mpMsg),'_blank')">1 · Mensagem</button>
+  <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.mpCodeMsg),'_blank')">2 · Só o código</button>
+  <button class="btn g" onclick="qrEnviar(window.mpQrTxt,'QR Code para pagar')">3 · QR Code</button></div>
   <p id="mpst" class="sm" role="status">Aguardando o pagamento… (confere sozinho a cada poucos segundos)</p>
   <button class="btn g" onclick="mpCancel('${r.id}','${iid}','${sid}')">Cancelar este Pix</button>`);
   clearInterval(window.mpTm);
