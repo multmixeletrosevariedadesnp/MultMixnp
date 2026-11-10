@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1522,24 +1522,44 @@ function mpStop(v){ // fecha a espera do Pix: v=false cancela a venda
   clearInterval(mpTm);mpTm=null;
   if(mpRes){const r=mpRes;mpRes=null;if(v===false&&mpId2)mpCall({action:'cancelar',id:mpId2}).then(()=>{},()=>{});r(v)}
 }
-function mpWa(v){
+function mpWa(v,modo){ // modo 'code' manda só o código; senão a mensagem sem o código (ele vai separado)
   let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
-  const c=CO||{},loja=c.trade_name||c.legal_name||'MultMix';
-  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este link (Pix ou cartão):\n${($('#mpcode')||{}).value}`),'_blank','noopener');
+  const c=CO||{},loja=c.trade_name||c.legal_name||'MultMix',cod=($('#mpcode')||{}).value||'',lk=/^http/.test(cod);
+  const t=modo==='code'?cod:`*${loja}*\nPagamento de ${R(v)}.\nO ${lk?'link para pagar (Pix ou cartão)':'código Pix (copia e cola)'} e o QR Code vão nas próximas mensagens.`;
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(t),'_blank','noopener');
+}
+async function mpQrEnviar(b64){ // QR sozinho como imagem: celular abre o "compartilhar"; computador copia a imagem (ou baixa)
+  try{
+    const txt=($('#mpcode')||{}).value||'';let bl;
+    if(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);bl=new Blob([u],{type:'image/png'})}
+    else{
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250" width="900" height="900">${qrSvg(txt,0,0,250,'#000','#fff')}</svg>`;
+      const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+      const cv=document.createElement('canvas');cv.width=cv.height=900;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,900,900);g.drawImage(img,0,0,900,900);
+      bl=await new Promise((ok,no)=>cv.toBlob(x=>x?ok(x):no(new Error('png')),'image/png'));
+    }
+    const f=new File([bl],'qr-pix.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:'QR Code para pagar'});return}
+    if(navigator.clipboard&&window.ClipboardItem){try{await navigator.clipboard.write([new ClipboardItem({'image/png':bl})]);alert('QR Code copiado. Abra a conversa do cliente no WhatsApp, cole (Ctrl+V) e envie.');return}catch(e){}}
+    const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click();alert('QR Code baixado. Anexe a imagem na conversa do cliente no WhatsApp.');
+  }catch(e){if(e&&e.name==='AbortError')return;alert('Não consegui gerar a imagem do QR Code.')}
 }
 async function mpPdvPay(sale,tot,nome,pv){
   let r;
   try{r=await mpCall({action:'criar',kind:'venda',...(pv?{provider:pv}:{}),sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no PDV'})}
   catch(e){return confirm('Não consegui gerar o Pix automático:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
-  mpId2=r.id;
+  mpId2=r.id;window.mpB64=r.checkout_url?'':(r.qr_base64||'');
   return await new Promise(res=>{
     mpRes=res;
     modal(`<h2>Pix · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code. A venda só é registrada quando o pagamento for confirmado.</p>
     ${r.checkout_url?(qrMake(r.checkout_url)?`<div style="text-align:center"><svg viewBox="0 0 250 250" width="250" height="250" role="img" aria-label="QR Code do link de pagamento">${qrSvg(r.checkout_url,0,0,250,'#000','#fff')}</svg><p class="sm">O cliente lê o QR, abre o link e paga com Pix ou cartão.</p></div>`:'<p class="sm">Envie o link abaixo ao cliente (Pix ou cartão).</p>'):r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:250px;height:250px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:''}
-    <textarea id="mpcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||r.qr_code)}</textarea>
-    ${r.checkout_url?`<div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="mpwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>`:''}
+    <textarea id="mpcode" rows="2" readonly onclick="this.select()" style="background:#eafaf1;color:#0b5d3b;border:2px solid #12805c;border-radius:10px;font:600 13px ui-monospace,Consolas,monospace;word-break:break-all">${esc(r.checkout_url||r.qr_code)}</textarea>
+    <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="mpwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="mpst" class="sm" role="status">Aguardando o pagamento…</p>
-    <div class="bar"><button class="btn g" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar ${r.checkout_url?'link':'código'}</button>${r.checkout_url?`<button class="btn g" onclick="mpWa(${+tot.toFixed(2)})">Enviar por WhatsApp</button>`:''}<button class="btn g" onclick="mpStop(false);closeM()">Cancelar venda</button></div>`);
+    <div class="bar"><button class="btn g" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar ${r.checkout_url?'link':'código'}</button></div>
+    <p class="sm" style="margin:8px 0 4px">Enviar ao cliente, uma coisa de cada vez:</p>
+    <div class="bar"><button class="btn g" onclick="mpWa(${+tot.toFixed(2)})">1 · Mensagem</button><button class="btn g" onclick="mpWa(${+tot.toFixed(2)},'code')">2 · Só o código</button><button class="btn g" onclick="mpQrEnviar(window.mpB64)">3 · QR Code</button></div>
+    <div class="bar"><button class="btn g" onclick="mpStop(false);closeM()">Cancelar venda</button></div>`);
     mpTm=setInterval(async()=>{
       if(!document.getElementById('mpst')){mpStop(false);return}
       try{
