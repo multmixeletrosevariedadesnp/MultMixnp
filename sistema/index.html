@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1378,13 +1378,21 @@ async function artUpload(inp){
   try{artPhoto=await artBlobData(f,1100);$('#a_st').textContent=''}catch(e){alert('Não consegui ler essa imagem.')}
   artNopRefresh();
 }
+function artPar(noRender){ // monta as linhas de carnê e de cartão com o valor da parcela conforme o nº de parcelas escolhido
+  const p=db.products.find(x=>x.id===artVal('p'));if(!p)return;
+  const nk=Math.max(1,+artVal('nk')||1),nc=Math.max(1,+artVal('nc')||1);
+  const set=(id,v)=>{const e=$('#a_'+id);if(e)e.value=v};
+  const cr=+p.price_credit>0?promoAt(+p.price_credit,p):0,cd=+p.price_card>0?promoAt(+p.price_card,p):0;
+  set('l1',cr>0?(nk>1?`ou ${nk}x de R$ ${artBRL(cr/nk)} no carnê`:`No carnê: R$ ${artBRL(cr)}`):'');
+  set('l2',cd>0?(nc>1?`Cartão até ${nc}x de R$ ${artBRL(cd/nc)} = R$ ${artBRL(cd)}`:`No cartão: R$ ${artBRL(cd)}`):'');
+  if(!noRender)artRender();
+}
 function artPick(){
   const p=db.products.find(x=>x.id===artVal('p'));if(!p)return;
   const set=(id,v)=>{const e=$('#a_'+id);if(e)e.value=v},m=p.max_inst||10;
   const pc=promoAt(+p.price_cash,p),pr=promoPct(p);
   set('name',p.name);set('price',pc.toFixed(2));set('old',pr?(+p.price_cash).toFixed(2):'');
-  set('l1',+p.price_credit>0?`ou ${m}x de R$ ${artBRL(promoAt(+p.price_credit,p)/m)} no carnê`:'');
-  set('l2',+p.price_card>0?`No cartão: R$ ${artBRL(promoAt(+p.price_card,p))}`:'');
+  set('nk',Math.min(24,m));set('nc',Math.min(12,m));artPar(true);
   const ph=$('#a_ph');if(ph)ph.innerHTML=(p.photos||[]).map((_,i)=>`<option value="${i}">Foto ${i+1}</option>`).join('')||'<option value="0">Sem foto</option>';
   artCapDirty=false;artLoadPhoto();
 }
@@ -1415,6 +1423,9 @@ async function vArte(){
   <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
   <div><label>Preço de oferta (R$)</label><input id="a_price" inputmode="decimal" oninput="artRender()"></div>
   <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
+  <div><label>Carnê: parcelas</label><select id="a_nk" onchange="artPar()"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option><option value="16">16x</option><option value="17">17x</option><option value="18">18x</option><option value="19">19x</option><option value="20">20x</option><option value="21">21x</option><option value="22">22x</option><option value="23">23x</option><option value="24">24x</option></select></div>
+  <div><label>Cartão: em até quantas vezes</label><select id="a_nc" onchange="artPar()"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>
+  <div class="w sm" style="margin-top:-6px">O valor da parcela é o preço do carnê (ou do cartão) dividido pelo número escolhido, sem juros. Se a maquininha cobrar juros do cliente, ajuste o texto abaixo.</div>
   <div class="w"><label>Condição 1 (opcional)</label><input id="a_l1" oninput="artRender()"></div>
   <div class="w"><label>Condição 2 (opcional)</label><input id="a_l2" oninput="artRender()"></div>
   <div class="w"><label>Validade (opcional)</label><input id="a_valid" value="Válido enquanto durar o estoque" oninput="artRender()"></div>
