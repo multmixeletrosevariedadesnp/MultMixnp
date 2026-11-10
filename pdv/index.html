@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1522,22 +1522,36 @@ function mpStop(v){ // fecha a espera do Pix: v=false cancela a venda
   clearInterval(mpTm);mpTm=null;
   if(mpRes){const r=mpRes;mpRes=null;if(v===false&&mpId2)mpCall({action:'cancelar',id:mpId2}).then(()=>{},()=>{});r(v)}
 }
-const WAQ_L=['Enviar ao cliente · 1 de 3: mensagem','Enviar · 2 de 3: código','Enviar · 3 de 3: QR Code'];
 let WAQ=null;
-function waSeqSet(o){WAQ={...o,step:0}}
-function waSeqGo(){ // um botão só: a cada toque abre a próxima parte (mensagem, código, QR) na ordem certa
-  const q=WAQ,b=document.getElementById('waseq');if(!q||!b)return;
-  const tel=q.tel();if(tel===false)return;
-  const wa=t=>window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(t),'_blank','noopener');
-  if(q.step===0){wa(q.msg());q.step=1;b.textContent=WAQ_L[1]}
-  else if(q.step===1){wa(q.code());q.step=2;b.textContent=WAQ_L[2]}
-  else{mpQrEnviar(window.mpB64);q.step=0;b.textContent='✓ Enviado · tocar para reenviar'}
+function waSeqSet(o){WAQ=o}
+async function waAll(comQr){ // UMA mensagem: texto + código/link + QR. Celular: "compartilhar" com a imagem e o texto como legenda. Computador: abre o WhatsApp com o texto e copia o QR para colar.
+  const q=WAQ;if(!q)return;const tel=q.tel();if(tel===false)return;
+  const wa=()=>window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(q.text(comQr)),'_blank','noopener');
+  if(!comQr)return wa();
+  let bl=null;try{bl=await q.png()}catch(e){}
+  if(!bl){alert('Não consegui gerar a imagem do QR Code. Vou abrir só o texto.');return wa()}
+  try{
+    const f=new File([bl],'qr-pix.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:q.text(true)});return}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  let ok=false;try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':bl})]);ok=true}}catch(e){}
+  if(!ok){const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click()}
+  wa();
+  alert(ok?'O texto está pronto no WhatsApp e o QR Code foi copiado. Na conversa do cliente, cole (Ctrl+V) e envie junto.':'O texto está pronto no WhatsApp. O QR Code foi baixado: anexe a imagem na conversa.');
 }
 function mpWa(v,modo){ // modo 'code' manda só o código; senão a mensagem sem o código (ele vai separado)
   let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
   const c=CO||{},loja=c.trade_name||c.legal_name||'MultMix',cod=($('#mpcode')||{}).value||'',lk=/^http/.test(cod);
   const t=modo==='code'?cod:`*${loja}*\nPagamento de ${R(v)}.\nO ${lk?'link para pagar (Pix ou cartão)':'código Pix (copia e cola)'} e o QR Code vão nas próximas mensagens.`;
   window.open('https://wa.me/'+d+'?text='+encodeURIComponent(t),'_blank','noopener');
+}
+async function mpPngBlob(){ // QR como imagem PNG: o do Mercado Pago já vem pronto; o de link é desenhado aqui
+  const txt=($('#mpcode')||{}).value||'',b64=window.mpB64;
+  if(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:'image/png'})}
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250" width="900" height="900">${qrSvg(txt,0,0,250,'#000','#fff')}</svg>`;
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  const cv=document.createElement('canvas');cv.width=cv.height=900;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,900,900);g.drawImage(img,0,0,900,900);
+  return await new Promise((ok,no)=>cv.toBlob(x=>x?ok(x):no(new Error('png')),'image/png'));
 }
 async function mpQrEnviar(b64){ // QR sozinho como imagem: celular abre o "compartilhar"; computador copia a imagem (ou baixa)
   try{
@@ -1560,7 +1574,7 @@ async function mpPdvPay(sale,tot,nome,pv){
   try{r=await mpCall({action:'criar',kind:'venda',...(pv?{provider:pv}:{}),sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no PDV'})}
   catch(e){return confirm('Não consegui gerar o Pix automático:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
   mpId2=r.id;window.mpB64=r.checkout_url?'':(r.qr_base64||'');
-  waSeqSet({tel:()=>{let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10){alert('Informe o WhatsApp do cliente com DDD.');return false}return d.length<=11?'55'+d:d},msg:()=>{const c=CO||{},lj=c.trade_name||c.legal_name||'MultMix',cd=($('#mpcode')||{}).value||'';return `*${lj}*\nPagamento de ${R(tot)}.\nO ${/^http/.test(cd)?'link para pagar (Pix ou cartão)':'código Pix (copia e cola)'} e o QR Code vão nas próximas mensagens.`},code:()=>($('#mpcode')||{}).value||''});
+  waSeqSet({tel:()=>{let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10){alert('Informe o WhatsApp do cliente com DDD.');return false}return d.length<=11?'55'+d:d},text:q=>{const c=CO||{},lj=c.trade_name||c.legal_name||'MultMix',cd=($('#mpcode')||{}).value||'';return `*${lj}*\nPagamento de ${R(tot)}.\n${/^http/.test(cd)?'Link para pagar (Pix ou cartão)':'Pix copia e cola'}:\n${cd}`+(q?'\n\nO QR Code está na imagem, caso queira pagar em outro aparelho.':'')},png:()=>mpPngBlob()});
   return await new Promise(res=>{
     mpRes=res;
     modal(`<h2>Pix · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code. A venda só é registrada quando o pagamento for confirmado.</p>
@@ -1569,8 +1583,9 @@ async function mpPdvPay(sale,tot,nome,pv){
     <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="mpwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="mpst" class="sm" role="status">Aguardando o pagamento…</p>
     <div class="bar"><button class="btn g" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar ${r.checkout_url?'link':'código'}</button></div>
-    <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waSeqGo()">${WAQ_L[0]}</button>
-  <p class="sm">Toque 3 vezes: mensagem, código e QR Code. Em cada toque abre o WhatsApp do cliente; é só enviar e voltar aqui.</p>
+    <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente: mensagem + código + QR</button>
+  <button class="btn g" style="width:100%;margin-top:6px" onclick="waAll(false)">Só texto, direto no WhatsApp do cliente</button>
+  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. O QR Code vai como imagem e a mensagem com o código vai de legenda, tudo numa mensagem só. No computador, abre o WhatsApp com o texto pronto e copia o QR para você colar (Ctrl+V).</p>
     <div class="bar"><button class="btn g" onclick="mpStop(false);closeM()">Cancelar venda</button></div>`);
     mpTm=setInterval(async()=>{
       if(!document.getElementById('mpst')){mpStop(false);return}
