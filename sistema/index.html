@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.84.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.85.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1569,6 +1569,8 @@ function vEmp(){
   <div style="margin:14px 0"><b>Cobrança automática (InfinitePay)</b>
   <p class="sm" style="margin:2px 0 8px">Gera um link de pagamento da InfinitePay (Pix ou cartão) e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até cadastrar as chaves abaixo, publicar a função <code>mp-pix</code> e fazer um teste de R$ 1,00. Escolha o provedor <b>InfinitePay</b> na lista.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_cat_pix_on" style="width:auto" ${c.cat_pix_on?'checked':''}> Mostrar <b>“Pagar agora com Pix”</b> no catálogo (Mercado Pago, preço à vista)</label>
+  <p class="sm" style="margin:0 0 8px">O cliente paga pelo catálogo, o pedido chega aqui como <b>PAGO</b> e a Central de avisos pede para separar e entregar. Precisa do SQL v47 e da cobrança automática ligada.</p>
   <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'&&c.pix_provider!=='both'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option><option value="both" ${c.pix_provider==='both'?'selected':''}>Os dois (escolher na hora: Gerar com Mercado Pago ou com InfinitePay)</option></select></div></div></div>
   ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
   <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
@@ -1655,7 +1657,7 @@ function saveEmp(){
     if(an||ae||ap||'accountant_name' in CO()){row.accountant_name=an||null;row.accountant_email=ae||null;row.accountant_phone=ap||null}
   }
   {const on=$('#e_mp_pix_on').checked,pv2=$('#e_pix_provider').value;
-  if(on!==!!CO().mp_pix_on||('mp_pix_on' in CO()))row.mp_pix_on=on;if(pv2!==(CO().pix_provider||'mp')||('pix_provider' in CO()))row.pix_provider=pv2;}row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
+  if(on!==!!CO().mp_pix_on||('mp_pix_on' in CO()))row.mp_pix_on=on;{const cp=$('#e_cat_pix_on').checked;if(cp!==!!CO().cat_pix_on||('cat_pix_on' in CO()))row.cat_pix_on=cp}if(pv2!==(CO().pix_provider||'mp')||('pix_provider' in CO()))row.pix_provider=pv2;}row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
   const cm=+$('#e_cob_multa').value,cj=+$('#e_cob_juro').value,cc=+$('#e_cob_car').value;
   if(!(cm>=0&&cm<=COB_MAX.multa))return alert('A multa por atraso não pode passar de 2% (Código de Defesa do Consumidor).');
@@ -1905,7 +1907,7 @@ let DUOS=null;
 function go(v){DUOS=null;view=v;render()}
 function duoSel(i){DUOS=i;render()}
 try{matchMedia('(min-width:900px)').addEventListener('change',()=>{if(LAY()==='duo'&&view!=='login')render()})}catch(e){}
-const NN=()=>db.orders.filter(o=>o.status==='novo').length;
+const NN=()=>db.orders.filter(o=>o.status==='novo'||o.status==='pago').length;
 const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.5-6.9A2 2 0 0016.8 4H7.2a2 2 0 00-1.7 1.1z"/>',bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/>',box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 01-2 2H4a2 2 0 01-2-2v-6z"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.5.7 4 2.6 4 6"/>',
  file:'<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',wallet:'<path d="M3 7a2 2 0 012-2h13v4"/><path d="M3 7v11a2 2 0 002 2h15V9H5a2 2 0 01-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
@@ -2549,7 +2551,7 @@ function vPdv(){
    </section>
   </div>
   <div class="pbar" id="pbar"><div><span class="sm">Carrinho</span><b id="pbt">R$ 0,00</b></div><button class="btn" onclick="document.getElementById('pdvcart').scrollIntoView({behavior:'smooth',block:'start'})">Ver carrinho</button></div>`;cartView();
-  if(pre){s_t.value=pre.pay_type;c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
+  if(pre){s_t.value=pre.pay_type==='pix'?'avista':pre.pay_type;if(pre.pay_type==='pix')s_m.value='Pix';c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
 }
 const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Date(),h=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   if(p.promo_from&&h<String(p.promo_from).slice(0,10))return 0;if(p.promo_to&&h>String(p.promo_to).slice(0,10))return 0;return x};
@@ -2705,16 +2707,16 @@ async function ipSalePay(sale,tot,nome,pv){
   catch(e){return confirm('Não consegui gerar a cobrança da '+PVN[pv]+':\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
   ipId2=r.id;
   return await new Promise(res=>{
-    ipRes=res;waSeqSet({tel:()=>{let d=String(($('#ipwa')||{}).value||'').replace(/\D/g,'');if(d.length<10){alert('Informe o WhatsApp do cliente com DDD.');return false}return d.length<=11?'55'+d:d},text:q=>{const lj=(CO().trade_name||CO().legal_name||'MultMix'),cd=($('#ipcode')||{}).value||'';return `*${lj}*\nPagamento de ${R(tot)}.\n${/^http/.test(cd)?'Link para pagar (Pix ou cartão)':'Pix copia e cola'}:\n${cd}`+(q?'\n\nO QR Code está na imagem, caso queira pagar em outro aparelho.':'')},png:()=>qrPngBlob(($('#ipcode')||{}).value||'')});
+    ipRes=res;waSeqSet({tel:()=>{let d=String(($('#ipwa')||{}).value||'').replace(/\D/g,'');if(d.length<10){alert('Informe o WhatsApp do cliente com DDD.');return false}return d.length<=11?'55'+d:d},text:()=>{const lj=(CO().trade_name||CO().legal_name||'MultMix'),cd=($('#ipcode')||{}).value||'';return `*${lj}*\nPagamento de ${R(tot)}.\n${/^http/.test(cd)?'Link para pagar (Pix ou cartão)':'Pix copia e cola'}:\n${cd}`},code:()=>($('#ipcode')||{}).value||'',card:()=>{const cd=($('#ipcode')||{}).value||'',lk=/^http/.test(cd);return cobCard({loja:CO().trade_name||CO().legal_name||'MultMix',titulo:lk?'Pagamento (Pix ou cartão)':'Pagamento via Pix',linhas:[nome||'',R(tot)],rodape:lk?'Escaneie o QR Code ou toque no link da mensagem':'Escaneie o QR Code ou copie o código Pix da mensagem',qr:qrDraw(cd)})}});
     modal(`<h2>${pv==='ip'?'InfinitePay':'Pix Mercado Pago'} · ${R(tot)}</h2><p class="sm">${r.checkout_url?'Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão).':'Peça ao cliente para ler o QR Code Pix.'} A venda só é registrada quando o pagamento for confirmado.</p>
     <div style="text-align:center">${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}">`:''}</div>
     <textarea id="ipcode" rows="2" readonly onclick="this.select()" style="${CODE_ST}">${esc(r.checkout_url||r.qr_code||'')}</textarea>
     <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="ipwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="ipst" class="sm" role="status">Aguardando o pagamento…</p>
     <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Copiado.'">Copiar link</button></div>
-    <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente: mensagem + código + QR</button>
+    <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente (imagem com QR + código)</button>
   <button class="btn g" style="width:100%;margin-top:6px" onclick="waAll(false)">Só texto, direto no WhatsApp do cliente</button>
-  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. O QR Code vai como imagem e a mensagem com o código vai de legenda, tudo numa mensagem só. No computador, abre o WhatsApp com o texto pronto e copia o QR para você colar (Ctrl+V).</p>
+  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. Vai a imagem com os dados da cobrança e o QR Code, e o texto da mensagem é <b>só o código</b>, para o cliente copiar e colar no banco. No computador, a imagem é copiada (cole com Ctrl+V) e o código fica pronto na caixa de texto.</p>
     <div class="bar"><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
     ipTm=setInterval(async()=>{
       if(!document.getElementById('ipst')){ipStop(false);return}
@@ -3348,6 +3350,8 @@ function cancelSaleOk(id){
   closeM();alert('Venda cancelada. Estoque devolvido.');render();
 }
 /* ========= Pix atualizado da parcela (valor de hoje, com multa e juros) + WhatsApp ========= */
+function qrDraw(text){return(g,x,y,S)=>{const q=QR.make(text),n=q.size,b=2,m=S/(n+2*b);g.fillStyle='#fff';g.fillRect(x,y,S,S);g.fillStyle='#000';
+  for(let yy=0;yy<n;yy++)for(let xx=0;xx<n;xx++)if(q.get(xx,yy))g.fillRect(Math.floor(x+(xx+b)*m),Math.floor(y+(yy+b)*m),Math.ceil(m),Math.ceil(m))}}
 function qrPngBlob(text){ // QR Code como imagem PNG, para mandar sozinho
   return new Promise((ok,no)=>{try{
     const q=QR.make(text),n=q.size,b=4,S=Math.max(6,Math.floor(900/(n+2*b))),W=(n+2*b)*S,cv=document.createElement('canvas');cv.width=cv.height=W;
@@ -3363,22 +3367,36 @@ async function qrEnviar(text,legenda){ // celular: abre o "compartilhar" com a i
     const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click();alert('QR Code baixado. Anexe a imagem na conversa do cliente no WhatsApp.');
   }catch(e){if(e&&e.name==='AbortError')return;alert('Não consegui gerar a imagem do QR Code.')}
 }
+async function cobCard(o){ // imagem da cobrança: loja, dados da parcela/venda e o QR (o código vai sozinho no texto da mensagem)
+  const W=1000,H=1400,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const fit=(t,px,wt,max)=>{let f=px;do{g.font=`${wt} ${f}px system-ui,Segoe UI,Arial,sans-serif`;f-=2}while(g.measureText(t).width>max&&f>16)};
+  g.fillStyle='#fff';g.fillRect(0,0,W,H);
+  g.fillStyle='#12805c';g.fillRect(0,0,W,150);g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
+  fit(o.loja||'MultMix',58,'800',W-80);g.fillText(o.loja||'MultMix',W/2,75);
+  g.fillStyle='#111';fit(o.titulo,50,'800',W-80);g.fillText(o.titulo,W/2,225);
+  let y=295;(o.linhas||[]).filter(Boolean).forEach((t,k)=>{g.fillStyle=k===o.linhas.length-1?'#0b5d3b':'#333';fit(t,k===o.linhas.length-1?52:38,k===o.linhas.length-1?'800':'600',W-80);g.fillText(t,W/2,y);y+=k===o.linhas.length-1?70:56});
+  const S=620,x0=(W-S)/2,y0=Math.max(y+10,460);
+  await o.qr(g,x0,y0,S);
+  g.fillStyle='#111';fit(o.rodape,34,'700',W-60);g.fillText(o.rodape,W/2,y0+S+60);
+  if(o.validade){g.fillStyle='#666';fit(o.validade,28,'500',W-60);g.fillText(o.validade,W/2,y0+S+110)}
+  return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('png')),'image/png'));
+}
 let WAQ=null;
 function waSeqSet(o){WAQ=o}
-async function waAll(comQr){ // UMA mensagem: texto + código/link + QR. Celular: "compartilhar" com a imagem e o texto como legenda. Computador: abre o WhatsApp com o texto e copia o QR para colar.
+async function waAll(comQr){ // comQr: imagem (cobrança + QR) com SÓ o código como texto, igual cobrança de banco. Senão: mensagem de texto completa.
   const q=WAQ;if(!q)return;const tel=q.tel();if(tel===false)return;
-  const wa=()=>window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(q.text(comQr)),'_blank','noopener');
-  if(!comQr)return wa();
-  let bl=null;try{bl=await q.png()}catch(e){}
-  if(!bl){alert('Não consegui gerar a imagem do QR Code. Vou abrir só o texto.');return wa()}
+  const wa=t=>window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(t),'_blank','noopener');
+  if(!comQr)return wa(q.text());
+  let bl=null;try{bl=await q.card()}catch(e){}
+  if(!bl){alert('Não consegui gerar a imagem da cobrança. Vou abrir a mensagem de texto.');return wa(q.text())}
   try{
-    const f=new File([bl],'qr-pix.png',{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:q.text(true)});return}
+    const f=new File([bl],'cobranca-pix.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],text:q.code()});return}
   }catch(e){if(e&&e.name==='AbortError')return}
   let ok=false;try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'image/png':bl})]);ok=true}}catch(e){}
-  if(!ok){const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click()}
-  wa();
-  alert(ok?'O texto está pronto no WhatsApp e o QR Code foi copiado. Na conversa do cliente, cole (Ctrl+V) e envie junto.':'O texto está pronto no WhatsApp. O QR Code foi baixado: anexe a imagem na conversa.');
+  if(!ok){const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='cobranca-pix.png';a.click()}
+  wa(q.code());
+  alert(ok?'A imagem da cobrança foi copiada e o código já está na caixa de texto do WhatsApp. Na conversa: cole a imagem (Ctrl+V), envie, e depois envie o código.':'A imagem da cobrança foi baixada e o código já está na caixa de texto do WhatsApp. Anexe a imagem e envie o código.');
 }
 const CODE_ST='background:#eafaf1;color:#0b5d3b;border:2px solid #12805c;border-radius:10px;font:600 13px ui-monospace,Consolas,monospace;word-break:break-all';
 function pixSvg(payload){
@@ -3418,7 +3436,7 @@ function pixAtual(iid,sid,charge){
     (d.dl>0?`que venceu em ${fmtD(i.due_date)} (${d.dl} dia${d.dl>1?'s':''} de atraso).`:`com vencimento em ${fmtD(i.due_date)}.`)+
     `\n\nValor para pagar hoje (${fmtD(now())}): *${R(valor)}*${det}.\n\nPix copia e cola:\n${payload}\n\nSe já pagou, é só desconsiderar. Obrigado!`;
   let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
-  window.pxMsg=msg;window.pxCode=payload;waSeqSet({tel:()=>ph,text:q=>msg.replace('\n\nSe já pagou',(q?'\n\nO QR Code está na imagem, caso queira pagar em outro aparelho.':'')+'\n\nSe já pagou'),png:()=>qrPngBlob(payload)});
+  window.pxMsg=msg;window.pxCode=payload;waSeqSet({tel:()=>ph,text:()=>msg,code:()=>payload,card:()=>cobCard({loja,titulo:'Pagamento via Pix',linhas:[c.name||'',`Parcela ${i.number}/${total} do carnê · venc. ${fmtD(i.due_date)}`,R(valor)],rodape:'Escaneie o QR Code ou copie o código Pix da mensagem',validade:'Valor para pagar hoje, '+fmtD(now()),qr:qrDraw(payload)})});
   modal(`<h2>Pix atualizado · parcela ${i.number}/${total}</h2>
   <p class="sm">${esc(c.name||'')}${c.phone?' · '+esc(c.phone):''}</p>
   <div class="prices"><div class="pr"><span>Parcela</span><b>${R(i.amount)}</b></div>${d.fee?`<div class="pr"><span class="${desc?'':'bad'}">Multa e juros${d.dl?` (${d.dl} dia${d.dl>1?'s':''})`:''}</span><b class="${desc?'':'bad'}">${R(ch)}</b></div>`:''}${desc?`<div class="pr"><span class="ok">Desconto nos encargos</span><b class="ok">− ${R(desc)}</b></div>`:''}<div class="pr k"><span>Total para pagar hoje</span><b>${R(valor)}</b></div></div>
@@ -3432,9 +3450,9 @@ function pixAtual(iid,sid,charge){
   <p class="sm" style="text-align:center">Recebedor: <b>${esc(nome)}</b>. O cliente deve conferir o nome antes de confirmar.</p>
   <label>Pix copia e cola</label><textarea id="pxcode" rows="3" readonly onclick="this.select()" style="${CODE_ST}">${esc(payload)}</textarea>
   <div class="row"><button class="btn" onclick="pixCopy()">Copiar código</button></div>
-  <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente: mensagem + código + QR</button>
+  <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente (imagem com QR + código)</button>
   <button class="btn g" style="width:100%;margin-top:6px" onclick="waAll(false)">Só texto, direto no WhatsApp do cliente</button>
-  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. O QR Code vai como imagem e a mensagem com o código vai de legenda, tudo numa mensagem só. No computador, abre o WhatsApp com o texto pronto e copia o QR para você colar (Ctrl+V).</p>
+  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. Vai a imagem com os dados da cobrança e o QR Code, e o texto da mensagem é <b>só o código</b>, para o cliente copiar e colar no banco. No computador, a imagem é copiada (cole com Ctrl+V) e o código fica pronto na caixa de texto.</p>
   <p class="sm">Uma única mensagem já leva tudo: o link abre uma página com o botão <b>Copiar código Pix</b> e o <b>QR Code</b> (para pagar em outro aparelho). O botão <b>Enviar só o código</b> é opcional.</p>
   ${co.mp_pix_on&&sb?(co.pix_provider==='both'?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'mp')">Gerar com Mercado Pago</button><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'ip')">Gerar com InfinitePay</button></div><p class="sm">Escolha por onde o cliente vai pagar. Assim que ele pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar com InfinitePay (baixa sozinho)':'Gerar com Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`):''}
   <p id="pxok" class="sm ok" role="status"></p>
@@ -3468,14 +3486,14 @@ function mpShow(r,iid,sid,desc){
   let ph=digits(c.phone);if(ph&&!(ph.startsWith('55')&&ph.length>=12))ph='55'+ph;
   window.mpMsg=`Olá${prim?', '+prim:''}! Aqui é da ${loja}.\n\n${r.checkout_url?`Segue o link para pagar a parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (Pix ou cartão):\n${r.checkout_url}`:`Segue o Pix da parcela ${i.number} do seu carnê, valor *${R(r.amount)}* (válido até ${dBR(r.expires_at)}).\n\nPix copia e cola:\n${r.qr_code}`}\n\nO pagamento é reconhecido na hora. Obrigado!`;
   window.mpQrTxt=r.checkout_url||r.qr_code;
-  window.mpCh=r.id;waSeqSet({tel:()=>ph,text:q=>window.mpMsg.replace('\n\nO pagamento é reconhecido',(q?'\n\nO QR Code está na imagem, caso queira pagar em outro aparelho.':'')+'\n\nO pagamento é reconhecido'),png:()=>qrPngBlob(window.mpQrTxt)});
+  window.mpCh=r.id;waSeqSet({tel:()=>ph,text:()=>window.mpMsg,code:()=>window.mpQrTxt,card:()=>cobCard({loja,titulo:r.checkout_url?'Pagamento (Pix ou cartão)':'Pagamento via Pix',linhas:[c.name||'',`Parcela ${i.number}${(()=>{const t=db.installments.filter(x=>x.sale_id===sid&&!x.canceled_at).length;return t?'/'+t:''})()} do carnê`,R(r.amount)],rodape:r.checkout_url?'Escaneie o QR Code ou toque no link da mensagem':'Escaneie o QR Code ou copie o código Pix da mensagem',validade:(r.checkout_url?'Combine o pagamento até ':'Válido até ')+dBR(r.expires_at),qr:qrDraw(window.mpQrTxt)})});
   modal(`<h2>${r.checkout_url?'Link InfinitePay':'Pix Mercado Pago'} · parcela ${i.number}</h2><p class="sm">${esc(c.name||'')} · <b>${R(r.amount)}</b> · ${r.checkout_url?'combine o pagamento até':'vale até'} ${dBR(r.expires_at)}</p>
   ${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<div style="text-align:center"><img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}"></div>`:r.qr_code?pixSvg(r.qr_code):''}
   <label>${r.checkout_url?'Link de pagamento':'Pix copia e cola'} <span class="sm">(vai em mensagem separada)</span></label><textarea id="mpcode" rows="3" readonly onclick="this.select()" style="${CODE_ST}">${esc(r.checkout_url||r.qr_code)}</textarea>
   <div class="row"><button class="btn" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar código</button></div>
-  <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente: mensagem + código + QR</button>
+  <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waAll(true)">Enviar ao cliente (imagem com QR + código)</button>
   <button class="btn g" style="width:100%;margin-top:6px" onclick="waAll(false)">Só texto, direto no WhatsApp do cliente</button>
-  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. O QR Code vai como imagem e a mensagem com o código vai de legenda, tudo numa mensagem só. No computador, abre o WhatsApp com o texto pronto e copia o QR para você colar (Ctrl+V).</p>
+  <p class="sm">No celular, o 1º botão abre o “compartilhar”: escolha o WhatsApp e o cliente. Vai a imagem com os dados da cobrança e o QR Code, e o texto da mensagem é <b>só o código</b>, para o cliente copiar e colar no banco. No computador, a imagem é copiada (cole com Ctrl+V) e o código fica pronto na caixa de texto.</p>
   <p id="mpst" class="sm" role="status">Aguardando o pagamento… (confere sozinho a cada poucos segundos)</p>
   <button class="btn g" onclick="mpCancel('${r.id}','${iid}','${sid}')">Cancelar este Pix</button>`);
   clearInterval(window.mpTm);
@@ -3521,7 +3539,14 @@ function payToast(txt){ // faixa verde no topo (some em 20 s ou ao tocar)
     e.textContent='✅ '+txt;clearTimeout(e._t);e._t=setTimeout(()=>e.remove(),20000)}catch(x){}
 }
 let mpBusy=false;
+async function pedPagos(){ // pedidos do catálogo pagos por Pix (o servidor marca como "pago"): traz para cá e avisa
+  if(!sb||role!=='admin'||!CO().cat_pix_on||navigator.onLine===false||db.outbox.some(o=>o.t==='orders'))return;
+  try{const{data}=await sb.from('orders').select('*').in('status',['pago','aguardando_pix','pix_expirado']).gte('created_at',new Date(Date.now()-15*86400000).toISOString());
+    let mud=false;for(const o of data||[]){const k=db.orders.findIndex(x=>x.id===o.id);if(k<0){db.orders.push(o);mud=true}else if(db.orders[k].status!==o.status){db.orders[k]=o;mud=true}}
+    if(mud){save();notifCheck();if(view==='ped')render()}}catch(e){}
+}
 async function mpCheckAll(){ // confere Pix de parcela ainda sem baixa (pagos com o sistema fechado ou em outro aparelho)
+  pedPagos();
   if(mpBusy||!sb||role!=='admin'||!CO().mp_pix_on||navigator.onLine===false)return;
   mpBusy=true;let n=0,tot=0;
   try{
@@ -3762,14 +3787,14 @@ function extratoOpen(cid){
 /* ========= Pedidos do catálogo ========= */
 function vPed(){
   const l=[...db.orders].sort((a,b)=>b.created_at.localeCompare(a.created_at));
-  const st={novo:'Novo',convertido:'Virou venda',cancelado:'Cancelado'};
+  const st={novo:'Novo',convertido:'Virou venda',cancelado:'Cancelado',pago:'PAGO · entregar',aguardando_pix:'Aguardando Pix',pix_expirado:'Pix não pago'};
   $('#app').innerHTML=l.length?`<div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Total</th><th>Status</th><th></th></tr>
   ${l.map(o=>`<tr><td>${new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
   <td>${esc(o.customer_name||'—')}<div class="sm">${esc(o.customer_phone||'')}</div></td>
   <td>${o.items.map(i=>`${i.qty}x ${esc(i.name)}`).join('<br>')}</td>
-  <td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê '+(o.n_inst||1)+'x'}[o.pay_type]}</td><td>${R(o.total)}</td>
-  <td><span class="tag ${o.status==='novo'?'ok':''}">${st[o.status]||o.status}</span></td>
-  <td>${o.status==='novo'?`<button class="btn s" onclick="toSale('${o.id}')">Vender</button> <button class="btn g s" onclick="cancelOrder('${o.id}')">Cancelar</button>`:''}
+  <td>${{avista:'À vista',cartao:'Cartão',crediario:'Carnê '+(o.n_inst||1)+'x',pix:'Pix pelo catálogo'}[o.pay_type]||esc(o.pay_type||'')}${o.paid_at?`<div class="sm ok">pago ${new Date(o.paid_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td><td>${R(o.total)}</td>
+  <td><span class="tag ${o.status==='novo'||o.status==='pago'?'ok':''}" ${o.status==='pago'?'style="background:#12805c;color:#fff"':''}>${st[o.status]||o.status}</span></td>
+  <td>${o.status==='novo'?`<button class="btn s" onclick="toSale('${o.id}')">Vender</button> <button class="btn g s" onclick="cancelOrder('${o.id}')">Cancelar</button>`:o.status==='pago'?`<button class="btn s" onclick="toSale('${o.id}')">Registrar venda (já pago)</button>`:''}
   ${o.customer_phone?` <a class="btn g s" target="_blank" rel="noopener" href="https://wa.me/55${digits(o.customer_phone)}">WhatsApp</a>`:''}</td></tr>`).join('')}</table></div>`
   :empty('Nenhum pedido ainda','Os pedidos feitos no catálogo aparecem aqui.');
 }
@@ -3808,6 +3833,7 @@ function notifs(){
       out.push({id:'pg'+x.id,kind:'pgto',days:1,title:(c.name||'Cliente')+' pagou a parcela '+(i.number||'?')+(tot?'/'+tot:''),sub:'Recebido '+dBR(x.paid_at)+(m?' pelo '+m[1]:'')+(+x.discount>0?' · com desconto '+R(x.discount):''),amount:+x.amount,pid:x.id,sid:x.sale_id});
     });
   }
+  if(ADM())db.orders.filter(o=>o.status==='pago').forEach(o=>out.push({id:'op'+o.id,kind:'pedido',days:0,title:'Pedido PAGO no catálogo: separar e entregar',sub:(o.customer_name||'Cliente')+(o.customer_phone?' · '+o.customer_phone:'')+' · '+(o.items||[]).map(i=>i.qty+'x '+i.name).join(', '),amount:+o.total,oid:o.id}));
   if(ADM())(window.CTRS||[]).forEach(r=>{ // clientes que assinaram o contrato pelo link e ainda não foram vistos neste aparelho
     if(ctrSeenSet().includes(r.id))return;
     const sl=db.sales.find(x=>x.id===r.sale_id)||{},c=db.customers.find(x=>x.id===sl.customer_id)||{};
@@ -3856,7 +3882,7 @@ function avisoToast(txt){ // faixa bem visível no topo até clicar ou passar 30
     e.textContent='🔔 '+txt+' — toque para ver';clearTimeout(e._t);e._t=setTimeout(()=>e.remove(),30000)}catch(x){}
 }
 let lastRep=0;
-const urgente=n=>n.kind==='contrato'||n.kind==='nota'||n.kind==='pdv'||n.kind==='fiscal'||n.kind==='cert'||n.kind==='backup'||((n.kind==='cobrar'||n.kind==='pagar')&&n.days<=0);
+const urgente=n=>n.kind==='pedido'||n.kind==='contrato'||n.kind==='nota'||n.kind==='pdv'||n.kind==='fiscal'||n.kind==='cert'||n.kind==='backup'||((n.kind==='cobrar'||n.kind==='pagar')&&n.days<=0);
 function notifCheck(){
   if(!isAdmin()||view==='login')return;
   const o=NS(),today=ld(now()),L=notifs(),seen=o.seen&&o.seen.d===today?o.seen.ids:[];
@@ -3873,7 +3899,7 @@ function notifCheck(){
   lastRep=Date.now();
   nset('seen',{d:today,ids:[...seen,...nw.map(n=>n.id)]});
   const c=nw.filter(n=>n.kind==='cobrar').length,p=nw.filter(n=>n.kind==='pagar').length;
-  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'||n.kind==='pacote'||n.kind==='codigos'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),ctn=nw.filter(n=>n.kind==='contrato').length,pg=nw.filter(n=>n.kind==='pgto').length,txt=[pg?(pg>1?pg+' parcelas pagas':'parcela paga pelo cliente'):'',ctn?(ctn>1?ctn+' contratos assinados':'contrato assinado pelo cliente'):'',c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado, tabela IBPT ou pacote do contador':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
+  const ce=nw.some(n=>n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'||n.kind==='pacote'||n.kind==='codigos'),pv=nw.filter(n=>n.kind==='pdv').length,bk=nw.some(n=>n.kind==='backup'),es=nw.some(n=>n.kind==='estoque'),nt=nw.some(n=>n.kind==='nota'),ctn=nw.filter(n=>n.kind==='contrato').length,pg=nw.filter(n=>n.kind==='pgto').length,pd=nw.filter(n=>n.kind==='pedido').length,txt=[pd?(pd>1?pd+' pedidos pagos para entregar':'pedido pago no catálogo, entregar'):'',pg?(pg>1?pg+' parcelas pagas':'parcela paga pelo cliente'):'',ctn?(ctn>1?ctn+' contratos assinados':'contrato assinado pelo cliente'):'',c?`${c} para cobrar`:'',p?`${p} para pagar`:'',nt?'nota de compra recebida':'',es?'estoque baixo':'',ce?'certificado, tabela IBPT ou pacote do contador':'',pv?pv+' aviso(s) do PDV':'',bk?'backup pendente':''].filter(Boolean).join(' e ');
   if(o.sound!==false)beep();
   avisoToast(txt);
   if(o.push&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
@@ -3900,10 +3926,11 @@ async function ctrPoll(){
 setInterval(()=>{try{ctrPoll()}catch(e){}},45000);setTimeout(()=>{try{ctrPoll()}catch(e){}},6000);
 function notifOpen(){
   const L=notifs(),o=NS(),row=n=>`<div class="pri" style="cursor:default;align-items:flex-start"><span class="pn"><b>${esc(n.title)}</b><span class="sm ${n.days<0?'bad':''}">${esc(n.sub)}</span></span>
-    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='pacote'?`<button class="btn s" onclick="pacoteDoAviso('${n.ym}')">Gerar pacote</button>`:n.kind==='codigos'?`<button class="btn s" onclick="codOpen()">Ver faixas</button>`:n.kind==='contrato'?`<button class="btn s" onclick="ctrSeen('${n.cid}');carne('${n.sid}')">Ver contrato</button>`:n.kind==='pgto'?`<button class="btn s" onclick="pgSeen('${n.pid}')">Ok, visto</button><button class="btn g s" onclick="pgSeen('${n.pid}');carne('${n.sid}')">Ver carnê</button>`:n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
-  const G=L.filter(n=>n.kind==='pgto'),C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind));
+    <span class="pv">${['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind)?'':`<b>${R(n.amount)}</b>`}<span style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">${n.kind==='cobrar'?`<button class="btn s" onclick="pixAtual('${n.iid}','${n.sid}')">Cobrar</button>`:n.kind==='pagar'?`<button class="btn s" onclick="pagPay('${n.pid}')">Pagar</button>`:n.kind==='nota'?`<button class="btn s" onclick="closeM();go('dfe')">Ver notas</button>`:n.kind==='estoque'?`<button class="btn s" onclick="closeM();go('ini')">Ver lista</button>`:n.kind==='pacote'?`<button class="btn s" onclick="pacoteDoAviso('${n.ym}')">Gerar pacote</button>`:n.kind==='codigos'?`<button class="btn s" onclick="codOpen()">Ver faixas</button>`:n.kind==='contrato'?`<button class="btn s" onclick="ctrSeen('${n.cid}');carne('${n.sid}')">Ver contrato</button>`:n.kind==='pedido'?`<button class="btn s" onclick="closeM();go('ped')">Ver pedido</button>`:n.kind==='pgto'?`<button class="btn s" onclick="pgSeen('${n.pid}')">Ok, visto</button><button class="btn g s" onclick="pgSeen('${n.pid}');carne('${n.sid}')">Ver carnê</button>`:n.kind==='cert'||n.kind==='ibpt'||n.kind==='fiscal'?`<button class="btn s" onclick="closeM();go('fis')">Ver Fiscal</button>`:n.kind==='pdv'?`<button class="btn s" onclick="closeM();BAL.tab='av';go('bal')">Ver avisos</button>`:`<button class="btn s" onclick="closeM();go('emp')">Ir ao backup</button>`}</span></span></div>`;
+  const PD=L.filter(n=>n.kind==='pedido'),G=L.filter(n=>n.kind==='pgto'),C=L.filter(n=>n.kind==='cobrar'),P=L.filter(n=>n.kind==='pagar'),B=L.filter(n=>['backup','estoque','nota','cert','pdv','ibpt','fiscal','pacote','codigos','contrato'].includes(n.kind));
   modal(`<h2>Central de avisos</h2>
   ${L.length?'':'<p>Nada pendente por enquanto. 🎉</p>'}
+  ${PD.length?`<h3 class="ok">Pedidos pagos para entregar (${PD.length})</h3><div class="pres">${PD.map(row).join('')}</div><p class="sm">O aviso some quando você registra a venda do pedido (botão “Registrar venda (já pago)” em Pedidos).</p>`:''}
   ${G.length?`<h3 class="ok">Pagamentos recebidos (${G.length})</h3><div class="pres">${G.map(row).join('')}</div><p><button class="btn g s" onclick="pgSeen('*')">Marcar todos como vistos</button></p>`:''}
   ${C.length?`<h3>Para cobrar (${C.length})</h3><div class="pres">${C.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('cob')">Abrir tela de cobrança</button></p>`:''}
   ${P.length?`<h3>Para pagar (${P.length})</h3><div class="pres">${P.map(row).join('')}</div><p><button class="btn g s" onclick="closeM();go('pag')">Abrir contas a pagar</button></p>`:''}
