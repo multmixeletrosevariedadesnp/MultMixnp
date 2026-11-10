@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -104,6 +104,17 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 #artv svg{width:100%;height:auto;display:block;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .thb.on,.occb.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 @media(max-width:900px){.art{grid-template-columns:1fr}.artp{order:-1;position:sticky;top:0;z-index:6;background:var(--bg);padding:6px 0;text-align:center}.artp #artv svg{width:auto;max-width:100%;max-height:34vh;margin:0 auto}}
+.artact .btn{white-space:normal}
+@media(max-width:900px){
+.artp{margin:0 -18px;padding:6px 18px}
+.artp #artv svg{max-height:28vh}
+.artact{position:sticky;bottom:0;z-index:6;background:var(--card);margin:10px -14px 0;padding:8px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--line)}
+.artact .btn:first-child{grid-column:1/-1}
+.artact .btn{width:100%;justify-content:center}
+.artact .btn:not(:first-child){white-space:nowrap;font-size:14px;padding-left:6px;padding-right:6px}
+.L-bot .artact{bottom:72px}
+}
+@media(max-width:900px) and (max-height:520px){.artp,.artact{position:static}.artp #artv svg{max-height:60vh}}
 .kitbox{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:8px}.kitbox.off{display:none}
 .artg{grid-column:1/-1;border:1px solid var(--line);border-radius:12px;background:var(--card)}.artg>summary{cursor:pointer;font-weight:700;padding:12px 14px;list-style:none}.artg>summary::after{content:'▾';float:right}.artg[open]>summary::after{content:'▴'}.artg>.f{padding:0 14px;margin-bottom:0}.artg>.f::after{content:'';grid-column:1/-1;height:4px}
 .appv{background:none;border:0;color:#fff;opacity:.7;font:inherit;font-size:11px;cursor:pointer;text-align:left;padding:2px 8px}
@@ -1423,7 +1434,7 @@ async function vArte(){
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_logo" style="width:auto" checked onchange="artRender()"> Mostrar logo e nome da empresa no topo</label>
   <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="a_foot" style="width:auto" checked onchange="artRender()"> Mostrar rodapé com WhatsApp e endereço</label></div>
   <div class="w"><label>Legenda do status (pode editar)</label><textarea id="a_cap" rows="6" oninput="artCapDirty=true"></textarea></div></div>
-  <div class="row"><button class="btn" onclick="artShare()">Enviar para o WhatsApp (Status)</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
+  <div class="row artact"><button class="btn" onclick="artShare()">Enviar para o WhatsApp (Status)</button><button class="btn g" onclick="artDownload()">Baixar imagem</button><button class="btn g" onclick="artCopy()">Copiar legenda</button></div>
   <p class="sm">No computador: baixe a imagem e publique pelo <a href="https://web.whatsapp.com/" target="_blank" rel="noopener">WhatsApp Web</a> (Status, botão +).</p></div>
   <div class="artp"><div id="artv"></div></div></div>`;
   artGroups();
