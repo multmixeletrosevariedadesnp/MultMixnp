@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.85.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.85.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3367,18 +3367,35 @@ async function qrEnviar(text,legenda){ // celular: abre o "compartilhar" com a i
     const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download='qr-pix.png';a.click();alert('QR Code baixado. Anexe a imagem na conversa do cliente no WhatsApp.');
   }catch(e){if(e&&e.name==='AbortError')return;alert('Não consegui gerar a imagem do QR Code.')}
 }
-async function cobCard(o){ // imagem da cobrança: loja, dados da parcela/venda e o QR (o código vai sozinho no texto da mensagem)
-  const W=1000,H=1400,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
-  const fit=(t,px,wt,max)=>{let f=px;do{g.font=`${wt} ${f}px system-ui,Segoe UI,Arial,sans-serif`;f-=2}while(g.measureText(t).width>max&&f>16)};
-  g.fillStyle='#fff';g.fillRect(0,0,W,H);
-  g.fillStyle='#12805c';g.fillRect(0,0,W,150);g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
-  fit(o.loja||'MultMix',58,'800',W-80);g.fillText(o.loja||'MultMix',W/2,75);
-  g.fillStyle='#111';fit(o.titulo,50,'800',W-80);g.fillText(o.titulo,W/2,225);
-  let y=295;(o.linhas||[]).filter(Boolean).forEach((t,k)=>{g.fillStyle=k===o.linhas.length-1?'#0b5d3b':'#333';fit(t,k===o.linhas.length-1?52:38,k===o.linhas.length-1?'800':'600',W-80);g.fillText(t,W/2,y);y+=k===o.linhas.length-1?70:56});
-  const S=620,x0=(W-S)/2,y0=Math.max(y+10,460);
+async function cobCard(o){ // imagem da cobrança no padrão MultMix (azul + amarelo, logo); o código/link vai no texto da mensagem
+  const W=1000,H=1620,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  const AZ1='#002e68',AZ2='#00468f',AM='#ffc21a',TX='#0b1f44',F='system-ui,Segoe UI,Arial,sans-serif';
+  const fit=(t,px,wt,max)=>{let f=px;do{g.font=`${wt} ${f}px ${F}`;f-=2}while(g.measureText(t).width>max&&f>14)};
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle='#f4f6fb';g.fillRect(0,0,W,H);
+  // topo azul com o logo e o nome
+  let gr=g.createLinearGradient(0,0,W,260);gr.addColorStop(0,AZ1);gr.addColorStop(1,AZ2);g.fillStyle=gr;g.fillRect(0,0,W,260);
+  g.fillStyle=AM;g.fillRect(0,260,W,12);
+  const lg=await new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src='logo.jpg'});
+  let tx=60;
+  if(lg){g.save();rr(50,40,180,180,36);g.clip();g.drawImage(lg,200,70,400,340,40,40,200,170);g.restore();g.save();rr(50,40,180,180,36);g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=3;g.stroke();g.restore();tx=265}
+  g.textAlign='left';g.textBaseline='alphabetic';g.font=`900 92px ${F}`;g.fillStyle='#fff';g.fillText('Mult',tx,150);const mw=g.measureText('Mult').width;g.fillStyle=AM;g.fillText('Mix',tx+mw,150);
+  g.font=`700 27px ${F}`;g.fillStyle='#fff';try{g.letterSpacing='5px'}catch(e){}g.fillText('ELETROS E VARIEDADES',tx+4,198);try{g.letterSpacing='0px'}catch(e){}
+  // cartão branco
+  g.save();g.shadowColor='rgba(0,46,104,.18)';g.shadowBlur=30;g.shadowOffsetY=8;rr(40,310,W-80,H-310-150,32);g.fillStyle='#fff';g.fill();g.restore();
+  g.textAlign='center';g.textBaseline='middle';
+  g.fillStyle=TX;fit(o.titulo,52,'900',W-160);g.fillText(o.titulo,W/2,385);
+  const L=(o.linhas||[]).filter(Boolean),val=L.length>1?L.pop():null;let y=450;
+  L.forEach(t=>{g.fillStyle='#334155';fit(t,38,'600',W-160);g.fillText(t,W/2,y);y+=54});
+  if(val){fit(val,64,'900',W-200);const vw=g.measureText(val).width+70;rr((W-vw)/2,y-8,vw,96,18);g.fillStyle=AM;g.fill();g.fillStyle='#101828';g.fillText(val,W/2,y+42);y+=120}
+  const S=600,x0=(W-S)/2,y0=y+10;
+  rr(x0-22,y0-22,S+44,S+44,24);g.strokeStyle=AZ2;g.lineWidth=6;g.stroke();
   await o.qr(g,x0,y0,S);
-  g.fillStyle='#111';fit(o.rodape,34,'700',W-60);g.fillText(o.rodape,W/2,y0+S+60);
-  if(o.validade){g.fillStyle='#666';fit(o.validade,28,'500',W-60);g.fillText(o.validade,W/2,y0+S+110)}
+  g.fillStyle=TX;fit(o.rodape,34,'800',W-140);g.fillText(o.rodape,W/2,y0+S+70);
+  if(o.validade){g.fillStyle='#64748b';fit(o.validade,28,'600',W-140);g.fillText(o.validade,W/2,y0+S+118)}
+  // rodapé azul
+  gr=g.createLinearGradient(0,H-110,W,H);gr.addColorStop(0,AZ1);gr.addColorStop(1,AZ2);g.fillStyle=gr;g.fillRect(0,H-110,W,110);g.fillStyle=AM;g.fillRect(0,H-110,W,8);
+  g.fillStyle='#fff';fit('Antes de confirmar, confira se o recebedor é a MultMix no app do banco.',28,'700',W-80);g.fillText('Antes de confirmar, confira se o recebedor é a MultMix no app do banco.',W/2,H-52);
   return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('png')),'image/png'));
 }
 let WAQ=null;
