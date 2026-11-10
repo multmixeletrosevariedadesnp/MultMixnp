@@ -1,6 +1,6 @@
 {
   "name": "multmix",
-  "version": "1.2.1",
+  "version": "1.2.4",
   "description": "MultMix para computador (Windows): Sistema, Catálogo e PDV, funciona sem internet e imprime o cupom direto.",
   "main": "main.js",
   "author": "MultMix Eletros e Variedades",
