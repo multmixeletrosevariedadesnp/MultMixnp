@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.7.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.7.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -117,6 +117,12 @@ body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))
 .lbn.l{left:10px}.lbn.r{right:10px}
 #lbc{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.55);padding:2px 12px;border-radius:99px;font-size:13px}
 .cwa{display:block;margin-top:8px;padding:7px 10px;font-size:14px}
+/* cards alinhados: nome com altura fixa de 3 linhas e botão sempre no rodapé do card */
+.grid:not(.g-list) .card{display:flex;flex-direction:column}
+.grid:not(.g-list) .cb{flex:1;display:flex;flex-direction:column}
+.grid:not(.g-list) .cb h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;min-height:3.75em}
+.grid:not(.g-list) .cwa{margin-top:auto}
+.grid:not(.g-list) .cb .sm{margin-bottom:10px}
 .card.na .ph{filter:grayscale(.85);opacity:.7}.card.na .cb h3,.card.na .cash{opacity:.65}
 .nab{position:absolute;left:8px;top:8px;background:#344054;color:#fff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px}
 .g-small .nab,.g-list .nab{font-size:11px;padding:2px 8px}
@@ -306,7 +312,7 @@ function list(){
   summary(l.length);
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}${safeUrl(p.video_url)?'<span class="vidb" title="Tem vídeo">▶ vídeo</span>':''}</div>
-   <div class="cb"><h3>${esc(p.name)}</h3>${mainPrice(p)}
+   <div class="cb"><h3 title="${esc(p.name)}">${esc(p.name)}</h3><div class="prc">${mainPrice(p)}</div>
    <div class="sm">${p.stock<=0?'Indisponível · aguardando estoque':offers(p)}</div>${p.stock>0?`<a class="btn wa cwa" target="_blank" rel="noopener" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" href="https://wa.me/${wa()}?text=${waAsk(p)}">Chamar no WhatsApp</a>`:''}</div></div>`}).join('')||EMPTY;
   fab();
 }

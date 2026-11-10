@@ -1,5 +1,5 @@
 {
- "version": "1.7.0",
+ "version": "1.7.1",
  "date": "2026-11-10",
- "notes": "Pagar agora com Pix (Mercado Pago): o pedido chega à loja já pago."
+ "notes": "Cards alinhados: preço e botão do WhatsApp na mesma altura em todos os produtos."
 }
