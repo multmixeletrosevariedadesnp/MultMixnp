@@ -1,7 +1,7 @@
 {
  "id": "multmix-pdv",
  "name": "MultMix PDV",
- "short_name": "PDV",
+ "short_name": "MultMix PDV",
  "description": "PDV do vendedor MultMix",
  "start_url": "./",
  "scope": "./",

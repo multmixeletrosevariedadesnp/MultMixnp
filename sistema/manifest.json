@@ -1,7 +1,7 @@
 {
  "id": "multmix-sistema",
  "name": "MultMix Sistema",
- "short_name": "MultMix",
+ "short_name": "MultMix Sistema",
  "description": "MultMix Eletros e Variedades",
  "start_url": "./",
  "scope": "./",

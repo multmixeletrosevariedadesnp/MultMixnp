@@ -1,7 +1,7 @@
 {
  "id": "multmix-catalogo",
  "name": "MultMix Catálogo",
- "short_name": "MultMix",
+ "short_name": "MultMix Catálogo",
  "description": "MultMix Eletros e Variedades",
  "start_url": "./",
  "scope": "./",
