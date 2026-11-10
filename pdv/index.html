@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.2'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1522,6 +1522,17 @@ function mpStop(v){ // fecha a espera do Pix: v=false cancela a venda
   clearInterval(mpTm);mpTm=null;
   if(mpRes){const r=mpRes;mpRes=null;if(v===false&&mpId2)mpCall({action:'cancelar',id:mpId2}).then(()=>{},()=>{});r(v)}
 }
+const WAQ_L=['Enviar ao cliente · 1 de 3: mensagem','Enviar · 2 de 3: código','Enviar · 3 de 3: QR Code'];
+let WAQ=null;
+function waSeqSet(o){WAQ={...o,step:0}}
+function waSeqGo(){ // um botão só: a cada toque abre a próxima parte (mensagem, código, QR) na ordem certa
+  const q=WAQ,b=document.getElementById('waseq');if(!q||!b)return;
+  const tel=q.tel();if(tel===false)return;
+  const wa=t=>window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(t),'_blank','noopener');
+  if(q.step===0){wa(q.msg());q.step=1;b.textContent=WAQ_L[1]}
+  else if(q.step===1){wa(q.code());q.step=2;b.textContent=WAQ_L[2]}
+  else{mpQrEnviar(window.mpB64);q.step=0;b.textContent='✓ Enviado · tocar para reenviar'}
+}
 function mpWa(v,modo){ // modo 'code' manda só o código; senão a mensagem sem o código (ele vai separado)
   let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
   const c=CO||{},loja=c.trade_name||c.legal_name||'MultMix',cod=($('#mpcode')||{}).value||'',lk=/^http/.test(cod);
@@ -1549,6 +1560,7 @@ async function mpPdvPay(sale,tot,nome,pv){
   try{r=await mpCall({action:'criar',kind:'venda',...(pv?{provider:pv}:{}),sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no PDV'})}
   catch(e){return confirm('Não consegui gerar o Pix automático:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
   mpId2=r.id;window.mpB64=r.checkout_url?'':(r.qr_base64||'');
+  waSeqSet({tel:()=>{let d=String(($('#mpwa')||{}).value||'').replace(/\D/g,'');if(d.length<10){alert('Informe o WhatsApp do cliente com DDD.');return false}return d.length<=11?'55'+d:d},msg:()=>{const c=CO||{},lj=c.trade_name||c.legal_name||'MultMix',cd=($('#mpcode')||{}).value||'';return `*${lj}*\nPagamento de ${R(tot)}.\nO ${/^http/.test(cd)?'link para pagar (Pix ou cartão)':'código Pix (copia e cola)'} e o QR Code vão nas próximas mensagens.`},code:()=>($('#mpcode')||{}).value||''});
   return await new Promise(res=>{
     mpRes=res;
     modal(`<h2>Pix · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code. A venda só é registrada quando o pagamento for confirmado.</p>
@@ -1557,8 +1569,8 @@ async function mpPdvPay(sale,tot,nome,pv){
     <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="mpwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="mpst" class="sm" role="status">Aguardando o pagamento…</p>
     <div class="bar"><button class="btn g" onclick="mpcode.select();document.execCommand('copy');mpst.textContent='Código copiado.'">Copiar ${r.checkout_url?'link':'código'}</button></div>
-    <p class="sm" style="margin:8px 0 4px">Enviar ao cliente, uma coisa de cada vez:</p>
-    <div class="bar"><button class="btn g" onclick="mpWa(${+tot.toFixed(2)})">1 · Mensagem</button><button class="btn g" onclick="mpWa(${+tot.toFixed(2)},'code')">2 · Só o código</button><button class="btn g" onclick="mpQrEnviar(window.mpB64)">3 · QR Code</button></div>
+    <button class="btn" id="waseq" style="width:100%;margin-top:8px" onclick="waSeqGo()">${WAQ_L[0]}</button>
+  <p class="sm">Toque 3 vezes: mensagem, código e QR Code. Em cada toque abre o WhatsApp do cliente; é só enviar e voltar aqui.</p>
     <div class="bar"><button class="btn g" onclick="mpStop(false);closeM()">Cancelar venda</button></div>`);
     mpTm=setInterval(async()=>{
       if(!document.getElementById('mpst')){mpStop(false);return}
