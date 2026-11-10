@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.81.8'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.82.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1486,10 +1486,10 @@ async function ipDiag(){
 async function ipTest(){
   const o=$('#ip_t'),c=CO(),fl=[];
   fl.push('Cobrança automática ligada: <b>'+(c.mp_pix_on?'sim':'NÃO (ligue em Empresa e salve)')+'</b>');
-  fl.push('Provedor: <b>'+(c.pix_provider==='ip'?'InfinitePay':'NÃO é InfinitePay (escolha em Empresa e salve)')+'</b>');
+  fl.push('Provedor: <b>'+(c.pix_provider==='ip'||c.pix_provider==='both'?'InfinitePay':'NÃO é InfinitePay (escolha em Empresa e salve)')+'</b>');
   o.innerHTML=fl.join('<br>')+'<br>Gerando o link…';
   try{
-    const r=await mpCall({action:'criar',kind:'venda',sale_ref:uid(),amount:1,payer_name:'Teste',description:'Teste de integração'});
+    const r=await mpCall({action:'criar',kind:'venda',provider:'ip',sale_ref:uid(),amount:1,payer_name:'Teste',description:'Teste de integração'});
     o.innerHTML=fl.join('<br>')+`<br><b class="ok">Funcionou: a InfinitePay devolveu o link.</b> Pague com o celular para testar a confirmação.<div style="text-align:center">${r.checkout_url?pixSvg(r.checkout_url):''}</div><textarea rows="2" readonly onclick="this.select()" style="width:100%">${esc(r.checkout_url||'')}</textarea><div id="ip_s">Aguardando pagamento…</div>`;
     const tm=setInterval(async()=>{
       if(!$('#ip_s')){clearInterval(tm);mpCall({action:'cancelar',id:r.id}).catch(()=>{});return}
@@ -1547,7 +1547,7 @@ function vEmp(){
   <div style="margin:14px 0"><b>Cobrança automática (InfinitePay)</b>
   <p class="sm" style="margin:2px 0 8px">Gera um link de pagamento da InfinitePay (Pix ou cartão) e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até cadastrar as chaves abaixo, publicar a função <code>mp-pix</code> e fazer um teste de R$ 1,00. Escolha o provedor <b>InfinitePay</b> na lista.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
-  <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option></select></div></div></div>
+  <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'&&c.pix_provider!=='both'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option><option value="both" ${c.pix_provider==='both'?'selected':''}>Os dois (escolher na hora: Gerar com Mercado Pago ou com InfinitePay)</option></select></div></div></div>
   ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
   <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
   <button class="btn g s" onclick="unlockUntil=0;master(ipKeys)">Abrir chaves (pede senha)</button></div>`:''}
@@ -2457,7 +2457,7 @@ function vPdv(){
    <div class="cact"><button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></div>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option><option value="crediario">Carnê (crediário)</option></select></div>
-   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${sb&&CO().mp_pix_on&&CO().pix_provider==='ip'?'<option value="__ip">Pix InfinitePay (QR automático)</option>':''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
+   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${sb&&CO().mp_pix_on?(CO().pix_provider==='both'?'<option value="__mp">Gerar com Mercado Pago (QR Pix automático)</option><option value="__ip">Gerar com InfinitePay (link/QR automático)</option>':CO().pix_provider==='ip'?'<option value="__ip">Gerar com InfinitePay (link/QR automático)</option>':'<option value="__mp">Gerar com Mercado Pago (QR Pix automático)</option>'):''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
    ${ADM()&&PROF.length?`<div><label>Vendedor</label><select id="s_v">${PROF.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${me&&u.id===me.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></div>`:''}
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" value="0" oninput="cartView()"></div>
    ${ADM()?`<div class="cr"><label>Preço do carnê</label><select id="s_pm" onchange="cartView()"><option value="carne">Preço de carnê (tabela)</option><option value="avista">Usar preço à vista</option><option value="custom">Valor combinado (digitar o total)</option></select></div>
@@ -2616,21 +2616,21 @@ function ipStop(v){clearInterval(ipTm);ipTm=null;if(ipRes){const r=ipRes;ipRes=n
 function ipWa(v){
   let d=String(($('#ipwa')||{}).value||'').replace(/\D/g,'');if(d.length<10)return alert('Informe o WhatsApp do cliente com DDD.');if(d.length<=11)d='55'+d;
   const loja=(CO().trade_name||CO().legal_name||'MultMix');
-  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este link (Pix ou cartão):\n${($('#ipcode')||{}).value}`),'_blank','noopener');
+  window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este ${/^http/.test(($('#ipcode')||{}).value||'')?'link (Pix ou cartão)':'Pix copia e cola'}:\n${($('#ipcode')||{}).value}`),'_blank','noopener');
 }
-async function ipSalePay(sale,tot,nome){
-  let r;
-  try{r=await mpCall({action:'criar',kind:'venda',sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no Sistema'})}
-  catch(e){return confirm('Não consegui gerar o QR da InfinitePay:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
+async function ipSalePay(sale,tot,nome,pv){
+  pv=pv||'ip';let r;
+  try{r=await mpCall({action:'criar',kind:'venda',provider:pv,sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no Sistema'})}
+  catch(e){return confirm('Não consegui gerar a cobrança da '+PVN[pv]+':\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
   ipId2=r.id;
   return await new Promise(res=>{
     ipRes=res;
-    modal(`<h2>Pix InfinitePay · ${R(tot)}</h2><p class="sm">Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão). A venda só é registrada quando o pagamento for confirmado.</p>
-    <div style="text-align:center">${pixSvg(r.checkout_url)}</div>
-    <textarea id="ipcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||'')}</textarea>
+    modal(`<h2>${pv==='ip'?'InfinitePay':'Pix Mercado Pago'} · ${R(tot)}</h2><p class="sm">${r.checkout_url?'Peça ao cliente para ler o QR Code, abrir o link e pagar (Pix ou cartão).':'Peça ao cliente para ler o QR Code Pix.'} A venda só é registrada quando o pagamento for confirmado.</p>
+    <div style="text-align:center">${r.checkout_url?pixSvg(r.checkout_url):r.qr_base64?`<img alt="QR Code Pix" style="width:240px;height:240px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}">`:''}</div>
+    <textarea id="ipcode" rows="2" readonly onclick="this.select()">${esc(r.checkout_url||r.qr_code||'')}</textarea>
     <div class="f"><div class="w"><label>WhatsApp do cliente (para pagar à distância)</label><input id="ipwa" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((($('#c_p')||{}).value)||'')}"></div></div>
     <p id="ipst" class="sm" role="status">Aguardando o pagamento…</p>
-    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Link copiado.'">Copiar link</button><button class="btn g" onclick="ipWa(${+tot.toFixed(2)})">Enviar por WhatsApp</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
+    <div class="bar"><button class="btn g" onclick="ipcode.select();document.execCommand('copy');ipst.textContent='Copiado.'">Copiar link</button><button class="btn g" onclick="ipWa(${+tot.toFixed(2)})">Enviar por WhatsApp</button><button class="btn g" onclick="ipStop(false);closeM()">Cancelar venda</button></div>`);
     ipTm=setInterval(async()=>{
       if(!document.getElementById('ipst')){ipStop(false);return}
       try{
@@ -2682,7 +2682,7 @@ async function finish(){
     let c=db.customers.find(x=>x.id===selCli)||db.customers.find(x=>(digits(c_c.value)&&digits(x.cpf)===digits(c_c.value))||x.name===c_n.value.trim())||{id:uid()};
     Object.assign(c,{name:c_n.value.trim(),cpf:c_c.value.trim(),phone:c_p.value.trim(),address:c.address||window.preAddr||''});const pc=window.preCli;if(pc&&digits(pc.cpf)===digits(c_c.value)){Object.entries(pc).forEach(([k,v])=>{if(v&&k!=='name'&&k!=='phone'&&!c[k])c[k]=v});if(!c.address&&c.street)c.address=`${c.street}, ${c.number||'s/n'} - ${c.district||''}, ${c.city||''}/${c.uf||''}`;if(pc.name&&!c.trade_name)c.trade_name=pc.trade_name||''}window.preCli=null;window.preAddr='';put('customers',c);cid=c.id;
   }else if(t==='crediario')return alert('Carnê exige o nome do cliente.');
-  const sale={id:uid(),customer_id:cid,pay_type:t,method:s_m.value==='__ip'?'Pix':s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
+  const sale={id:uid(),customer_id:cid,pay_type:t,method:/^__(ip|mp)$/.test(s_m.value)?'Pix':s_m.value,total:tot,entry:e,n_inst:n,fiscal_status:'pendente',doc_type:'nfe',nat_op:'Venda de mercadoria',freight:'9',...sellerInfo(),created_at:now(),
    items:cart.map(i=>{const p=db.products.find(x=>x.id===i.id);return{id:p.id,name:p.name,qty:i.qty,price:unitE(p),...(t==='crediario'&&unitE(p)<unit(p,'crediario')-0.004?{list_price:unit(p,'crediario')}:{}),ncm:p.ncm,cfop:p.cfop,unit:p.unit,cest:p.cest,csosn:p.csosn,...(p.serial_kind&&SER[p.id]?{serial_kind:p.serial_kind,serials:SER[p.id]}:{})}})};
   if(ctCustom()){ // acerta os centavos do arredondamento nas linhas, para a soma dos itens bater com o total combinado
     let res=Math.round((tot-sale.items.reduce((a,i)=>a+i.price*i.qty,0))*100)/100;
@@ -2692,9 +2692,10 @@ async function finish(){
   const low=cart.filter(i=>{const p=db.products.find(x=>x.id===i.id);return(+p.stock||0)<i.qty}).map(i=>db.products.find(x=>x.id===i.id).name);
   if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
   let ipId=null;
-  if(s_m.value==='__ip'&&t!=='crediario'){
-    if(navigator.onLine===false)return alert('Sem internet: não dá para gerar o QR da InfinitePay. Escolha Pix comum.');
-    const r=await ipSalePay(sale,tot,c_n.value.trim());if(r===false)return;if(r&&r.id)ipId=r.id;
+  if(/^__(ip|mp)$/.test(s_m.value)&&t!=='crediario'){
+    const pv=s_m.value.slice(2);
+    if(navigator.onLine===false)return alert('Sem internet: não dá para gerar a cobrança automática. Escolha Pix comum.');
+    const r=await ipSalePay(sale,tot,c_n.value.trim(),pv);if(r===false)return;if(r&&r.id)ipId=r.id;
   }
   put('sales',sale);
   if(ipId)mpCall({action:'aplicado',id:ipId,note:'venda '+sale.id}).catch(()=>{});
@@ -3316,12 +3317,14 @@ function pixAtual(iid,sid,charge){
   <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxMsg),'_blank')">${ph?'Enviar por WhatsApp':'Abrir WhatsApp (sem número do cliente)'}</button>
   <button class="btn g" onclick="window.open('https://wa.me/${ph}?text='+encodeURIComponent(window.pxCode),'_blank')">Enviar só o código</button></div>
   <p class="sm">Uma única mensagem já leva tudo: o link abre uma página com o botão <b>Copiar código Pix</b> e o <b>QR Code</b> (para pagar em outro aparelho). O botão <b>Enviar só o código</b> é opcional.</p>
-  ${co.mp_pix_on&&sb?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar link de pagamento InfinitePay (baixa sozinho)':'Gerar Pix Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:''}
+  ${co.mp_pix_on&&sb?(co.pix_provider==='both'?`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'mp')">Gerar com Mercado Pago</button><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc},'ip')">Gerar com InfinitePay</button></div><p class="sm">Escolha por onde o cliente vai pagar. Assim que ele pagar, o sistema dá baixa nesta parcela automaticamente.</p>`:`<div class="row"><button class="btn" onclick="mpCobrar('${iid}','${sid}',${valor},${desc})">${co.pix_provider==='ip'?'Gerar com InfinitePay (baixa sozinho)':'Gerar com Mercado Pago (baixa sozinho)'}</button></div><p class="sm">${co.pix_provider==='ip'?'A InfinitePay gera um link (Pix ou cartão).':'O Mercado Pago gera um QR próprio'} e, assim que o cliente pagar, o sistema dá baixa nesta parcela automaticamente.</p>`):''}
   <p id="pxok" class="sm ok" role="status"></p>
   <p class="sm">Este valor vale para pagamento <b>hoje</b>: amanhã os juros aumentam, então gere um novo Pix. Depois que o cliente pagar, confira no aplicativo da ${co.pix_provider==='ip'?'InfinitePay':'conta do Mercado Pago'} e use <b>Receber</b> no carnê para dar baixa${desc?' (o valor com desconto já vem preenchido)':''}.</p>
   <button class="btn g" onclick="carne('${sid}')">Voltar ao carnê</button>`);
 }
 /* ========= Pix Mercado Pago: gera o QR, reconhece o pagamento e dá baixa na parcela (desligado até ligar na aba Empresa) ========= */
+const PVN={mp:'Mercado Pago',ip:'InfinitePay'};
+function pvOne(){const p=CO().pix_provider;return p==='ip'?'ip':'mp'}
 async function mpCall(body){
   if(!sb)throw new Error('Precisa de conexão com o Supabase.');
   const{data,error}=await sb.functions.invoke('smart-service',{body});
@@ -3329,15 +3332,16 @@ async function mpCall(body){
   if(data&&data.ok===false)throw new Error(data.erro||'Erro na cobrança automática.');
   return data;
 }
-async function mpCobrar(iid,sid,valor,desc){
+async function mpCobrar(iid,sid,valor,desc,pv){
+  pv=pv||pvOne();
   const i=db.installments.find(x=>x.id===iid),s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{};
   if(!i||i.paid_at||i.canceled_at)return alert('Esta parcela não está em aberto.');
-  modal('<h2>Gerando Pix…</h2><p class="sm">Falando com a '+(CO().pix_provider==='ip'?'InfinitePay':'Mercado Pago')+'.</p>');
+  modal('<h2>Gerando cobrança…</h2><p class="sm">Falando com a '+PVN[pv]+'.</p>');
   try{
-    const r=await mpCall({action:'criar',kind:'parcela',installment_id:iid,amount:+valor,disc:+desc||0,payer_name:c.name||'',payer_email:c.email||'',description:'Parcela '+i.number+' do carnê'});
+    const r=await mpCall({action:'criar',kind:'parcela',provider:pv,installment_id:iid,amount:+valor,disc:+desc||0,payer_name:c.name||'',payer_email:c.email||'',description:'Parcela '+i.number+' do carnê'});
     if(r.status==='approved'){await mpBaixa(r.id,iid,r.amount,+desc||0);return mpOkMsg(iid,sid,r.amount)}
     mpShow(r,iid,sid,+desc||0);
-  }catch(e){alert('Não foi possível gerar a cobrança '+(CO().pix_provider==='ip'?'da InfinitePay':'do Mercado Pago')+': '+e.message);pixAtual(iid,sid,Math.max(0,+(valor-i.amount).toFixed(2)))}
+  }catch(e){alert('Não foi possível gerar a cobrança '+(pv==='ip'?'da InfinitePay':'do Mercado Pago')+': '+e.message);pixAtual(iid,sid,Math.max(0,+(valor-i.amount).toFixed(2)))}
 }
 function mpShow(r,iid,sid,desc){
   const i=db.installments.find(x=>x.id===iid)||{},s=db.sales.find(x=>x.id===sid)||{},c=db.customers.find(x=>x.id===s.customer_id)||{},co=CO();
@@ -3363,7 +3367,7 @@ function mpShow(r,iid,sid,desc){
   },4000);
 }
 function mpOkMsg(iid,sid,v){
-  modal(`<h2 class="ok">Pix recebido!</h2><p><b>${R(v)}</b> confirmado e baixado na parcela.</p><button class="btn" onclick="carne('${sid}')">Ver o carnê</button>`);
+  modal(`<h2 class="ok">Pagamento recebido!</h2><p>${esc(window.mpLastMsg||'')}</p><p><b>${R(v)}</b> confirmado e baixado na parcela.</p><button class="btn" onclick="carne('${sid}')">Ver o carnê</button>`);
   render();
 }
 async function mpCancel(id,iid,sid){
@@ -3377,7 +3381,21 @@ async function mpBaixa(id,iid,paid,desc){ // reserva a baixa primeiro (só um ap
   if(!r.aplicado_agora||!i||i.paid_at||i.canceled_at)return null;
   const rid=uid();
   parcAplica(i,{valor:paid,desc:desc||0,meio:'Pix',nota:'Pagamento automático',motivo:desc>0?'Desconto de juros combinado no Pix':'',rid});
-  save();sync();return rid;
+  save();sync();
+  try{ // aviso: "Fulano pagou a parcela X pelo Mercado Pago / InfinitePay"
+    let pv='';try{const{data}=await sb.from('pix_charges').select('provider').eq('id',id).maybeSingle();pv=data&&data.provider==='ip'?'InfinitePay':'Mercado Pago'}catch(e){}
+    const sl=db.sales.find(x=>x.id===i.sale_id)||{},cu=db.customers.find(x=>x.id===sl.customer_id)||{};
+    const nt=db.installments.filter(x=>x.sale_id===i.sale_id&&!x.canceled_at).length;
+    const msg=(cu.name||'Cliente')+' pagou a parcela '+i.number+(nt?'/'+nt:'')+' ('+R(paid)+')'+(pv?' pelo '+pv:'')+'.';
+    window.mpLastMsg=msg;payToast(msg);
+  }catch(e){}
+  return rid;
+}
+function payToast(txt){ // faixa verde no topo (some em 20 s ou ao tocar)
+  try{let e=document.getElementById('pgtoast');if(!e){e=document.createElement('div');e.id='pgtoast';e.setAttribute('role','status');
+    e.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#12805c;color:#fff;font:700 16px system-ui;padding:14px 20px;border-radius:14px;box-shadow:0 8px 30px #0009;cursor:pointer;max-width:92vw;text-align:center';
+    e.onclick=()=>e.remove();document.body.appendChild(e)}
+    e.textContent='✅ '+txt;clearTimeout(e._t);e._t=setTimeout(()=>e.remove(),20000)}catch(x){}
 }
 let mpBusy=false;
 async function mpCheckAll(){ // confere Pix de parcela ainda sem baixa (pagos com o sistema fechado ou em outro aparelho)
@@ -3393,7 +3411,7 @@ async function mpCheckAll(){ // confere Pix de parcela ainda sem baixa (pagos co
     }
   }catch(e){}
   mpBusy=false;
-  if(n){render();alert('Pagamento automático: '+n+' parcela'+(n>1?'s':'')+' recebida'+(n>1?'s':'')+' e baixada'+(n>1?'s':'')+' ('+R(tot)+').')}
+  if(n){render();if(n>1)alert('Pagamento automático: '+n+' parcela'+(n>1?'s':'')+' recebida'+(n>1?'s':'')+' e baixada'+(n>1?'s':'')+' ('+R(tot)+').')}
 }
 setInterval(()=>{try{mpCheckAll()}catch(e){}},60000);
 /* ========= Recebimentos do crediário: pagamento parcial, abatimento, recibo, vários de uma vez e extrato ========= */
