@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.28.3'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.29.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1240,7 +1240,7 @@ function vPdv(){
    <div class="bar" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="holdSave()">Pausar venda</button><button type="button" class="btn g s" id="hbtn" onclick="holdList()">Em espera (0)</button></div>
    <div id="cartv"></div>
    <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option>${carne?'<option value="crediario">Carnê (crediário)</option>':''}</select></div>
-   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option><option>Cartão débito</option><option>Cartão crédito</option></select></div>
+   <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${CO.mp_pix_on&&CO.pix_provider==='both'?'<option value="__mp">Gerar com Mercado Pago (QR Pix automático)</option><option value="__ip">Gerar com InfinitePay (link/QR automático)</option>':''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" min="0" value="0" oninput="cartView()"></div>
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
    <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
@@ -1491,18 +1491,20 @@ async function finish(){
       if(navigator.onLine===false)return alert('Desconto acima de '+free+'% precisa da autorização do administrador e de internet. Reduza o desconto ou conecte-se.');
       authId=await askAdmin(cc.disc);if(!authId)return;
     }
-    const sale={id:uid(),_by:ME.id,pay_type:t,method:s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
+    const sale={id:uid(),_by:ME.id,pay_type:t,method:/^__(ip|mp)$/.test(s_m.value)?'Pix':s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
       customer:nm?{id:selCli||null,name:nm,cpf:c_c.value.trim(),phone:c_p.value.trim()}:null,items:cart.map(i=>({id:i.id,qty:i.qty,disc_val:+i.disc||0}))};
     let mpId=null;
-    if(CO.mp_pix_on&&t!=='crediario'&&/^pix$/i.test(s_m.value)&&navigator.onLine!==false){ // Pix Mercado Pago: a venda só é registrada quando o pagamento cair
-      const r=await mpPdvPay(sale,tot,nm);if(r===false)return;if(r&&r.id)mpId=r.id;
+    const pvSel=/^__(ip|mp)$/.test(s_m.value)?s_m.value.slice(2):null;
+    if(pvSel&&navigator.onLine===false)return alert('Sem internet: não dá para gerar a cobrança automática. Escolha Pix comum.');
+    if(CO.mp_pix_on&&t!=='crediario'&&(pvSel||(CO.pix_provider!=='both'&&/^pix$/i.test(s_m.value)))&&navigator.onLine!==false){ // Pix Mercado Pago: a venda só é registrada quando o pagamento cair
+      const r=await mpPdvPay(sale,tot,nm,pvSel);if(r===false)return;if(r&&r.id)mpId=r.id;
     }
     const rec={...sale,seller:ME.name,total:tot,disc:cc.disc,lines:cc.L.map(l=>({name:l.p.name,qty:l.q,price:l.un}))};
     Q.push(sale);saveQ();
     if(mpId)mpCall({action:'aplicado',id:mpId,note:'venda '+sale.id}).catch(()=>{});
     cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
     cart=[];saleDisc={mode:'val',val:0};window.lastRec=rec;
-    modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':s_m.value)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
+    modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':sale.method)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
     <div class="f"><div class="w"><label>WhatsApp do cliente (para enviar o recibo)</label><input id="wa_n" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((rec.customer&&rec.customer.phone)||'')}"></div></div>
     <div class="bar"><button class="btn" onclick="cupomPrint()">Imprimir cupom</button><button class="btn g" onclick="reciboWa()">Enviar recibo no WhatsApp</button><button class="btn g" onclick="closeM();render()">Nova venda</button></div>`);
     sync();
@@ -1525,9 +1527,9 @@ function mpWa(v){
   const c=CO||{},loja=c.trade_name||c.legal_name||'MultMix';
   window.open('https://wa.me/'+d+'?text='+encodeURIComponent(`*${loja}*\nPagamento de ${R(v)}.\nPague por este link (Pix ou cartão):\n${($('#mpcode')||{}).value}`),'_blank','noopener');
 }
-async function mpPdvPay(sale,tot,nome){
+async function mpPdvPay(sale,tot,nome,pv){
   let r;
-  try{r=await mpCall({action:'criar',kind:'venda',sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no PDV'})}
+  try{r=await mpCall({action:'criar',kind:'venda',...(pv?{provider:pv}:{}),sale_ref:sale.id,amount:+tot.toFixed(2),payer_name:nome||'',description:'Venda no PDV'})}
   catch(e){return confirm('Não consegui gerar o Pix automático:\n'+e.message+'\n\nRegistrar como Pix comum (você confere o pagamento no seu banco)?')?'manual':false}
   mpId2=r.id;
   return await new Promise(res=>{
