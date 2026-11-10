@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.82.1'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.83.0'</script><link rel="icon" href="favicon.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1844,12 +1844,19 @@ async function ibptTeste(){
 let me=null,PROF=[],loginMsg='';
 async function loadRole(){
   role=null;me=null;loginMsg='';if(!sb||!session)return;
-  const{data}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  let data=null,err=null;
+  try{const r=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();data=r.data;err=r.error}catch(e){err=e}
+  if(!data&&err){ // sem internet: usa o perfil guardado neste computador (entrou antes com internet)
+    const u=Object.values(offLoad()).find(x=>x.uid===session.user.id);
+    if(u&&Date.now()-u.at<=OFF_DIAS*864e5){role=u.role;me=u.me;return}
+    return;
+  }
   if(data&&data.active===false){loginMsg='Este usuário está desativado. Fale com o administrador.';return}
   role=data?.role||null;me=data||null;
   if(role==='vendedor'){role=null;me=null;loginMsg='Vendedores usam o aplicativo PDV (endereço terminado em /pdv/). Peça o link ao administrador.';try{await sb.auth.signOut()}catch(e){}session=null;return}
   if(!role)loginMsg='Seu usuário ainda não tem permissão. Peça ao administrador.';
   if(role==='admin')await loadProf();
+  offTouch();
 }
 let unlockUntil=0,masterFn=null;
 function master(fn){
@@ -1956,19 +1963,70 @@ async function mfaLogin(e){
 async function login(e){
   if(e)e.preventDefault();
   const b=$('#lb');b.disabled=true;b.textContent='Entrando...';$('#err').textContent='';
-  const{data,error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+  const em=$('#em').value.trim(),pw=$('#pw').value;
+  let data=null,error=null;
+  if(navigator.onLine===false)error={offline:true};
+  else try{const r=await sb.auth.signInWithPassword({email:em,password:pw});data=r.data;error=r.error}catch(x){error={offline:true}}
+  if(error&&(error.offline||/fetch|network|timeout/i.test(error.message||'')||error.status===0)){ // sem internet: entra com a senha guardada neste computador
+    const m=await offLogin(em,pw);b.disabled=false;b.textContent='Entrar';if(m)$('#err').textContent=m;return;
+  }
   b.disabled=false;b.textContent='Entrar';
   if(error)return $('#err').textContent='E-mail ou senha incorretos.';
-  session=data.session;
+  OFFPW={email:em,pw};session=data.session;
   if(await mfaNeeded())return vMfa();
   await afterLogin();
 }
 async function afterLogin(){
   await loadRole();
   if(!role){await sb.auth.signOut();session=null;view='login';render();return setTimeout(()=>{const er=$('#err');if(er)er.textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'},50)}
+  if(OFFPW){offSave(OFFPW.email,OFFPW.pw);OFFPW=null}
   cobLoad().then(()=>{try{render()}catch(e){}});
   view=ADM()?'prod':'pdv';render();sync();
 }
+/* ===== Entrada sem internet: a senha fica guardada só como código embaralhado (PBKDF2) neste computador, por 30 dias desde o último acesso com internet ===== */
+const OFF_K='mm_off_users',OFF_DIAS=30;let OFFPW=null;
+function offLoad(){try{return JSON.parse(localStorage.getItem(OFF_K)||'{}')}catch(e){return{}}}
+function offPut(U){try{localStorage.setItem(OFF_K,JSON.stringify(U))}catch(e){}}
+async function offHash(email,pw,salt){
+  const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(email.toLowerCase()+'\n'+pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function offSave(email,pw){
+  try{if(!role||!me||!session)return;const U=offLoad(),salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
+    U[email.toLowerCase()]={salt,hash:await offHash(email,pw,salt),uid:session.user.id,role,me,at:Date.now()};offPut(U)}catch(e){}
+}
+function offTouch(){ // acesso com internet confirmado: renova o prazo e o perfil guardados
+  try{if(!session||session.offline||!me)return;const U=offLoad();for(const k in U)if(U[k].uid===session.user.id){U[k].me=me;U[k].role=role;U[k].at=Date.now()}offPut(U)}catch(e){}
+}
+async function offLogin(email,pw){
+  const u=offLoad()[email.toLowerCase()];
+  if(!u)return 'Sem internet, e este computador ainda não tem o seu acesso guardado. Entre uma vez com internet.';
+  if(Date.now()-u.at>OFF_DIAS*864e5)return 'O acesso sem internet venceu (mais de '+OFF_DIAS+' dias sem entrar com internet). Conecte-se e entre de novo.';
+  let ok=false;try{ok=await offHash(email,pw,u.salt)===u.hash}catch(e){return 'Este navegador não permite entrar sem internet.'}
+  if(!ok)return 'E-mail ou senha incorretos.';
+  session={user:{id:u.uid,email:email},offline:true};role=u.role;me=u.me;
+  view=ADM()?'prod':'pdv';render();
+  try{setSync('offline · '+db.outbox.length+' pendente(s)')}catch(e){}
+  return '';
+}
+function offBack(){ // a internet voltou e a entrada foi sem internet: pede a senha para sincronizar
+  if(!session||!session.offline||!sb)return;
+  modal(`<h2>A internet voltou</h2><p class="sm">Digite a sua senha para enviar as vendas feitas sem internet.</p>
+  <input id="ob_p" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')offBackOk()"><p id="ob_e" class="bad" role="alert"></p>
+  <div class="bar"><button class="btn" onclick="offBackOk()">Sincronizar</button><button class="btn g" onclick="closeM()">Depois</button></div>`);
+}
+async function offBackOk(){
+  const pw=$('#ob_p').value,email=session.user.email;
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
+    if(error)return $('#ob_e').textContent=/fetch|network/i.test(error.message||'')?'Ainda sem conexão.':'Senha incorreta.';
+    OFFPW={email,pw};session=data.session;closeM();
+    if(await mfaNeeded())return vMfa();
+    await afterLogin();
+  }catch(e){$('#ob_e').textContent='Ainda sem conexão.'}
+}
+addEventListener('online',()=>setTimeout(offBack,1500));
 /* ----- cadastro do autenticador (Verificação em 2 etapas) ----- */
 async function mfaOpen(){
   modal('<h2>Verificação em 2 etapas</h2><p class="sm">Carregando…</p>');
