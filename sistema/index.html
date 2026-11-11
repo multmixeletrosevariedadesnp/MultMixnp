@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.87.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.88.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -125,6 +125,46 @@ nav button:focus-visible{outline:2px solid var(--tag);outline-offset:-2px;opacit
 body:not(.ics-padrao) nav button{opacity:1}
 body:not(.ics-padrao) nav button:not(.on)>span{opacity:.82}
 body:not(.ics-padrao):not(.L-bot):not(.L-top) nav>.ng .nd>button,body:not(.ics-padrao):not(.L-bot):not(.L-top) nav>button{padding-top:6px;padding-bottom:6px}
+.L-dock{--dk:44px}
+body.in.L-dock{display:block;padding-bottom:calc(var(--dk) + 34px)}
+body.in.L-dock.dk-t{padding-bottom:0}body.in.L-dock.dk-l{padding-left:calc(var(--dk) + 34px);padding-bottom:0}body.in.L-dock.dk-r{padding-right:calc(var(--dk) + 34px);padding-bottom:0}
+body.in.L-dock header{position:sticky;top:0;height:auto;width:auto;align-self:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 18px;gap:14px;overflow:visible}
+.L-dock .brand{padding:0}.L-dock .sync{margin:0 0 0 auto;padding:0}
+.L-dock nav{position:fixed;z-index:40;display:flex;flex-wrap:nowrap;gap:6px;padding:8px;width:auto;height:auto;overflow:visible;
+  background:rgba(0,38,90,.55);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid rgba(255,255,255,.28);border-radius:22px;box-shadow:0 12px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.dk-b.L-dock nav{left:50%;bottom:10px;transform:translateX(-50%);flex-direction:row;align-items:flex-end}
+.dk-t.L-dock nav{left:50%;top:8px;transform:translateX(-50%);flex-direction:row;align-items:flex-start}
+.dk-l.L-dock nav{top:50%;left:10px;transform:translateY(-50%);flex-direction:column;align-items:flex-start}
+.dk-l.L-dock nav,.dk-r.L-dock nav{gap:4px;padding:7px}
+.dk-r.L-dock nav{top:50%;right:10px;transform:translateY(-50%);flex-direction:column;align-items:flex-end}
+body.in.L-dock.dk-t{padding-top:calc(var(--dk) + 26px)}
+.dk-t.L-dock header{position:relative}
+.L-dock nav .grp{display:none!important}
+.L-dock nav .dsep{flex:none;background:rgba(255,255,255,.3);border-radius:2px}
+.dk-b.L-dock nav .dsep,.dk-t.L-dock nav .dsep{width:1.5px;height:calc(var(--dk) - 8px);margin:0 3px;align-self:center}
+.dk-l.L-dock nav .dsep,.dk-r.L-dock nav .dsep{height:1.5px;width:calc(var(--dk) - 8px);margin:3px 0;align-self:center}
+.L-dock nav button{position:relative;display:block;padding:0!important;margin:0;min-height:0;line-height:0;width:auto;background:none!important;box-shadow:none!important;opacity:1;border-radius:14px;flex:none}
+.L-dock nav button:active{transform:none}
+.L-dock nav button>span{position:absolute;white-space:nowrap;background:rgba(15,23,42,.92);color:#fff;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:8px;pointer-events:none;opacity:0!important;line-height:1.3;transition:opacity .12s;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:2}
+.L-dock nav button:is(:hover,:focus-visible)>span{opacity:1!important}
+.dk-b.L-dock nav button>span{bottom:calc(100% + 10px);left:50%;transform:translateX(-50%)}
+.dk-t.L-dock nav button>span{top:calc(100% + 10px);left:50%;transform:translateX(-50%)}
+.dk-l.L-dock nav button>span{left:calc(100% + 12px);top:50%;transform:translateY(-50%)}
+.dk-r.L-dock nav button>span{right:calc(100% + 12px);top:50%;transform:translateY(-50%)}
+.L-dock nav .icw{display:grid!important;place-items:center;width:calc(var(--dk) * var(--s,1))!important;height:calc(var(--dk) * var(--s,1))!important;border-radius:calc(var(--dk) * var(--s,1) * .26)!important;transition:width .12s ease-out,height .12s ease-out}
+.L-dock nav .icw .ic{width:56%!important;height:56%!important}
+.L-dock.ics-padrao nav .icw{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);box-shadow:0 4px 10px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.4)}
+.L-dock.ics-padrao nav .icw .ic{stroke:#fff}
+.L-dock nav button.on::after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:var(--tag);box-shadow:0 0 6px var(--tag)}
+.dk-b.L-dock nav button.on::after{bottom:-6px;left:50%;margin-left:-2.5px}.dk-t.L-dock nav button.on::after{top:-6px;left:50%;margin-left:-2.5px}
+.dk-l.L-dock nav button.on::after{left:-6px;top:50%;margin-top:-2.5px}.dk-r.L-dock nav button.on::after{right:-6px;top:50%;margin-top:-2.5px}
+.L-dock nav button .bdg{position:absolute;top:-5px;right:-5px;font-size:10.5px;line-height:17px;min-width:17px;text-align:center;padding:0 5px;margin:0;z-index:3;border-radius:99px;box-shadow:0 0 0 2px rgba(0,38,90,.9)}
+.L-dock nav .out{margin:0;border:0}
+@media(max-width:699px){
+ .L-dock nav{left:8px!important;right:8px;transform:none!important;bottom:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;justify-content:flex-start}
+ .L-dock nav::-webkit-scrollbar{display:none}
+ .L-dock nav button>span{display:none}
+}
 .icsprev{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:10px;border-radius:14px;border:2px solid transparent;background:linear-gradient(135deg,#002e68,#00468f);color:#fff;cursor:pointer;font:inherit}
 .icsprev.sel{border-color:var(--tag);box-shadow:0 0 0 3px color-mix(in srgb,var(--tag) 35%,transparent)}
 .icsprev .ip{display:flex;gap:6px;margin-bottom:4px;color:#fff}.icsprev .ip .ic{width:18px;height:18px}
@@ -1768,9 +1808,9 @@ function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else
   if(k==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',k);layoutOpen()}
 
 /* ========= Layout do menu (por aparelho) ========= */
-const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],duo:['Duas colunas','Faixa fina só com os grupos (Vendas, Gestão, Conta) e, ao lado, a lista do grupo escolhido. O menu fica curto e organizado. Só em tela grande; no celular usa a lateral.'],foco:['Modo foco','Sem menu na tela: só uma barra fina com ☰ Menu e Buscar (Ctrl+K). O menu abre por cima quando precisa. Dá a tela inteira para a venda e os relatórios.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.']};
+const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],duo:['Duas colunas','Faixa fina só com os grupos (Vendas, Gestão, Conta) e, ao lado, a lista do grupo escolhido. O menu fica curto e organizado. Só em tela grande; no celular usa a lateral.'],foco:['Modo foco','Sem menu na tela: só uma barra fina com ☰ Menu e Buscar (Ctrl+K). O menu abre por cima quando precisa. Dá a tela inteira para a venda e os relatórios.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.'],dock:['Dock (estilo Mac)','Barra flutuante só com ícones, em vidro. Ao passar o mouse o ícone cresce e os vizinhos acompanham. Escolha embaixo, em cima ou nas laterais e o tamanho (abaixo).']};
 const LAY=()=>{try{const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
-const LAYSVG={duo:'<rect x="2" y="2" width="12" height="56" rx="3" fill="#00468f"/><rect x="17" y="2" width="26" height="56" rx="3" fill="#9fb4d3"/><rect x="46" y="2" width="52" height="56" rx="3" fill="#cfd8e6"/>',foco:'<rect x="2" y="2" width="96" height="9" rx="3" fill="#00468f"/><rect x="2" y="14" width="96" height="44" rx="3" fill="#cfd8e6"/>',side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
+const LAYSVG={duo:'<rect x="2" y="2" width="12" height="56" rx="3" fill="#00468f"/><rect x="17" y="2" width="26" height="56" rx="3" fill="#9fb4d3"/><rect x="46" y="2" width="52" height="56" rx="3" fill="#cfd8e6"/>',foco:'<rect x="2" y="2" width="96" height="9" rx="3" fill="#00468f"/><rect x="2" y="14" width="96" height="44" rx="3" fill="#cfd8e6"/>',side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',dock:'<rect x="2" y="2" width="96" height="56" rx="3" fill="#cfd8e6"/><rect x="22" y="45" width="56" height="10" rx="5" fill="#00468f"/><circle cx="30" cy="50" r="3" fill="#ffc21a"/><circle cx="39" cy="49" r="4" fill="#ffc21a"/><circle cx="50" cy="48" r="5.5" fill="#ffc21a"/><circle cx="61" cy="49" r="4" fill="#ffc21a"/><circle cx="70" cy="50" r="3" fill="#ffc21a"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
 function layoutOpen(){
   const TE=TEMAUI();
   modal(`<h2>Aparência</h2><p class="sm">Vale só para este aparelho/navegador. Pode trocar quando quiser.</p>
@@ -1778,7 +1818,34 @@ function layoutOpen(){
   <b>Cor de destaque</b><div class="fchips" style="margin-bottom:12px">${ACCS.map(([k,l,c])=>`<button class="chip ${ACC()===k?'on':''}" onclick="accSet('${k}')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};margin-right:6px;vertical-align:-1px"></span>${l}</button>`).join('')}</div>
   <b>Estilo dos ícones</b><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0 14px">${Object.entries(ICSS).map(([k,[n,d]])=>`<button class="icsprev ics-${k} ${ICS()===k?'sel':''}" onclick="icsSet('${k}')" aria-pressed="${ICS()===k}"><span class="ip">${['home','cart','nfok','chatcoin'].map(ic).join('')}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
   <b>Layout do menu</b>
-  <div style="display:grid;gap:10px;margin-top:6px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>`);
+  <div style="display:grid;gap:10px;margin-top:6px">${Object.entries(LAYS).map(([k,[n,d]])=>`<button class="btn ${LAY()===k?'':'g'}" style="display:flex;gap:12px;align-items:center;text-align:left;white-space:normal" onclick="layoutSet('${k}')"><svg viewBox="0 0 100 60" width="88" height="53" style="flex:none;border-radius:6px;background:#fff">${LAYSVG[k]}</svg><span><b>${n}${LAY()===k?' ✓':''}</b><br><span class="sm" style="color:inherit;opacity:.85">${d}</span></span></button>`).join('')}</div>${LAY()==='dock'?`<div style="margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px"><b>Dock</b>
+  <div class="sm" style="margin:6px 0 4px">Posição</div><div class="fchips">${[['b','Embaixo'],['t','Em cima'],['l','Esquerda'],['r','Direita']].map(([k,l])=>`<button class="chip ${DKC().pos===k?'on':''}" onclick="dkSet('pos','${k}')">${l}</button>`).join('')}</div>
+  <div class="sm" style="margin:10px 0 4px">Tamanho dos ícones: <b id="dkv">${DKC().size}px</b></div><input type="range" min="32" max="64" step="2" value="${DKC().size}" oninput="dkv.textContent=this.value+'px';document.body.style.setProperty('--dk',this.value+'px')" onchange="dkSet('size',+this.value)" style="width:100%">
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" style="width:auto" ${DKC().mag?'checked':''} onchange="dkSet('mag',this.checked)"> Aumentar o ícone ao passar o mouse</label>
+  <p class="sm" style="margin:6px 0 0">No celular o Dock fica sempre embaixo e sem o efeito (não existe “passar o mouse” no toque).</p></div>`:''}`);
+}
+/* ===== Dock (estilo Mac): posição, tamanho e efeito de aumentar ===== */
+const DKC=()=>{let o={};try{o=JSON.parse(localStorage.mm_dock||'{}')}catch(e){}return{pos:['b','t','l','r'].includes(o.pos)?o.pos:'b',size:Math.min(64,Math.max(32,+o.size||44)),mag:o.mag!==false}};
+function dkSet(k,v){const o=DKC();o[k]=v;try{localStorage.mm_dock=JSON.stringify(o)}catch(e){}render();layoutOpen()}
+function dkApply(){
+  const b=document.body;['dk-b','dk-t','dk-l','dk-r'].forEach(c=>b.classList.remove(c));
+  if(LAY()!=='dock'||!isAdmin())return;
+  const c=DKC(),cel=innerWidth<700,pos=cel?'b':c.pos,v=pos==='l'||pos==='r';b.classList.add('dk-'+pos);
+  const n=$('#nav'),k=n?n.querySelectorAll(':scope>button').length:20,ns=n?n.querySelectorAll(':scope>.dsep').length:0;
+  // cabe tudo na tela, já contando o espaço extra que os ícones ocupam quando crescem com o mouse
+  const gap=v?4:6,livre=(v?innerHeight:innerWidth)-44-ns*(v?8:12),fit=Math.floor(livre/(Math.max(1,k)+(c.mag?1.9:0))-gap);
+  b.style.setProperty('--dk',(cel?Math.min(c.size,44):Math.max(22,Math.min(c.size,fit)))+'px');
+  if(n&&!n._dk){n._dk=1;let C=[];
+    const medir=()=>{n.querySelectorAll(':scope>button').forEach(x=>x.style.setProperty('--s',1));C=[...n.querySelectorAll(':scope>button')].map(x=>{const r=x.getBoundingClientRect();return[x,r.left+r.width/2,r.top+r.height/2]})};
+    n.addEventListener('mouseenter',()=>{if(LAY()==='dock')medir()});
+    n.addEventListener('mousemove',e=>{
+      if(LAY()!=='dock'||!DKC().mag||innerWidth<700)return;if(!C.length)medir();
+      const vv=document.body.classList.contains('dk-l')||document.body.classList.contains('dk-r'),R=parseFloat(getComputedStyle(document.body).getPropertyValue('--dk'))*3.2,M=1.75;
+      C.forEach(([x,cx,cy])=>{const d=Math.abs((vv?e.clientY-cy:e.clientX-cx)),t=Math.max(0,1-d/R);x.style.setProperty('--s',(1+(M-1)*t*t*(3-2*t)).toFixed(3))});
+    });
+    n.addEventListener('mouseleave',()=>{C=[];n.querySelectorAll(':scope>button').forEach(x=>x.style.setProperty('--s',1))});
+    addEventListener('resize',()=>{if(LAY()==='dock')dkApply()});
+  }
 }
 function layoutSet(k){try{localStorage.mm_layout=k}catch(e){}closeM();render()}
 function ngTog(ev,el){
@@ -1985,11 +2052,16 @@ function render(){
     h=top+GR.map((g,i)=>`<button class="rl ${i===ai?'on':''}" onclick="duoSel(${i})" title="${esc(g.t)}">${ic(GI[g.t]||'box')}<span>${esc(g.t)}</span></button>`).join('')+out+`<div class="duop"><div class="duoh">${esc(GR[ai].t)}</div>${GR[ai].inner}</div>`;
     document.body.className+=' duo';
   }
+  if(LAY()==='dock'&&isAdmin()){
+    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
+    h=top+GR.map(g=>'<span class="dsep" aria-hidden="true"></span>'+g.inner).join('')+(out?'<span class="dsep" aria-hidden="true"></span>'+out:'');
+    h=h.replace(/<span>([^<]*)\s*(<b class="bdg"[^>]*>[^<]*<\/b>)\s*<\/span>/g,'$2<span>$1</span>'); // no Dock o número (badge) fica no canto do ícone
+  }
   if(LAY()==='bot'&&isAdmin()){
     const bell=(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0];
     h=bell+item('ini','Início','home')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','nfok'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
   }
-  $('#nav').innerHTML=h;
+  $('#nav').innerHTML=h;try{dkApply()}catch(e){}
   ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
