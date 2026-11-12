@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.94.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.94.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -5719,7 +5719,7 @@ const LIC=(()=>{
   const norm=k=>String(k||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reais=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  let NOTA='',H={sb:null,app:'app',ver:'',admin:()=>false,onChange:null},S={st:'off'},chave='',tok=null,META={},timer=null,poll=null,busy=null;
+  let NOTA='',H={sb:null,app:'app',ver:'',admin:()=>false,onChange:null},S={st:'off'},chave='',tok=null,META={},timer=null,poll=null,busy=null,DBG='';
   try{META=JSON.parse(g(KI)||'{}')}catch(e){}
   async function kid(k){const h=await crypto.subtle.digest('SHA-256',enc.encode(norm(k)));return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16)}
   async function post(b,ms){
@@ -5781,11 +5781,12 @@ const LIC=(()=>{
     tok=best;return bp;
   }
   async function check(){
-    const r=await post({action:'check',chave,app:H.app,ver:H.ver});
+    const r=await post({action:'check',chave,app:H.app,ver:H.ver});DBG='';
     if(r.ok&&r.token){
       const p=await verify(r.token,chave);
       if(p){tok=r.token;s(KT,tok);s(KI,JSON.stringify(META={loja:r.loja,plano:r.plano,preco:r.preco_centavos,fatura:r.fatura}));try{await H.sb.rpc('lic_put_token',{p:tok})}catch(e){}return 1}
-    }
+      DBG='A resposta do servidor não confere com a chave pública do app (assinatura ou chave da loja diferente).';
+    }else DBG='O servidor respondeu HTTP '+r.__st+(r.erro?': '+String(r.erro).slice(0,160):'')+'.';
     if(r.__st===404)return -1;
     return 0;
   }
@@ -5797,7 +5798,7 @@ const LIC=(()=>{
         let p=await load();
         if(!chave){S=calc(null,false);emit();return S}
         if(force||!p||Date.now()-p.iat*1000>6*36e5){
-          let r=0;try{r=await check()}catch(e){r=0}
+          let r=0;try{r=await check()}catch(e){r=0;DBG='Sem conexão com o servidor de licenças ('+String(e&&e.message||e).slice(0,100)+').'}
           if(r===-1){S={st:'chave_invalida'};emit();return S}
           if(r===1)p=await verify(tok,chave);
         }
@@ -5845,7 +5846,7 @@ const LIC=(()=>{
     (x.car&&x.st!=='isenta'?'<div class="r"><span>Carência até</span><b>'+br(x.car)+'</b></div>':'')+
     (META.preco>0&&x.st!=='isenta'?'<div class="r"><span>Mensalidade</span><b>'+reais(META.preco)+'</b></div>':'')+
     (x.iat?'<div class="r"><span>Última conferência</span><b>'+new Date(x.iat*1000).toLocaleString('pt-BR')+'</b></div>':'')+
-    (m?'<p style="margin:10px 0 0">'+esc(m.t)+'</p>':'')+
+    (m?'<p style="margin:10px 0 0">'+esc(m.t)+'</p>':'')+(DBG&&adm&&(x.st==='sem_verif'||x.st==='consulta'||x.st==='chave_invalida')?'<p class="m" style="margin:6px 0 0">Detalhe técnico: '+esc(DBG)+'</p>':'')+
     '<div id="licpix"></div>'+
     (adm?'<label style="display:block;margin-top:12px;font-weight:700;font-size:13px">Chave de licença</label><input id="lic_k" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" value="'+esc(chave)+'"><button class="b g" type="button" id="lic_sv">Salvar chave</button>':'')+
     '<div style="margin-top:8px">'+(pagar?'<button class="b" type="button" id="lic_pg">Pagar mensalidade (Pix)</button>':'')+'<button class="b g" type="button" id="lic_vf">Verificar agora</button><button class="b g" type="button" id="lic_x">Fechar</button></div>'+

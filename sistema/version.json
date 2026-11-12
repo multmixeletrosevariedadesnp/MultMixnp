@@ -1,5 +1,5 @@
 {
- "version": "1.94.0",
+ "version": "1.94.1",
  "date": "2026-11-12",
- "notes": "Licença mensal ligada: confere a chave da loja no servidor de licenças."
+ "notes": "Licença: a janela mostra o detalhe técnico quando não consegue conferir (para o administrador)."
 }
