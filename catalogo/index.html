@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.9.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.10.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -290,6 +290,7 @@ async function load(){
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
   brand();applyTema(CO);
   {const cb=$('#cbtn');if(cb)cb.hidden=!(sb&&CO.cli_portal_on&&CO.mp_pix_on)}
+  if(sb&&CO.cli_portal_on&&ctk())cliEu();
   if(/^#carne/.test(location.hash)&&sb&&CO.cli_portal_on)setTimeout(carneOpen,300);
   bag=bag.filter(i=>prod(i.id)&&!(prod(i.id).stock<=0));saveBag();
   list();
@@ -425,8 +426,9 @@ function bagView(){
    <div class="chips" style="margin-top:14px">${opts().length<2?'':opts().map(t=>`<button class="chip ${t===pay?'on':''}" onclick="setPay('${t}')">${NAMES[t]}</button>`).join('')}</div>
    ${pay==='crediario'?`<label class="sm">Parcelas</label><select onchange="nin=+this.value;bagView()">${Array.from({length:mx},(_,k)=>k+1).map(n=>`<option ${n===nin?'selected':''} value="${n}">${n}x de ${R(tot/n)}</option>`).join('')}</select>`:''}
    <h3 style="margin:14px 0 6px">Seus dados para o pedido</h3>
-   <div class="row"><input placeholder="Nome completo *" autocomplete="name" value="${esc(cust.name)}" oninput="setC('name',this.value)" style="flex:1;min-width:150px"><input placeholder="WhatsApp com DDD *" inputmode="tel" autocomplete="tel" value="${esc(cust.phone)}" oninput="setC('phone',this.value)" style="flex:1;min-width:150px"></div>
-   ${pay==='crediario'?`<div class="row"><input placeholder="CPF *" inputmode="numeric" value="${esc(cust.cpf)}" oninput="setC('cpf',this.value)" style="flex:1;min-width:150px"><input placeholder="Endereço completo *" autocomplete="street-address" value="${esc(cust.address)}" oninput="setC('address',this.value)" style="flex:2;min-width:200px"></div><p class="sm">Para o carnê precisamos do CPF e do endereço. O cadastro fica salvo neste aparelho para as próximas compras.</p>`:''}
+   ${CLI?`<div style="padding:10px 12px;border-radius:12px;background:#eafaf1;border:1.5px solid #12805c;margin:0 0 8px"><b>Comprando como ${esc(CLI.nome)}</b> ✓<div class="sm">O pedido vai ligado ao seu cadastro na loja (CPF e endereço já estão lá). <a href="#" onclick="carneSair();return false">Não é você? Sair</a></div></div>`:`<p class="sm" style="margin:0 0 6px">Já é cliente com carnê? <a href="#" onclick="carneOpen();return false">Entre em Meu carnê</a> e o pedido vai ligado ao seu cadastro.</p>`}
+   <div class="row" ${CLI?'hidden':''}><input placeholder="Nome completo *" autocomplete="name" value="${esc(cust.name)}" oninput="setC('name',this.value)" style="flex:1;min-width:150px"><input placeholder="WhatsApp com DDD *" inputmode="tel" autocomplete="tel" value="${esc(cust.phone)}" oninput="setC('phone',this.value)" style="flex:1;min-width:150px"></div>
+   ${pay==='crediario'&&!CLI?`<div class="row"><input placeholder="CPF *" inputmode="numeric" value="${esc(cust.cpf)}" oninput="setC('cpf',this.value)" style="flex:1;min-width:150px"><input placeholder="Endereço completo *" autocomplete="street-address" value="${esc(cust.address)}" oninput="setC('address',this.value)" style="flex:2;min-width:200px"></div><p class="sm">Para o carnê precisamos do CPF e do endereço. O cadastro fica salvo neste aparelho para as próximas compras.</p>`:''}
    <p style="font-size:20px"><b>Total${opts().length<2?' ('+NAMES[pay].toLowerCase()+')':''}: ${R(tot)}</b></p>
    ${pixOn()?`<div class="row"><button class="btn" style="background:#12805c;color:#fff;flex:1" onclick="pixPay()">Pagar agora com Pix · ${R(bag.reduce((t,i)=>t+price(prod(i.id),'avista')*i.qty,0))} à vista</button></div><p class="sm" style="margin:4px 0 10px">O pagamento é confirmado na hora e a loja já recebe o pedido para separar e entregar.</p>`:''}
    <div class="row"><button class="btn wa" onclick="send()">Enviar pedido no WhatsApp</button><button class="btn g" onclick="closeM()">Continuar vendo</button></div>
@@ -437,7 +439,8 @@ const pixOn=()=>!!(sb&&CO.mp_pix_on&&CO.cat_pix_on&&bag.length&&bag.every(i=>has
 let pixTm=null,pixCh=null;
 
 /* ===== Meu carnê: o cliente entra com CPF + senha (1º acesso com o código do carnê) e paga as parcelas por Pix ===== */
-const CTK='mm_cli_tok';let cTm=null,cCh=null;
+const CTK='mm_cli_tok';let cTm=null,cCh=null,CLI=null;
+async function cliEu(){if(!sb||!ctk())return CLI=null;try{const r=await cliCall({action:'cli_eu',token:ctk()});CLI={nome:r.nome,fone:r.fone}}catch(e){if(e.sair)CLI=null}return CLI}
 const ctk=()=>{try{return localStorage.getItem(CTK)||''}catch(e){return''}};
 const ctkSet=t=>{try{t?localStorage.setItem(CTK,t):localStorage.removeItem(CTK)}catch(e){}};
 async function cliCall(body){
@@ -470,7 +473,7 @@ async function carneEntrar(primeiro){
   if(primeiro){if(!$('#c_cod').value.trim())return er.textContent='Informe o código do carnê.';if(pw.length<6)return er.textContent='A senha precisa ter pelo menos 6 caracteres.';if(pw!==$('#c_pw2').value)return er.textContent='As duas senhas não são iguais.'}
   else if(!pw)return er.textContent='Informe a senha.';
   er.textContent='Entrando…';
-  try{const r=await cliCall({action:'cli_entrar',cpf,senha:pw,...(primeiro?{codigo:$('#c_cod').value}:{})});ctkSet(r.token);carneLista()}
+  try{const r=await cliCall({action:'cli_entrar',cpf,senha:pw,...(primeiro?{codigo:$('#c_cod').value}:{})});ctkSet(r.token);cliEu();carneLista()}
   catch(e){er.textContent=e.message}
 }
 async function carneLista(){
@@ -509,7 +512,7 @@ function carnePago(n,de,v){
   modal(`<h2 style="color:#12805c">Parcela ${n}/${de} paga! ✅</h2><p><b>${R(v)}</b> recebido. A parcela já está baixada no seu carnê.</p><p class="sm">Obrigado! Se precisar do recibo, fale com a loja.</p>
    <div class="row"><button class="btn" onclick="carneLista()">Ver minhas parcelas</button><button class="btn g" onclick="closeM()">Fechar</button></div>`);
 }
-async function carneSair(){const t=ctk();ctkSet('');try{if(t)await cliCall({action:'cli_sair',token:t})}catch(e){}closeM()}
+async function carneSair(){const t=ctk();ctkSet('');CLI=null;try{if(t)await cliCall({action:'cli_sair',token:t})}catch(e){}closeM()}
 async function fnCall(body){
   const{data,error}=await sb.functions.invoke('smart-service',{body});
   if(error){let m=error.message;try{const j=await error.context.json();m=j.erro||m}catch(e){}throw new Error(m)}
@@ -518,10 +521,10 @@ async function fnCall(body){
 }
 async function pixPay(){
   const dg=v=>(v||'').replace(/\D/g,'');
-  if((cust.name||'').trim().length<3||dg(cust.phone).length<10)return alert('Preencha seu nome e WhatsApp com DDD para pagar com Pix.');
+  if(!(CLI&&ctk())&&((cust.name||'').trim().length<3||dg(cust.phone).length<10))return alert('Preencha seu nome e WhatsApp com DDD para pagar com Pix.');
   if(navigator.onLine===false)return alert('Sem internet agora. Tente de novo ou envie o pedido pelo WhatsApp.');
   modal('<h2>Gerando o Pix…</h2><p class="sm">Só um instante.</p>');
-  let r;try{r=await fnCall({action:'pedido_pix',items:bag.map(i=>({id:i.id,qty:i.qty})),customer:{name:cust.name.trim(),phone:cust.phone}})}
+  let r;try{r=await fnCall({action:'pedido_pix',items:bag.map(i=>({id:i.id,qty:i.qty})),customer:{name:(cust.name||'').trim(),phone:cust.phone||''},...(CLI&&ctk()?{token:ctk()}:{})})}
   catch(e){modal(`<h2>Não deu para gerar o Pix</h2><p>${esc(e.message)}</p><div class="row"><button class="btn" onclick="bagView()">Voltar à sacola</button></div>`);return}
   pixCh=r.charge_id;const it=(r.itens||[]).map(i=>`${i.qty}x ${esc(i.name)} — ${R(i.price*i.qty)}`).join('<br>');
   modal(`<h2>Pague com Pix · ${R(r.amount)}</h2><p class="sm">Pedido nº <b>${esc(r.numero)}</b> · vale 30 minutos</p>
@@ -541,7 +544,7 @@ async function pixPoll(r){
   let s;try{s=await fnCall({action:'pedido_status',charge_id:r.charge_id})}catch(e){return}
   if(s.status==='approved'){
     clearInterval(pixTm);bag=[];saveBag();
-    const t=`Olá! Paguei o pedido nº ${r.numero} pelo Pix (${R(r.amount)}).\n${(r.itens||[]).map(i=>`• ${i.qty}x ${i.name}`).join('\n')}\n\nNome: ${cust.name} · ${cust.phone}`;
+    const t=`Olá! Paguei o pedido nº ${r.numero} pelo Pix (${R(r.amount)}).\n${(r.itens||[]).map(i=>`• ${i.qty}x ${i.name}`).join('\n')}\n\nNome: ${CLI?CLI.nome+(CLI.fone?' · '+CLI.fone:''):cust.name+' · '+cust.phone}`;
     modal(`<h2 style="color:#12805c">Pagamento confirmado! ✅</h2><p>Pedido nº <b>${esc(r.numero)}</b> · <b>${R(r.amount)}</b></p>
      <p>A loja já recebeu o seu pedido e vai entrar em contato para combinar a entrega.</p>
      <div class="row"><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${wa()}?text=${encodeURIComponent(t)}">Falar com a loja no WhatsApp</a><button class="btn g" onclick="closeM()">Fechar</button></div>`);
@@ -549,8 +552,18 @@ async function pixPoll(r){
     clearInterval(pixTm);const st=$('#pxst');if(st)st.innerHTML='Este Pix venceu e não foi pago. <button class="btn s" onclick="bagView()">Gerar outro</button>';
   }
 }
+function sendCli(tot){ // cliente logado: o pedido é gravado pelo servidor, ligado ao cadastro dele
+  let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`+((p.photos||[])[0]?`\n   Foto: ${waImg(p.photos[0])}`:'')+`\n   ${pageUrl(p.id)}`}).join('\n');
+  t+=`\n\nCliente cadastrado: ${CLI.nome}${CLI.fone?' · '+CLI.fone:''}`;
+  t+=`\n\nForma de pagamento: ${NAMES[pay]}${pay==='crediario'?` (${nin}x de ${R(tot/nin)})`:''}\nTotal: ${R(tot)}`;
+  window.open('https://wa.me/'+wa()+'?text='+encodeURIComponent(t),'_blank','noopener');
+  const items=bag.map(i=>({id:i.id,qty:i.qty}));
+  cliCall({action:'pedido_cli',token:ctk(),items,pay_type:pay,n_inst:pay==='crediario'?nin:1}).catch(()=>{});
+  bag=[];saveBag();closeM();alert('Pedido enviado! Continue a conversa no WhatsApp.');
+}
 function send(){
   const tot=total(),dg=v=>(v||'').replace(/\D/g,'');
+  if(CLI&&ctk())return sendCli(tot);
   if((cust.name||'').trim().length<3||dg(cust.phone).length<10)return alert('Preencha seu nome e WhatsApp com DDD para fazer o pedido.');
   if(pay==='crediario'&&(dg(cust.cpf).length!==11||(cust.address||'').trim().length<5))return alert('Para o carnê, informe o CPF (11 dígitos) e o endereço.');
   let t='Olá, MultMix! Quero fazer um pedido:\n'+bag.map(i=>{const p=prod(i.id);return`• ${i.qty}x ${p.name} — ${R(price(p,pay)*i.qty)}`+((p.photos||[])[0]?`\n   Foto: ${waImg(p.photos[0])}`:'')+`\n   ${pageUrl(p.id)}`}).join('\n');
