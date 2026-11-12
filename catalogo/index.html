@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.8.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.9.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -94,6 +94,11 @@ s.old{color:var(--mut);font-size:13px;font-weight:500}
 .empty{grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--mut)}
 .empty p{margin:0 0 10px}.empty b{color:var(--ink)}
 @media(min-width:700px){#filters{position:sticky;top:var(--hh,64px);z-index:4;background:var(--bg);margin:-18px -18px 8px;padding:12px 18px 4px}}
+.cbtn{margin-left:auto;background:#ffc21a;color:#101828;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:800;cursor:pointer;white-space:nowrap}.cbtn[hidden]{display:none}
+.ibtn:not([hidden])~.cbtn{margin-left:0}.cbtn:not([hidden])~#zap,.ibtn:not([hidden])~#zap{margin-left:0}
+@media(max-width:420px){header{gap:8px;padding:10px 12px}header h1{font-size:20px}#zap{padding:6px 10px;font-size:14px}.cbtn{padding:6px 10px;font-size:14px}}
+.cpar{border:1px solid var(--line,#e4e7ec);border-radius:14px;padding:12px 14px;margin:0 0 10px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.cpar.atr{border-color:#e5484d;background:rgba(229,72,77,.06)}.cpar b.v{font-size:20px}.cpar .sm{display:block}
 .ibtn{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit;font-weight:600;cursor:pointer}.ibtn[hidden]{display:none}.ibtn+#zap{margin-left:0}
 .cash.ask{font-size:14px;font-weight:700}
 #top{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;width:52px;height:52px;border-radius:50%;border:0;background:var(--brand);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.28);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .2s,transform .2s}
@@ -145,7 +150,7 @@ body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))
 </style>
 </head>
 <body>
-<header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><button class="ibtn" data-install hidden>Instalar app</button><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
+<header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><button class="ibtn" data-install hidden>Instalar app</button><button class="cbtn" id="cbtn" hidden onclick="carneOpen()">Meu carnê</button><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
 <main>
   <div class="hero"><img id="hlogo" src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
   <div id="filters"><div class="tools"><input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
@@ -284,6 +289,8 @@ async function load(){
   if(sb){const{data}=await sb.from('company').select('*').eq('id',1).maybeSingle();if(data){CO=data;localStorage.mmco=JSON.stringify(CO)}}
   else{try{CO=JSON.parse(localStorage.mm).company[0]||CO}catch(e){}}
   brand();applyTema(CO);
+  {const cb=$('#cbtn');if(cb)cb.hidden=!(sb&&CO.cli_portal_on&&CO.mp_pix_on)}
+  if(/^#carne/.test(location.hash)&&sb&&CO.cli_portal_on)setTimeout(carneOpen,300);
   bag=bag.filter(i=>prod(i.id)&&!(prod(i.id).stock<=0));saveBag();
   list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);
@@ -428,6 +435,79 @@ function bagView(){
 /* ---- Pix pelo catálogo (Mercado Pago): o valor é recalculado no servidor; a loja recebe o pedido já pago ---- */
 const pixOn=()=>!!(sb&&CO.mp_pix_on&&CO.cat_pix_on&&bag.length&&bag.every(i=>has(prod(i.id),'avista')));
 let pixTm=null,pixCh=null;
+
+/* ===== Meu carnê: o cliente entra com CPF + senha (1º acesso com o código do carnê) e paga as parcelas por Pix ===== */
+const CTK='mm_cli_tok';let cTm=null,cCh=null;
+const ctk=()=>{try{return localStorage.getItem(CTK)||''}catch(e){return''}};
+const ctkSet=t=>{try{t?localStorage.setItem(CTK,t):localStorage.removeItem(CTK)}catch(e){}};
+async function cliCall(body){
+  const{data,error}=await sb.functions.invoke('smart-service',{body});
+  let j=data;if(error){try{j=await error.context.json()}catch(e){j={ok:false,erro:'Sem conexão com a loja. Tente de novo.'}}}
+  if(j&&j.sair){ctkSet('');throw Object.assign(new Error(j.erro||'Entre de novo.'),{sair:true})}
+  if(!j||j.ok===false)throw new Error((j&&j.erro)||'Falha ao falar com a loja.');
+  return j;
+}
+const cpfMask=v=>{const d=String(v||'').replace(/\D/g,'').slice(0,11);return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2')};
+const dBR=d=>String(d||'').slice(0,10).split('-').reverse().join('/');
+function carneOpen(){if(!sb)return;clearInterval(cTm);ctk()?carneLista():carneLogin()}
+function carneLogin(primeiro,msg){
+  modal(`<h2>Acesse seu carnê</h2><p class="sm">${primeiro?'Primeiro acesso: use o <b>código do carnê</b> (está impresso no seu carnê) e crie uma senha.':'Entre com seu CPF e senha para ver e pagar suas parcelas por Pix.'}</p>
+   <label class="sm">CPF</label><input id="c_cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" oninput="this.value=cpfMask(this.value)" style="width:100%">
+   ${primeiro?`<label class="sm">Código do carnê</label><input id="c_cod" autocapitalize="characters" placeholder="Ex.: K7P2QX9A" style="width:100%;text-transform:uppercase">`:''}
+   <label class="sm">${primeiro?'Crie uma senha (mínimo 6 caracteres)':'Senha'}</label><input id="c_pw" type="password" autocomplete="${primeiro?'new-password':'current-password'}" style="width:100%" onkeydown="if(event.key==='Enter')carneEntrar(${primeiro?1:0})">
+   ${primeiro?`<label class="sm">Repita a senha</label><input id="c_pw2" type="password" autocomplete="new-password" style="width:100%" onkeydown="if(event.key==='Enter')carneEntrar(1)">`:''}
+   <p id="c_er" role="alert" style="color:#c4321f;font-weight:600;min-height:1.2em">${esc(msg||'')}</p>
+   <div class="row"><button class="btn" style="flex:1" onclick="carneEntrar(${primeiro?1:0})">${primeiro?'Criar senha e entrar':'Entrar'}</button></div>
+   <p class="sm" style="margin-top:10px">${primeiro?'Já tem senha? <a href="#" onclick="carneLogin(0);return false">Entrar</a>':'<a href="#" onclick="carneLogin(1);return false">Primeiro acesso</a> · Esqueceu a senha? Peça à loja para liberar um novo acesso.'}</p>
+   <p class="sm">Seus dados ficam protegidos: aqui aparecem só suas parcelas e valores.</p>`);
+  setTimeout(()=>{const e=$('#c_cpf');e&&e.focus()},50);
+}
+async function carneEntrar(primeiro){
+  const er=$('#c_er'),cpf=$('#c_cpf').value,pw=$('#c_pw').value;
+  if(String(cpf).replace(/\D/g,'').length!==11)return er.textContent='Informe o CPF completo.';
+  if(primeiro){if(!$('#c_cod').value.trim())return er.textContent='Informe o código do carnê.';if(pw.length<6)return er.textContent='A senha precisa ter pelo menos 6 caracteres.';if(pw!==$('#c_pw2').value)return er.textContent='As duas senhas não são iguais.'}
+  else if(!pw)return er.textContent='Informe a senha.';
+  er.textContent='Entrando…';
+  try{const r=await cliCall({action:'cli_entrar',cpf,senha:pw,...(primeiro?{codigo:$('#c_cod').value}:{})});ctkSet(r.token);carneLista()}
+  catch(e){er.textContent=e.message}
+}
+async function carneLista(){
+  modal('<h2>Meu carnê</h2><p class="sm">Carregando suas parcelas…</p>');
+  let r;try{r=await cliCall({action:'cli_carne',token:ctk()})}catch(e){return e.sair?carneLogin(0,e.message):modal(`<h2>Meu carnê</h2><p>${esc(e.message)}</p><button class="btn" onclick="carneLista()">Tentar de novo</button>`)}
+  const L=r.abertas||[];
+  modal(`<h2>Olá, ${esc(r.nome||'cliente')}!</h2><p class="sm">${L.length?`Você tem ${L.length} parcela${L.length>1?'s':''} em aberto.`:'Você não tem parcelas em aberto. Obrigado! 🎉'}${r.pagas?` · ${r.pagas} já paga${r.pagas>1?'s':''}`:''}</p>
+   ${L.map(i=>`<div class="cpar ${i.dias>0?'atr':''}"><div><b>Parcela ${i.numero}/${i.de}</b><span class="sm">${i.dias>0?`venceu ${dBR(i.vencimento)} · ${i.dias} dia${i.dias>1?'s':''} de atraso`:`vence ${dBR(i.vencimento)}`}</span>${i.juros>0?`<span class="sm">${R(i.valor)} + multa e juros ${R(i.juros)}</span>`:''}</div>
+   <div style="text-align:right"><b class="v">${R(i.total)}</b><br><button class="btn" style="margin-top:6px;background:#12805c;color:#fff" onclick="carnePagar('${i.id}',${i.numero},${i.de})">Pagar com Pix</button></div></div>`).join('')}
+   <p class="sm">Pode pagar qualquer parcela, inclusive adiantar. Assim que o Pix cair, a parcela fica paga na hora.</p>
+   <div class="row"><button class="btn g" onclick="carneSair()">Sair</button><button class="btn g" onclick="closeM()">Fechar</button></div>`);
+}
+async function carnePagar(iid,n,de){
+  modal('<h2>Gerando o Pix…</h2><p class="sm">Só um instante.</p>');
+  let r;try{r=await cliCall({action:'cli_pix',token:ctk(),installment_id:iid})}catch(e){return e.sair?carneLogin(0,e.message):modal(`<h2>Não deu para gerar o Pix</h2><p>${esc(e.message)}</p><button class="btn" onclick="carneLista()">Voltar</button>`)}
+  if(r.status==='approved')return carnePago(n,de,r.amount);
+  cCh=r.charge_id;
+  modal(`<h2>Parcela ${n}/${de} · ${R(r.amount)}</h2><p class="sm">Pague até ${new Date(r.expires_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</p>
+   <div style="text-align:center">${r.qr_base64?`<img alt="QR Code Pix" style="width:230px;height:230px;background:#fff;padding:8px;border-radius:12px" src="data:image/png;base64,${r.qr_base64}">`:''}</div>
+   <label class="sm">Pix copia e cola</label>
+   <textarea id="cpx" rows="3" readonly onclick="this.select()" style="width:100%;background:#eafaf1;color:#0b5d3b;border:2px solid #12805c;border-radius:10px;font:600 13px ui-monospace,Consolas,monospace;word-break:break-all;padding:8px">${esc(r.qr_code)}</textarea>
+   <div class="row"><button class="btn" style="flex:1;background:#12805c;color:#fff" onclick="carneCopiar()">Copiar código Pix</button></div>
+   <p id="cst" role="status" style="font-weight:700">Aguardando o pagamento…</p>
+   <p class="sm">Abra o app do seu banco, escolha Pix e leia o QR Code ou cole o código. Confira se o recebedor é a loja. Esta tela confirma sozinha.</p>
+   <div class="row"><button class="btn g" onclick="clearInterval(cTm);carneLista()">Voltar às parcelas</button></div>`);
+  clearInterval(cTm);cTm=setInterval(()=>carnePoll(r.charge_id,n,de,r.amount),4000);
+}
+function carneCopiar(){const t=$('#cpx');if(!t)return;t.select();try{document.execCommand('copy')}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>{},()=>{});const st=$('#cst');if(st)st.textContent='Código copiado. Cole no app do banco. Aguardando o pagamento…'}
+async function carnePoll(ch,n,de,v){
+  if(!$('#cst')||cCh!==ch){clearInterval(cTm);return}
+  let s;try{s=await cliCall({action:'cli_status',token:ctk(),charge_id:ch})}catch(e){if(e.sair){clearInterval(cTm);carneLogin(0,e.message)}return}
+  if(s.status==='approved'){clearInterval(cTm);carnePago(n,de,v)}
+  else if(['expired','cancelled','rejected'].includes(s.status)){clearInterval(cTm);const st=$('#cst');if(st)st.innerHTML='Este Pix venceu sem pagamento. <button class="btn s" onclick="carneLista()">Gerar outro</button>'}
+}
+function carnePago(n,de,v){
+  modal(`<h2 style="color:#12805c">Parcela ${n}/${de} paga! ✅</h2><p><b>${R(v)}</b> recebido. A parcela já está baixada no seu carnê.</p><p class="sm">Obrigado! Se precisar do recibo, fale com a loja.</p>
+   <div class="row"><button class="btn" onclick="carneLista()">Ver minhas parcelas</button><button class="btn g" onclick="closeM()">Fechar</button></div>`);
+}
+async function carneSair(){const t=ctk();ctkSet('');try{if(t)await cliCall({action:'cli_sair',token:t})}catch(e){}closeM()}
 async function fnCall(body){
   const{data,error}=await sb.functions.invoke('smart-service',{body});
   if(error){let m=error.message;try{const j=await error.context.json();m=j.erro||m}catch(e){}throw new Error(m)}
