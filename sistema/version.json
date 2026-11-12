@@ -1,5 +1,5 @@
 {
- "version": "1.93.0",
+ "version": "1.93.1",
  "date": "2026-11-12",
- "notes": "Fiscal: botão Trocar certificado (arquivo .pfx e senha enviados ao Render sem abrir o painel dele). Inclui a licença mensal, ainda desligada."
+ "notes": "Arte do produto: botões para girar a foto para a esquerda ou para a direita."
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.93.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.93.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1364,6 +1364,17 @@ async function artCutRun(){
   }catch(e){if(g===artCutGen)artCut=null}
   if(g===artCutGen)artRender();
 }
+async function artRot(d){ // gira a foto 90° (d=-1 esquerda, d=1 direita) sem perder qualidade e refaz a remoção de fundo, se estiver ligada
+  if(!artPhoto){alert('Escolha ou envie uma foto primeiro.');return}
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('img'));i.src=artPhoto});
+    const cv=document.createElement('canvas');cv.width=img.height;cv.height=img.width;
+    const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);
+    x.translate(cv.width/2,cv.height/2);x.rotate(d*Math.PI/2);x.drawImage(img,-img.width/2,-img.height/2);
+    artPhoto=cv.toDataURL('image/jpeg',.95);
+  }catch(e){alert('Não consegui girar essa foto.');return}
+  artNopRefresh();
+}
 function artNopRefresh(){artCut=null;const e=$('#a_nop');if(e&&e.checked)artCutRun();else artRender()}
 const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
 function artCaption(){
@@ -1515,6 +1526,7 @@ async function vArte(){
 <div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
+  <label style="margin-top:8px">Girar a foto</label><div class="row" style="margin:0"><button type="button" class="btn g s" onclick="artRot(-1)">↶ Girar à esquerda</button><button type="button" class="btn g s" onclick="artRot(1)">↷ Girar à direita</button></div><div class="sm">Cada toque gira 90°. Para voltar ao original, escolha a foto de novo.</div>
   <div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="$('#a_pz').value=100;$('#a_px').value=0;$('#a_py').value=0;$('#a_pzv').textContent='100%';artPosLbl()">Foto no padrão</button></div></div>
   <div class="w"><label>Mascote MultMix apresentando o produto</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote: mulher</option><option value="2">Mascote: homem</option><option value="4">Mascote: robô</option><option value="5">Natal: vendedor (gesto p/ direita)</option><option value="6">Natal: Papai Noel (gesto p/ direita)</option><option value="7">Natal: Papai Noel (gesto p/ esquerda)</option><option value="8">Natal: vendedor (gesto p/ esquerda)</option><option value="9">Natal: vendedora (gesto p/ direita)</option></select><div class="sm">O mascote aparece ao lado do produto, como se estivesse apresentando a oferta. Só entra na arte se você escolher aqui.</div>
   <label style="margin-top:8px">Tamanho do mascote: <b id="a_masv">100%</b></label><input type="range" id="a_masz" min="50" max="140" value="100" oninput="$('#a_masv').textContent=this.value+'%';artRender()"><div class="sm">Até 140%, que é o limite em que a imagem continua nítida (acima disso ela borraria). Ao diminuir, o produto ganha mais espaço.</div>
