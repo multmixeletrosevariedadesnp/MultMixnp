@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.88.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.89.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1653,6 +1653,12 @@ function vEmp(){
   ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
   <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
   <button class="btn g s" onclick="unlockUntil=0;master(ipKeys)">Abrir chaves (pede senha)</button></div>`:''}
+  <div style="margin:14px 0"><b>Preços automáticos (porcentagens padrão)</b>
+  <p class="sm" style="margin:2px 0 8px">Produto novo já vem com estas porcentagens; em cada produto dá para mudar. Cartão e carnê são em cima do preço à vista. Não muda nenhum preço já cadastrado (para isso use Produtos > Recalcular preços).</p>
+  <div class="f" style="margin:0"><div><label>Margem do à vista sobre o custo (%)</label><input id="e_pc_mk" type="number" step="0.1" value="${esc(PCFG().mk)}" placeholder="ex.: 80"></div>
+  <div><label>Cartão: % em cima do à vista</label><input id="e_pc_card" type="number" step="0.1" value="${esc(PCFG().card)}" placeholder="ex.: 12"></div>
+  <div><label>Carnê: % em cima do à vista</label><input id="e_pc_credit" type="number" step="0.1" value="${esc(PCFG().credit)}" placeholder="ex.: 30"></div>
+  <div><label>Arredondar preços calculados</label><select id="e_pc_round">${[['none','Não arredondar (centavos)'],['90','Terminar em ,90 (ex.: 201,90)'],['int','Real inteiro para cima (ex.: 202,00)']].map(([k,l])=>`<option value="${k}" ${PCFG().round===k?'selected':''}>${l}</option>`).join('')}</select></div></div></div>
   <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
   <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
@@ -1737,6 +1743,11 @@ function saveEmp(){
   {const on=$('#e_mp_pix_on').checked,pv2=$('#e_pix_provider').value;
   if(on!==!!CO().mp_pix_on||('mp_pix_on' in CO()))row.mp_pix_on=on;{const cp=$('#e_cat_pix_on').checked;if(cp!==!!CO().cat_pix_on||('cat_pix_on' in CO()))row.cat_pix_on=cp}if(pv2!==(CO().pix_provider||'mp')||('pix_provider' in CO()))row.pix_provider=pv2;}row.show_cash=$('#e_show_cash').checked;row.show_card=$('#e_show_card').checked;row.show_credit=$('#e_show_credit').checked;
   if(!row.show_cash&&!row.show_card&&!row.show_credit)return alert('Deixe ao menos uma forma de preço visível no catálogo.');
+  { // porcentagens padrão (SQL v48): só envia se preenchidas ou se já existiam
+    const pc={mk:pcN($('#e_pc_mk').value),card:pcN($('#e_pc_card').value),credit:pcN($('#e_pc_credit').value),round:$('#e_pc_round').value};
+    if([pc.mk,pc.card,pc.credit].some(x=>x!=null&&(x<0||x>1000)))return alert('Porcentagem fora do normal (0 a 1000%).');
+    if(pc.mk!=null||pc.card!=null||pc.credit!=null||pc.round!=='none'||'price_cfg' in CO())row.price_cfg={mk:pc.mk??'',card:pc.card??'',credit:pc.credit??'',round:pc.round};
+  }
   const cm=+$('#e_cob_multa').value,cj=+$('#e_cob_juro').value,cc=+$('#e_cob_car').value;
   if(!(cm>=0&&cm<=COB_MAX.multa))return alert('A multa por atraso não pode passar de 2% (Código de Defesa do Consumidor).');
   if(!(cj>=0&&cj<=COB_MAX.juro))return alert('Os juros de mora não podem passar de 1% ao mês.');
@@ -2293,7 +2304,7 @@ function catDel(i){
   l.forEach(p=>put('products',{...p,category:''},true));save();sync();catOpen();if(view==='prod')vProd();
 }
 function vProd(){
-  $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar nome, código, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><select id="pcatf" style="max-width:190px" onchange="pcat=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${cats().map(c=>`<option value="${esc(c)}" ${pcat===c?'selected':''}>${esc(c)}</option>`).join('')}<option value="__sem" ${pcat==='__sem'?'selected':''}>Sem categoria</option></select><select id="pestf" style="max-width:160px" onchange="pest=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por estoque"><option value="">Todo estoque</option><option value="com" ${pest==='com'?'selected':''}>Com estoque</option><option value="sem" ${pest==='sem'?'selected':''}>Sem estoque (zero)</option><option value="neg" ${pest==='neg'?'selected':''}>Estoque negativo</option></select><select id="psitf" style="max-width:150px" onchange="psit=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por situação"><option value="">Todos</option><option value="ati" ${psit==='ati'?'selected':''}>Só ativos</option><option value="ina" ${psit==='ina'?'selected':''}>Só inativos</option></select><button class="btn g" onclick="catOpen()">Categorias</button><button class="btn g" onclick="codOpen()">Códigos</button><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
+  $('#app').innerHTML=`<div class="bar"><input id="pq" type="search" style="max-width:300px" placeholder="Pesquisar nome, código, categoria ou NCM" value="${esc(pq)}" oninput="pq=this.value;$('#ptb').innerHTML=prodRows()"><select id="pcatf" style="max-width:190px" onchange="pcat=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>${cats().map(c=>`<option value="${esc(c)}" ${pcat===c?'selected':''}>${esc(c)}</option>`).join('')}<option value="__sem" ${pcat==='__sem'?'selected':''}>Sem categoria</option></select><select id="pestf" style="max-width:160px" onchange="pest=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por estoque"><option value="">Todo estoque</option><option value="com" ${pest==='com'?'selected':''}>Com estoque</option><option value="sem" ${pest==='sem'?'selected':''}>Sem estoque (zero)</option><option value="neg" ${pest==='neg'?'selected':''}>Estoque negativo</option></select><select id="psitf" style="max-width:150px" onchange="psit=this.value;$('#ptb').innerHTML=prodRows()" aria-label="Filtrar por situação"><option value="">Todos</option><option value="ati" ${psit==='ati'?'selected':''}>Só ativos</option><option value="ina" ${psit==='ina'?'selected':''}>Só inativos</option></select><button class="btn g" onclick="catOpen()">Categorias</button><button class="btn g" onclick="codOpen()">Códigos</button><button class="btn" onclick="prodForm()">Novo produto</button><button class="btn g" onclick="pcLote()">Recalcular preços</button><button class="btn g" onclick="impOpen()">Importar planilha</button><button class="btn g" onclick="xmlOpen()">Entrada por XML (NF-e)</button><span class="sm" id="pcount" style="align-self:center"></span></div>
   <div class="tw"><table><tr><th>Cód.</th><th>Produto</th><th>À vista</th><th>Cartão</th><th>Carnê</th><th>Margem</th><th>Estoque</th><th></th></tr><tbody id="ptb">${prodRows()}</tbody></table></div>`;
 }
 /* ========= Importar produtos (xlsx / csv) ========= */
@@ -2426,6 +2437,7 @@ function xmlKitCheck(x){
   return'';
 }
 function xmlCore(x,upd,pay){
+  if(!x._pcStart){window.XCOST=window.XCOST||[]}
   let a=0,n=0,cp=0,kn=0;
   x.items.forEach(i=>{if(i.pid==='novo'&&!i.nid)i.nid=uid()});
   x.items.forEach(i=>{
@@ -2434,6 +2446,7 @@ function xmlCore(x,upd,pay){
       put('products',{id:i.nid,name:i.name,category:'',description:'',price_cash:0,price_card:null,price_credit:null,max_inst:10,stock:i.qty,active:false,ncm:i.ncm,cfop:'5102',unit:i.un,cest:i.cest,csosn:'102',specs:[],photos:[],ean:i.ean||null,supplier_code:i.code||null,cost:i.cost||null});n++;
     }else{
       const p=db.products.find(y=>y.id===i.pid);if(!p)return;
+      if(upd&&i.cost&&Math.abs(+i.cost-(+p.cost||0))>0.004)(window.XCOST=window.XCOST||[]).push(p.id); // custo mudou: oferece recalcular o preço
       put('products',{...p,stock:(+p.stock||0)+i.qty,ean:p.ean||i.ean||null,supplier_code:p.supplier_code||i.code||null,ncm:p.ncm||i.ncm,...(upd&&i.cost?{cost:i.cost}:{})});a++;
     }
   });
@@ -2455,6 +2468,7 @@ function xmlApply(){
   if(x.relanc&&x.key)confMark(x.key,true);
   closeM();XML=null;render();dfeLoad();
   alert(`Entrada concluída: ${a} produto(s) atualizado(s) e ${n} cadastrado(s)${n?' (inativos, sem preço: defina os preços e ative)':''}.${kn?`\n${kn} kit(s) criado(s): confira preço e NCM do kit na lista de produtos.`:''}${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
+  pcXml();
 }
 function impModel(){
   const csv='nome;categoria;preço à vista;preço cartão;preço carnê;estoque;ncm;unidade;parcelas;descrição;especificações;fotos\n'+
@@ -2550,11 +2564,14 @@ function prodForm(id){
    <div><label>Categoria (escolha ou digite uma nova)</label><input id="f_category" list="catlist" autocomplete="off" value="${v('category')}"><datalist id="catlist">${cats().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
    <div><label>Código interno</label><input value="${p.internal_code?p.internal_code:(id?'sem código (categoria sem faixa)':'automático ao salvar')}" readonly style="background:var(--line);font-weight:700" aria-readonly="true"></div>
    <div><label>Estoque</label><input id="f_stock" type="number" value="${v('stock')}"></div>
-   <div><label>Preço de custo (R$)</label><input id="f_cost" type="number" step="0.01" min="0" value="${v('cost')}" oninput="prodMarg()" placeholder="vem da nota (XML)"></div>
-   <div><label>Margem desejada sobre o custo (%) <span class="sm">preenche o à vista</span></label><input id="f_mk" type="number" step="0.1" min="0" oninput="prodMk()" placeholder="ex.: 40"></div>
-   <div><label>Preço à vista</label><input id="f_price_cash" type="number" step="0.01" value="${v('price_cash')}" oninput="prodMarg()"></div>
-   <div><label>Preço cartão (opcional)</label><input id="f_price_card" type="number" step="0.01" value="${v('price_card')}" oninput="prodMarg()"></div>
-   <div><label>Preço carnê total (opcional)</label><input id="f_price_credit" type="number" step="0.01" value="${v('price_credit')}" oninput="prodMarg()"></div>
+   <div><label>Preço de custo (R$)</label><input id="f_cost" type="number" step="0.01" min="0" value="${v('cost')}" oninput="prodMk('cost')" placeholder="vem da nota (XML)"></div>
+   <div class="w sm" style="margin:2px 0 -4px">Preencha as porcentagens e os preços se calculam. Pode digitar o preço à mão: a porcentagem mostra a real. ${PCFG().round!=='none'?`Arredondando para ${PCFG().round==='90'?'final ,90':'real inteiro'} (Empresa).`:''}</div>
+   <div><label>Margem do à vista sobre o custo (%)</label><input id="f_mk" type="number" step="0.1" oninput="prodMk('mk')" placeholder="ex.: 80"></div>
+   <div><label>Preço à vista</label><input id="f_price_cash" type="number" step="0.01" value="${v('price_cash')}" oninput="prodMk('cash')"></div>
+   <div><label>Cartão: % em cima do à vista</label><input id="f_pcard" type="number" step="0.1" oninput="prodMk('pcard')" placeholder="ex.: 12"></div>
+   <div><label>Preço cartão (opcional)</label><input id="f_price_card" type="number" step="0.01" value="${v('price_card')}" oninput="prodMk('card')"></div>
+   <div><label>Carnê: % em cima do à vista</label><input id="f_pcred" type="number" step="0.1" oninput="prodMk('pcred')" placeholder="ex.: 30"></div>
+   <div><label>Preço carnê total (opcional)</label><input id="f_price_credit" type="number" step="0.01" value="${v('price_credit')}" oninput="prodMk('credit')"></div>
    <div class="w" id="f_marg"></div>
    <div><label>Máx. parcelas do carnê</label><input id="f_max_inst" type="number" value="${v('max_inst')}"></div>
    <div><label>Promoção: desconto % (vazio = sem)</label><input id="f_promo_pct" type="number" min="0" max="90" step="0.1" value="${v('promo_pct')}"></div>
@@ -2581,7 +2598,7 @@ function prodForm(id){
    <div id="kitrows">${kitArr(p).map(c=>kitRow(p.id||'',c)).join('')}</div><label style="margin-top:6px">Buscar peça (nome, código interno, código de barras, código do fornecedor ou categoria)</label><input id="kitq" type="search" autocomplete="off" placeholder="Digite para buscar e toque na peça para adicionar" oninput="kitSearch('${p.id||''}')" onkeydown="kitEnter('${p.id||''}',event)"><div id="kitres" class="pres"></div><div class="sm" id="kitst" style="margin-top:6px"></div></div></div>
    <div><label>No catálogo?</label><select id="f_active"><option value="true" ${p.active!==false?'selected':''}>Sim</option><option value="false" ${p.active===false?'selected':''}>Não</option></select></div></div>
    <button class="btn" onclick="saveProd('${p.id||''}')">Salvar produto</button>${p.id?` <button class="btn g" onclick="prodToggle('${p.id}',true)">${p.active===false?'Reativar produto':'Inativar produto'}</button>`:''}`);
-  prodMarg();kitUi();
+  pcInit(p);prodMarg();kitUi();
 }
 function prodMarg(){
   const c=$('#f_cost').value,el=$('#f_marg');if(!el)return;
@@ -2589,7 +2606,79 @@ function prodMarg(){
   const L=[['À vista','f_price_cash'],['Cartão','f_price_card'],['Carnê','f_price_credit']].map(([n,id])=>{const m=margCalc(c,$('#'+id).value);return m?`<div class="pr"><span>${n}</span><b class="${m.lucro<0?'bad':'ok'}">${pc1(m.mk)} sobre o custo</b><div class="sm">lucro ${R(m.lucro)} · margem ${pc1(m.mg)} da venda</div></div>`:''}).join('');
   el.innerHTML=`<div class="prices">${L||'<p class="sm">Digite o preço de venda para ver a margem.</p>'}</div>`;
 }
-function prodMk(){const c=+$('#f_cost').value,m=$('#f_mk').value;if(c>0&&m!==''){$('#f_price_cash').value=(c*(1+ +m/100)).toFixed(2);prodMarg()}}
+/* ===== Preços automáticos por porcentagem: só PREENCHEM os três preços (à vista, cartão, carnê); venda e nota usam os preços como sempre ===== */
+const PCFG=()=>{const c=CO().price_cfg||{};return{mk:c.mk??'',card:c.card??'',credit:c.credit??'',round:['none','90','int'].includes(c.round)?c.round:'none'}};
+function pcRound(v,r){v=+v;if(!(v>0))return 0;if(r==='int')return Math.ceil(v-0.004);if(r==='90'){const b=Math.floor(v);return b+0.9>=v-0.004?b+0.9:b+1.9}return Math.round(v*100)/100}
+const pcN=v=>v===''||v==null||isNaN(+v)?null:+v;
+const pcFmt=n=>(Math.round(n*10)/10).toString();
+function pcCalc(cost,mk,card,credit,r){ // devolve os preços calculados (null = não mexer)
+  const o={};cost=pcN(cost);mk=pcN(mk);card=pcN(card);credit=pcN(credit);
+  if(cost>0&&mk!=null)o.cash=pcRound(cost*(1+mk/100),r);
+  return o;
+}
+function pcFrom(cash,pct,r){cash=+cash;pct=pcN(pct);return cash>0&&pct!=null?pcRound(cash*(1+pct/100),r):null}
+function prodMk(src){ // src: qual campo a pessoa mexeu
+  const r=PCFG().round,g=id=>$('#'+id).value,set=(id,v)=>{if(v!=null)$('#'+id).value=(+v).toFixed(2)};
+  const cost=+g('f_cost');
+  if(src==='cost'||src==='mk'){if(cost>0&&pcN(g('f_mk'))!=null)set('f_price_cash',pcRound(cost*(1+ +g('f_mk')/100),r))}
+  if(src==='cash'&&cost>0&&+g('f_price_cash')>0)$('#f_mk').value=pcFmt((+g('f_price_cash')/cost-1)*100); // preço digitado à mão: a margem mostra a real
+  const cash=+g('f_price_cash');
+  if(['cost','mk','cash','pcard'].includes(src))set('f_price_card',pcFrom(cash,g('f_pcard'),r));
+  if(['cost','mk','cash','pcred'].includes(src))set('f_price_credit',pcFrom(cash,g('f_pcred'),r));
+  if(src==='card'&&cash>0&&+g('f_price_card')>0)$('#f_pcard').value=pcFmt((+g('f_price_card')/cash-1)*100);
+  if(src==='credit'&&cash>0&&+g('f_price_credit')>0)$('#f_pcred').value=pcFmt((+g('f_price_credit')/cash-1)*100);
+  prodMarg();
+}
+function pcInit(p){ // ao abrir: % guardada no produto; senão a real (dos preços atuais); produto novo: padrão da loja
+  const d=PCFG(),cash=+p.price_cash,cost=+p.cost,put=(id,v)=>{const e=$('#'+id);if(e&&v!=null&&v!=='')e.value=v};
+  if(!p.id){put('f_mk',d.mk);put('f_pcard',d.card);put('f_pcred',d.credit);return}
+  // a % guardada só vale se ainda gera o preço atual (com o arredondamento); se o preço mudou por outro caminho, mostra a % real
+  const ok=(stored,base,price)=>stored!=null&&base>0&&+price>0&&(Math.abs(pcRound(base*(1+ +stored/100),d.round)-+price)<0.011||Math.abs(Math.round(base*(1+ +stored/100)*100)/100-+price)<0.011);
+  const real=(base,price)=>base>0&&+price>0?pcFmt((+price/base-1)*100):'';
+  put('f_mk',ok(p.mk_cash,cost,cash)?pcFmt(+p.mk_cash):real(cost,cash));
+  put('f_pcard',ok(p.pct_card,cash,p.price_card)?pcFmt(+p.pct_card):real(cash,p.price_card));
+  put('f_pcred',ok(p.pct_credit,cash,p.price_credit)?pcFmt(+p.pct_credit):real(cash,p.price_credit));
+}
+/* ---- recalcular em lote (com prévia) ---- */
+let PCL=null;
+function pcLote(ids){
+  const d=PCFG(),base=ids?db.products.filter(p=>ids.includes(p.id)):db.products.filter(p=>p.active!==false||ids);
+  PCL={ids:ids||null};
+  modal(`<h2>Recalcular preços</h2><p class="sm">Usa as porcentagens de cada produto (ou o padrão da loja em Empresa, se o produto não tiver). Nada muda até você confirmar. Preço em branco continua em branco (não cria cartão ou carnê onde não tem).${ids?'':' Só produtos ativos.'}</p>
+  <div class="row" style="flex-wrap:wrap;gap:14px;margin:8px 0">
+   <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pl_cash" style="width:auto" checked onchange="pcPrev()"> À vista (custo + margem)</label>
+   <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pl_card" style="width:auto" checked onchange="pcPrev()"> Cartão</label>
+   <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pl_cred" style="width:auto" checked onchange="pcPrev()"> Carnê</label>
+   <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pl_def" style="width:auto" onchange="pcPrev()"> Usar o padrão da loja em todos (ignora o % de cada produto)</label></div>
+  <p class="sm">Padrão da loja: margem ${d.mk===''?'—':d.mk+'%'} · cartão ${d.card===''?'—':'+'+d.card+'%'} · carnê ${d.credit===''?'—':'+'+d.credit+'%'} · arredondar: ${{none:'não',90:'final ,90',int:'real inteiro'}[d.round]}</p>
+  <div id="pl_prev"></div>
+  <div class="bar"><button class="btn" id="pl_ok" onclick="pcLoteOk()">Aplicar</button><button class="btn g" onclick="closeM()">Fechar</button></div>`);
+  PCL.base=base;pcPrev();
+}
+function pcPlan(){
+  const d=PCFG(),r=d.round,def=$('#pl_def').checked,L=[];
+  for(const p of PCL.base){
+    const mk=def?pcN(d.mk):(p.mk_cash!=null?+p.mk_cash:pcN(d.mk)),pc=def?pcN(d.card):(p.pct_card!=null?+p.pct_card:pcN(d.card)),pr=def?pcN(d.credit):(p.pct_credit!=null?+p.pct_credit:pcN(d.credit));
+    let cash=+p.price_cash||0;const n={};
+    if($('#pl_cash').checked&&+p.cost>0&&mk!=null){const v=pcRound(+p.cost*(1+mk/100),r);if(Math.abs(v-cash)>0.004){n.price_cash=v;n.mk_cash=mk}cash=v}
+    if($('#pl_card').checked&&cash>0&&pc!=null&&+p.price_card>0){const v=pcRound(cash*(1+pc/100),r);if(Math.abs(v-(+p.price_card||0))>0.004){n.price_card=v;n.pct_card=pc}}
+    if($('#pl_cred').checked&&cash>0&&pr!=null&&+p.price_credit>0){const v=pcRound(cash*(1+pr/100),r);if(Math.abs(v-(+p.price_credit||0))>0.004){n.price_credit=v;n.pct_credit=pr}}
+    if(Object.keys(n).some(k=>k.startsWith('price_')))L.push({p,n});
+  }
+  return L;
+}
+function pcPrev(){
+  const L=pcPlan(),f=(p,n,k)=>n[k]!=null?`<s class="sm">${+p[k]>0?R(+p[k]):'—'}</s> <b>${R(n[k])}</b>`:(+p[k]>0?R(+p[k]):'—');
+  $('#pl_ok').disabled=!L.length;$('#pl_ok').textContent=L.length?`Aplicar em ${L.length} produto(s)`:'Nada para mudar';
+  $('#pl_prev').innerHTML=L.length?`<div class="tw" style="max-height:50vh;overflow:auto"><table><tr><th>Produto</th><th>Custo</th><th>À vista</th><th>Cartão</th><th>Carnê</th></tr>${L.slice(0,300).map(({p,n})=>`<tr><td>${esc(p.name)}</td><td>${+p.cost>0?R(+p.cost):'<span class="sm">sem custo</span>'}</td><td>${f(p,n,'price_cash')}</td><td>${f(p,n,'price_card')}</td><td>${f(p,n,'price_credit')}</td></tr>`).join('')}</table></div>${L.length>300?`<p class="sm">… e mais ${L.length-300}.</p>`:''}`:'<p class="sm">Nenhum preço muda com essas porcentagens (ou faltam custo / porcentagens). Produto sem custo não tem o à vista recalculado.</p>';
+}
+function pcLoteOk(){
+  const L=pcPlan();if(!L.length)return;
+  if(!confirm(`Mudar os preços de ${L.length} produto(s)? O catálogo e as próximas vendas já usam os preços novos.`))return;
+  L.forEach(({p,n})=>put('products',{...p,...n}));
+  closeM();render();alert(`${L.length} produto(s) com preço atualizado.`);
+}
+function pcXml(){const ids=[...new Set(window.XCOST||[])];window.XCOST=[];if(ids.length&&confirm(`${ids.length} produto(s) ficaram com custo novo. Quer ver os preços sugeridos pelas porcentagens? (você confirma antes de mudar)`))pcLote(ids)}
 async function upload(inp){
   const ta=$('#f_photos');
   for(const f of [...inp.files]){
@@ -2607,6 +2696,13 @@ function saveProd(id){
    max_inst:+g('max_inst')||10,stock:+g('stock')||0,active:g('active')==='true',ncm:g('ncm'),cfop:g('cfop'),unit:g('unit'),cest:g('cest'),csosn:g('csosn'),serial_kind:g('serial_kind')||null,
    specs:g('specs').split('\n').filter(Boolean).map(l=>{const[k,...v]=l.split(':');return{k:k.trim(),v:v.join(':').trim()}}),
    photos:g('photos').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,5)};
+  { // porcentagens (SQL v48): só envia se preenchidas ou se o produto já tinha
+    const o=db.products.find(x=>x.id===id)||{},P=[['mk_cash','mk'],['pct_card','pcard'],['pct_credit','pcred']];
+    P.forEach(([c,f])=>{const x=pcN(g(f));if(x!=null||c in o)row[c]=x});
+    if(!(+row.price_card>0))row.pct_card=('pct_card' in o||row.pct_card!=null)?null:undefined;
+    if(!(+row.price_credit>0))row.pct_credit=('pct_credit' in o||row.pct_credit!=null)?null:undefined;
+    ['pct_card','pct_credit'].forEach(c=>{if(row[c]===undefined)delete row[c]});
+  }
   { // kit: só envia a coluna se for kit (ou se deixou de ser), evita erro caso o SQL v40 ainda não tenha sido rodado
     const o=db.products.find(x=>x.id===id)||{};
     if($('#f_iskit').checked){
@@ -4398,7 +4494,7 @@ function dfeLoteOk(){
   L.forEach(x0=>{ // reler a nota para casar de novo com os produtos já cadastrados pelas notas anteriores do lote
     const x=xmlParse(window.LOTE_XML[x0.key]);const r=xmlCore(x,upd,pay);a+=r.a;n+=r.n;cp+=r.cp;k++});
   window.LOTE=null;window.LOTE_XML=null;dfeSel.clear();closeM();render();dfeLoad();
-  alert(`Entrada concluída em ${k} nota(s): ${a} atualização(ões) de produto e ${n} produto(s) novo(s) cadastrado(s)${n?' (inativos, sem preço)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
+  setTimeout(pcXml,50);alert(`Entrada concluída em ${k} nota(s): ${a} atualização(ões) de produto e ${n} produto(s) novo(s) cadastrado(s)${n?' (inativos, sem preço)':''}.${cp?`\n${cp} conta(s) a pagar lançada(s).`:''}`);
 }
 function vDfe(){
   const L=DFE.filter(n=>dfeF==='todas'||!dfeOk(n)||dfeF==='canc'&&n.canceled);
