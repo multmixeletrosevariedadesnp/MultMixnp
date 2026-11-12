@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.10.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.11.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -65,7 +65,7 @@ s.old{color:var(--mut);font-size:13px;font-weight:500}
 .ar{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:0;width:38px;height:38px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer}
 .ar.l{left:8px}.ar.r{right:8px}
 .cnt{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:1px 9px;border-radius:99px}
-.tools{display:flex;gap:10px;align-items:center}.tools input{flex:1}
+.tools{display:flex;gap:10px;align-items:stretch}.tools input{flex:1;min-width:0}
 .vm{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);flex:none}
 .vm button{background:none;border:0;color:var(--mut);padding:8px 11px;cursor:pointer;display:grid;place-items:center}
 .vm button[aria-pressed=true]{background:var(--pri);color:#fff}
@@ -154,7 +154,7 @@ body.instbar-on.hasbag #top{bottom:calc(162px + env(safe-area-inset-bottom,0px))
 <header><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span></h1><button class="ibtn" data-install hidden>Instalar app</button><button class="cbtn" id="cbtn" hidden onclick="carneOpen()">Meu carnê</button><a id="zap" target="_blank" rel="noopener">Falar com a loja</a></header>
 <main>
   <div class="hero"><img id="hlogo" src="logo.jpg" alt="MultMix"><div><b>Eletros e Variedades</b><span>Veja preços e fotos à vontade. Só pedimos seus dados na hora de comprar.</span></div></div>
-  <div id="filters"><div class="tools"><input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;list()">
+  <div id="filters"><div class="tools"><input id="q" type="search" placeholder="O que você procura?" oninput="q=this.value;window.list()">
     <div class="vm" role="group" aria-label="Modo de visualização">
       <button data-m="big" title="Cartões grandes" aria-label="Cartões grandes" onclick="setVm('big')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
       <button data-m="small" title="Compacto (mais produtos na tela)" aria-label="Compacto" onclick="setVm('small')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg></button>
@@ -297,8 +297,17 @@ async function load(){
   list();
   const m=location.hash.match(/p=([\w-]+)/);if(m&&prod(m[1]))detail(m[1]);
 }
+/* busca: ignora acento, maiúscula e pontuação; várias palavras em qualquer ordem; acha também nome abreviado (liquidificador → LIQ.MONDIAL) */
+const nrm=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const _hay=new WeakMap();
+function hayOf(p){let h=_hay.get(p);if(!h){const t=nrm((p.name||'')+' '+(p.category||'')+' '+(p.internal_code||''));h={t:' '+t+' ',w:t.split(' ').filter(Boolean)};_hay.set(p,h)}return h}
+function qOk(p){
+  const ts=nrm(q).split(' ').filter(Boolean);if(!ts.length)return true;
+  const h=hayOf(p);
+  return ts.every(t=>h.t.includes(' '+t)||h.t.includes(t)||(t.length>3&&h.w.some(w=>w.length>=3&&t.startsWith(w))));
+}
 function chips(){
-  const sq=q.toLowerCase(),base=P.filter(p=>p.name.toLowerCase().includes(sq)),cnt={},nof=base.filter(p=>promoPct(p)).length;
+  const base=P.filter(p=>qOk(p)),cnt={},nof=base.filter(p=>promoPct(p)).length;
   base.forEach(p=>{if(p.category)cnt[p.category]=(cnt[p.category]||0)+1});
   const names=[...new Set([...Object.keys(cnt),...(cat!=='Todos'?[cat]:[])])].sort((a,b)=>a.localeCompare(b,'pt-BR')).filter(c=>c!=='Ofertas');
   const chip=(c,n)=>`<button class="chip ${c===cat?'on':''}" data-c="${esc(c)}" aria-pressed="${c===cat}" onclick="setCat(this.dataset.c)">${esc(c)}<i>${n}</i></button>`;
@@ -317,7 +326,7 @@ function clearF(){q='';cat='Todos';$('#q').value='';list()}
 const EMPTY='<div class="empty"><p><b>Nenhum produto encontrado.</b></p><p>Tente outra palavra ou veja todas as categorias.</p><button class="btn g" onclick="clearF()">Limpar filtros</button></div>';
 function list(){
   chips();
-  const l=P.filter(p=>(cat==='Todos'||(cat==='Ofertas'?promoPct(p)>0:p.category===cat))&&p.name.toLowerCase().includes(q.toLowerCase())).sort((a,b)=>(a.stock<=0)-(b.stock<=0));
+  const l=P.filter(p=>(cat==='Todos'||(cat==='Ofertas'?promoPct(p)>0:p.category===cat))&&qOk(p)).sort((a,b)=>(a.stock<=0)-(b.stock<=0));
   summary(l.length);
   $('#grid').innerHTML=l.map(p=>{const m=p.max_inst||10;return`<div class="card${p.stock<=0?' na':''}" tabindex="0" onclick="detail('${p.id}')" onkeydown="if(event.key==='Enter')detail('${p.id}')">
    <div class="ph" style="${p.photos?.[0]?`background-image:url('${esc(p.photos[0])}')`:''}">${p.photos?.[0]?'':'sem foto'}${(p.photos||[]).length>1?`<span class="cnt">${p.photos.length} fotos</span>`:''}${p.stock<=0?'<span class="nab">Aguardando estoque</span>':offTag(p)}${safeUrl(p.video_url)?'<span class="vidb" title="Tem vídeo">▶ vídeo</span>':''}</div>
@@ -575,7 +584,7 @@ function send(){
     pay_type:pay,n_inst:pay==='crediario'?nin:1,total:tot,customer_name:cust.name,customer_phone:cust.phone,customer_cpf:cust.cpf||null,customer_address:cust.address||null,status:'novo'}).then(()=>{},()=>{});
   bag=[];saveBag();closeM();alert('Pedido enviado! Continue a conversa no WhatsApp.');
 }
-let vm=localStorage.mmvm||(innerWidth<600?'small':'big');
+let vm=localStorage.mmvm||'small';
 function applyVm(){
   $('#grid').className='grid g-'+vm;
   document.querySelectorAll('.vm button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===vm));
