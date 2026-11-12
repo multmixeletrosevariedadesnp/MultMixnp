@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>window.APP_VERSION='1.9.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
+<script>window.APP_VERSION='1.9.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Catálogo"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Catálogo"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Catálogo</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--wa:#128c4a}
@@ -447,12 +447,14 @@ async function cliCall(body){
   if(!j||j.ok===false)throw new Error((j&&j.erro)||'Falha ao falar com a loja.');
   return j;
 }
-const cpfMask=v=>{const d=String(v||'').replace(/\D/g,'').slice(0,11);return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2')};
+const cpfMask=v=>{const d=String(v||'').replace(/\D/g,'').slice(0,14); // CPF (11) ou CNPJ (14)
+  if(d.length<=11)return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d{1,2})$/,'$1-$2')};
 const dBR=d=>String(d||'').slice(0,10).split('-').reverse().join('/');
 function carneOpen(){if(!sb)return;clearInterval(cTm);ctk()?carneLista():carneLogin()}
 function carneLogin(primeiro,msg){
-  modal(`<h2>Acesse seu carnê</h2><p class="sm">${primeiro?'Primeiro acesso: use o <b>código do carnê</b> (está impresso no seu carnê) e crie uma senha.':'Entre com seu CPF e senha para ver e pagar suas parcelas por Pix.'}</p>
-   <label class="sm">CPF</label><input id="c_cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" oninput="this.value=cpfMask(this.value)" style="width:100%">
+  modal(`<h2>Acesse seu carnê</h2><p class="sm">${primeiro?'Primeiro acesso: use o <b>código do carnê</b> (está impresso no seu carnê) e crie uma senha.':'Entre com seu CPF (ou CNPJ, se a compra foi da empresa) e senha para ver e pagar suas parcelas por Pix.'}</p>
+   <label class="sm">CPF ou CNPJ</label><input id="c_cpf" inputmode="numeric" autocomplete="username" placeholder="CPF ou CNPJ, só números" oninput="this.value=cpfMask(this.value)" style="width:100%">
    ${primeiro?`<label class="sm">Código do carnê</label><input id="c_cod" autocapitalize="characters" placeholder="Ex.: K7P2QX9A" style="width:100%;text-transform:uppercase">`:''}
    <label class="sm">${primeiro?'Crie uma senha (mínimo 6 caracteres)':'Senha'}</label><input id="c_pw" type="password" autocomplete="${primeiro?'new-password':'current-password'}" style="width:100%" onkeydown="if(event.key==='Enter')carneEntrar(${primeiro?1:0})">
    ${primeiro?`<label class="sm">Repita a senha</label><input id="c_pw2" type="password" autocomplete="new-password" style="width:100%" onkeydown="if(event.key==='Enter')carneEntrar(1)">`:''}
@@ -464,7 +466,7 @@ function carneLogin(primeiro,msg){
 }
 async function carneEntrar(primeiro){
   const er=$('#c_er'),cpf=$('#c_cpf').value,pw=$('#c_pw').value;
-  if(String(cpf).replace(/\D/g,'').length!==11)return er.textContent='Informe o CPF completo.';
+  {const n=String(cpf).replace(/\D/g,'').length;if(n!==11&&n!==14)return er.textContent='Informe o CPF (11 números) ou o CNPJ (14 números) completo.'}
   if(primeiro){if(!$('#c_cod').value.trim())return er.textContent='Informe o código do carnê.';if(pw.length<6)return er.textContent='A senha precisa ter pelo menos 6 caracteres.';if(pw!==$('#c_pw2').value)return er.textContent='As duas senhas não são iguais.'}
   else if(!pw)return er.textContent='Informe a senha.';
   er.textContent='Entrando…';
