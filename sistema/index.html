@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.90.1'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.91.0'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2765,7 +2765,7 @@ function vPdv(){
    </section>
   </div>
   <div class="pbar" id="pbar"><div><span class="sm">Carrinho</span><b id="pbt">R$ 0,00</b></div><button class="btn" onclick="document.getElementById('pdvcart').scrollIntoView({behavior:'smooth',block:'start'})">Ver carrinho</button></div>`;cartView();
-  if(pre){s_t.value=pre.pay_type==='pix'?'avista':pre.pay_type;if(pre.pay_type==='pix')s_m.value='Pix';c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;pre=null;cartView()}
+  if(pre){s_t.value=pre.pay_type==='pix'?'avista':pre.pay_type;if(pre.pay_type==='pix')s_m.value='Pix';c_n.value=pre.customer_name||'';c_p.value=pre.customer_phone||'';c_c.value=pre.customer_cpf||'';window.preAddr=pre.customer_address||'';if(pre.n_inst)s_n.value=pre.n_inst;if(pre.customer_id&&db.customers.some(x=>x.id===pre.customer_id))pickCli(pre.customer_id);pre=null;cartView()}
 }
 const promoPct=p=>{const x=+p.promo_pct;if(!(x>0&&x<100))return 0;const d=new Date(),h=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   if(p.promo_from&&h<String(p.promo_from).slice(0,10))return 0;if(p.promo_to&&h>String(p.promo_to).slice(0,10))return 0;return x};
@@ -4050,7 +4050,7 @@ function vPed(){
   const st={novo:'Novo',convertido:'Virou venda',cancelado:'Cancelado',pago:'PAGO · entregar',aguardando_pix:'Aguardando Pix',pix_expirado:'Pix não pago'};
   $('#app').innerHTML=l.length?`<div style="overflow:auto"><table class="pcards"><tr class="ph"><th>Data</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Total</th><th>Status</th><th></th></tr>
   ${l.map(o=>`<tr class="${o.status==='pago'?'pc-pago':''}"><td data-l="Data">${new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
-  <td class="pc-cli">${esc(o.customer_name||'—')}<div class="sm">${esc(o.customer_phone||'')}</div></td>
+  <td class="pc-cli">${esc(o.customer_name||'—')}${o.customer_id&&db.customers.some(x=>x.id===o.customer_id)?' <span class="tag ok" title="Comprou logado em Meu carnê: o pedido está ligado ao cadastro">cliente cadastrado ✓</span>':''}<div class="sm">${esc(o.customer_phone||'')}</div></td>
   <td data-l="Itens">${o.items.map(i=>`${i.qty}x ${esc(i.name)}`).join('<br>')}</td>
   <td data-l="Pagamento">${{avista:'À vista',cartao:'Cartão',crediario:'Carnê '+(o.n_inst||1)+'x',pix:'Pix pelo catálogo'}[o.pay_type]||esc(o.pay_type||'')}${o.paid_at?`<div class="sm ok">pago ${new Date(o.paid_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}</td><td data-l="Total"><b>${R(o.total)}</b></td>
   <td class="pc-st"><span class="tag ${o.status==='novo'||o.status==='pago'?'ok':''}" ${o.status==='pago'?'style="background:#12805c;color:#fff"':''}>${st[o.status]||o.status}</span></td>
