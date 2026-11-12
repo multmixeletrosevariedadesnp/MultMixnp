@@ -1,5 +1,5 @@
 {
- "version": "1.94.2",
+ "version": "1.95.2",
  "date": "2026-11-12",
- "notes": "Licença: chave pública do servidor atualizada."
+ "notes": "Arte do produto: a foto agora gira em qualquer ângulo (barra de -180° a 180°)."
 }
