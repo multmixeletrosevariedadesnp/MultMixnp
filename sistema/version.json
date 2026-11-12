@@ -1,5 +1,5 @@
 {
- "version": "1.91.0",
- "date": "2026-11-06",
- "notes": "Hora da venda ao lado da data nas listas e relatórios."
+ "version": "1.93.0",
+ "date": "2026-11-12",
+ "notes": "Fiscal: botão Trocar certificado (arquivo .pfx e senha enviados ao Render sem abrir o painel dele). Inclui a licença mensal, ainda desligada."
 }
