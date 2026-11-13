@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.32.2'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.2'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -610,11 +610,11 @@ function artSvg(o){
   if(mas){const mw=masDim().mw,x0=Math.round(20+mw*.97+6),av=W-30-x0;cw=Math.min(av,Math.round(phF*.8));cx=mas.r?Math.round(30+(av-cw)*.7):Math.round(x0+(av-cw)*.3);y=yTop+Math.round(phF*.1);ph=Math.round(phF*.74)}
   const Y0=y,P0=ph,pz=Math.max(.3,Math.min(1.8,o.pz||1));{const ccx=cx+cw/2+(o.px||0),ccy=y+ph/2+(o.py||0);cw=Math.round(cw*pz);ph=Math.round(ph*pz);cx=Math.round(ccx-cw/2);y=Math.round(ccy-ph/2)}
   if(o.nop){
-    if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/>`);
+    if(o.photo)E.push(`<defs><filter id="ds" x="-20%" y="-20%" width="140%" height="145%"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#000" flood-opacity=".38"/></filter></defs><g transform="rotate(${+o.pr||0} ${cx+cw/2} ${y+ph/2})"><image href="${o.photo}" xlink:href="${o.photo}" x="${cx}" y="${y}" width="${cw}" height="${ph}" preserveAspectRatio="xMidYMid meet" filter="url(#ds)"/></g>`);
     else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:th.sub,anchor:'m'});
   }else{
   E.push(`<rect x="${cx+8}" y="${y+14}" width="${cw}" height="${ph}" rx="44" fill="#000" fill-opacity=".25"/><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44" fill="#ffffff"/>`);
-  if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet" clip-path="url(#pcp)"/>`)}
+  if(o.photo){E.push(`<clipPath id="pcp"><rect x="${cx}" y="${y}" width="${cw}" height="${ph}" rx="44"/></clipPath><g clip-path="url(#pcp)"><g transform="rotate(${+o.pr||0} ${cx+cw/2} ${y+ph/2})"><image href="${o.photo}" xlink:href="${o.photo}" x="${cx+26}" y="${y+26}" width="${cw-52}" height="${ph-52}" preserveAspectRatio="xMidYMid meet"/></g></g>`)}
   else T('Sem foto',W/2,y+ph/2,56,{bold:1,color:'#98a2b3',anchor:'m'});
   }
   y=Y0;ph=P0;
@@ -655,7 +655,8 @@ function artSvg(o){
 const ART_MAS={1:{f:'mascote1.png',ar:450/1159,h:1159},2:{f:'mascote2.png',ar:578/1180,h:1180},4:{f:'mascote4.png',ar:954/1522,h:1522},5:{f:'mascote5.png',ar:718/1513,h:1513},6:{f:'mascote6.png',ar:859/1522,h:1522},7:{f:'mascote7.png',ar:908/1518,h:1518,r:1},8:{f:'mascote8.png',ar:718/1513,h:1513,r:1},9:{f:'mascote9.png',ar:654/1526,h:1526}},ART_MASD={},ART_MASV={};
 // versões reduzidas e nítidas do mascote (redução em etapas, sem serrilhado); o original nunca é ampliado além do tamanho real
 function artMasYSet(v){const e=$('#a_masy');if(e)e.value=v;const t=$('#a_masyv');if(t)t.textContent=+v===0?'padrão':(+v<0?'subiu ':'desceu ')+Math.abs(+v)+' px';artRender()}
-function artPosLbl(){const f=(id,a,b)=>{const v=+($('#a_'+id)||{}).value||0,e=$('#a_'+id+'v');if(e)e.textContent=v===0?'padrão':(v<0?a:b)+' '+Math.abs(v)+' px'};f('px','← esquerda','direita →');f('py','↑ subiu','↓ desceu');artRender()}
+function artPosLbl(){const f=(id,a,b)=>{const v=+($('#a_'+id)||{}).value||0,e=$('#a_'+id+'v');if(e)e.textContent=v===0?'padrão':(v<0?a:b)+' '+Math.abs(v)+' px'};f('px','← esquerda','direita →');f('py','↑ subiu','↓ desceu');{const r=+($('#a_pr')||{}).value||0,e=$('#a_prv');if(e)e.textContent=r===0?'padrão':(r<0?'↶ esquerda ':'↷ direita ')+Math.abs(r)+'°'}artRender()}
+function artRotStep(d){const e=$('#a_pr');if(!e)return;e.value=Math.max(-180,Math.min(180,(+e.value||0)+d));artPosLbl()}
 function artMasY(d){artMasYSet(Math.max(-500,Math.min(300,(+artVal('masy')||0)+d)))}
 async function artMasShrink(id,hpx){
   const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no();i.src=ART_MASD[id]});
@@ -768,7 +769,7 @@ function artCaption(){
 function artOpts(){
   const co=CO||{},addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0,r:ART_MAS[artVal('mas')].r||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0,r:ART_MAS[artVal('mas')].r||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,pr:+artVal('pr')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
     co:{name:co.trade_name||co.legal_name||'MultMix',phone:fmtTel(SEL().phone)||co.whatsapp||co.phone||'',addr},sel:ck('selfoot')?(artSel()&&{...artSel(),noav:!ck('fotorod')}):null,photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
@@ -1143,7 +1144,8 @@ async function vArte(){
 <div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
-  <div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="$('#a_pz').value=100;$('#a_px').value=0;$('#a_py').value=0;$('#a_pzv').textContent='100%';artPosLbl()">Foto no padrão</button></div></div>
+  <label style="margin-top:8px">Foto: girar / inclinar: <b id="a_prv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artRotStep(-1)" aria-label="Girar 1 grau à esquerda">↶</button><input type="range" id="a_pr" min="-180" max="180" step="1" value="0" style="flex:1;min-width:140px" oninput="artPosLbl()"><button type="button" class="btn g s" onclick="artRotStep(1)" aria-label="Girar 1 grau à direita">↷</button></div><div class="sm">Gira a foto no ângulo que quiser (de -180° a 180°), sem perder qualidade. Os botões ↶ ↷ ajustam de 1 em 1 grau.</div>
+  <div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="$('#a_pz').value=100;$('#a_px').value=0;$('#a_py').value=0;$('#a_pr').value=0;$('#a_pzv').textContent='100%';artPosLbl()">Foto no padrão</button></div></div>
   <div class="w"><label>Mascote ou imagem sua (na arte e no cartão)</label><select id="a_mas" onchange="artMasLoad()"><option value="">Sem mascote</option><option value="1">Mascote MultMix: mulher</option><option value="2">Mascote MultMix: homem</option><option value="4">Mascote MultMix: robô</option><option value="5">Natal: vendedor (gesto p/ direita)</option><option value="6">Natal: Papai Noel (gesto p/ direita)</option><option value="7">Natal: Papai Noel (gesto p/ esquerda)</option><option value="8">Natal: vendedor (gesto p/ esquerda)</option><option value="9">Natal: vendedora (gesto p/ direita)</option><option value="3">Meu mascote (enviar imagem pronta)</option></select>
   <div id="a_masbox" class="hid" style="margin-top:6px"><input type="file" accept="image/*" onchange="masUp(this)"><div class="sm">Envie a imagem já pronta (a que você gerou em algum chat), de preferência PNG sem fundo. Se vier com fundo branco ou liso, o sistema tenta tirar o fundo sozinho. Ele fica salvo neste aparelho. <button type="button" class="btn g s" onclick="masDel()">Remover o meu mascote</button></div></div>
   <div id="a_masctl" class="hid">
@@ -1774,7 +1776,7 @@ const LIC_URL='https://yrcvqwmsdydtwgqyboos.supabase.co/functions/v1/licenca';  
 const LIC_PUB='{"kty":"EC","crv":"P-256","alg":"ES256","x":"S9e2wibzOSFCY9VK6cEIQ01gxKeQyXJahmcoP0miA4M","y":"NrwrkBHYZolV9sVfh9Ol7QVB1kbuN8BrdgTqYnOblvE","key_ops":["verify"],"ext":true}';      /* chave pública do servidor (JSON). Vazia = aprende da função na primeira conexão */
 const LIC_OBRIG=false; /* true na versão vendida: sem chave válida = somente consulta */
 const LIC=(()=>{
-  const KC='lic_key',KT='lic_tok',KP='lic_pub',KM='lic_maxt',KF='lic_first',KI='lic_meta',enc=new TextEncoder();
+  const KC='lic_key',KT='lic_tok',KP='lic_pub',KM='lic_maxt',KF='lic_first',KI='lic_meta',KA='lic_ate',enc=new TextEncoder();
   const g=k=>{try{return localStorage.getItem(k)}catch(e){return null}},s=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
   const b64d=t=>Uint8Array.from(atob(t.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((t.length+3)%4)),c=>c.charCodeAt(0));
   const ymd=ms=>new Date(ms-3*36e5).toISOString().slice(0,10);
@@ -1783,7 +1785,7 @@ const LIC=(()=>{
   const norm=k=>String(k||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const reais=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  let NOTA='',H={sb:null,app:'app',ver:'',admin:()=>false,onChange:null},S={st:'off'},chave='',tok=null,META={},timer=null,poll=null,busy=null,DBG='';
+  let NOTA='',H={sb:null,app:'app',ver:'',admin:()=>false,onChange:null},S={st:'off'},chave='',tok=null,META={},timer=null,poll=null,busy=null,DBG='',FAIL=false;
   try{META=JSON.parse(g(KI)||'{}')}catch(e){}
   async function kid(k){const h=await crypto.subtle.digest('SHA-256',enc.encode(norm(k)));return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16)}
   async function post(b,ms){
@@ -1836,7 +1838,35 @@ const LIC=(()=>{
     return null;
   }
   const pode=()=>!(S.st==='consulta'||S.st==='bloqueada'||((S.st==='sem_chave'||S.st==='chave_invalida')&&LIC_OBRIG));
-  function emit(){bar();try{H.onChange&&H.onChange(S,pode())}catch(e){}}
+  function paga(p){ /* validade aumentou desde a última vez que vimos (e não é só o teste): a mensalidade foi paga */
+    try{const a=g(KA);if(a&&p.ate>a&&p.st!=='teste'&&p.st!=='isenta'&&p.st!=='bloqueada')toast('Pagamento confirmado! Licença válida até '+br(p.ate)+'.');if(!a||p.ate>a)s(KA,p.ate)}catch(e){}
+  }
+  function toast(t){
+    if(typeof document==='undefined'||!document.body)return;css();
+    const o=document.getElementById('lictoast');if(o)o.remove();
+    const d=document.createElement('div');d.id='lictoast';d.setAttribute('role','status');d.textContent='✓ '+t;document.body.appendChild(d);setTimeout(()=>{try{d.remove()}catch(e){}},9000);
+  }
+  function led(){ /* {c:'v'|'a'|'r'|'c', t:texto}: verde = conectada à central; amarelo = usando a última conferência / atenção; vermelho = bloqueio ou sem conferir; cinza = sem chave */
+    const x=S;if(!LIC_URL||x.st==='off')return null;
+    if(x.st==='sem_chave')return{c:'c',t:'Central de licenças: sem chave cadastrada.'};
+    if(x.st==='bloqueada')return{c:'r',t:'Central de licenças: licença bloqueada.'};
+    if(x.st==='chave_invalida')return{c:'r',t:'Central de licenças: chave não reconhecida.'};
+    if(x.st==='sem_verif')return{c:'r',t:'Central de licenças: ainda não conferida'+(DBG?' ('+DBG+')':'.')};
+    if(x.st==='consulta')return{c:'r',t:'Central de licenças: '+(x.stale?'sem conferir há muito tempo.':'licença vencida (somente consulta).')};
+    const hora=x.iat?new Date(x.iat*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    const fresh=x.iat&&Date.now()-x.iat*1000<8*36e5&&!FAIL;
+    if(!fresh)return{c:'a',t:'Sem conexão com a central agora; usando a última conferência'+(hora?' ('+hora+')':'')+'.'};
+    if(x.st==='aviso'||x.st==='carencia')return{c:'a',t:'Conectada à central. '+(x.st==='carencia'?'Licença vencida, em carência.':'A licença vence em breve.')+' Última conferência '+hora+'.'};
+    return{c:'v',t:'Conectada à central de licenças. Última conferência '+hora+'.'};
+  }
+  function ledUi(){
+    if(typeof document==='undefined'||!document.body)return;
+    const l=led(),sy=document.getElementById('sync');let e=document.getElementById('licled');
+    if(!l||!sy){if(e)e.remove();return}
+    css();if(!e){e=document.createElement('span');e.id='licled';e.setAttribute('role','img');e.onclick=()=>open();sy.parentNode.insertBefore(e,sy)}
+    e.className=l.c;e.title=l.t;e.setAttribute('aria-label',l.t);
+  }
+  function emit(){bar();ledUi();try{H.onChange&&H.onChange(S,pode())}catch(e){}}
   async function load(){ /* chave e resposta guardadas */
     let c=null;try{const r=await H.sb.rpc('lic_get');if(!r.error)c=r.data||{}}catch(e){}
     if(c){if(c.chave)s(KC,c.chave);else try{localStorage.removeItem(KC)}catch(e){}}else c={chave:g(KC)||''};
@@ -1863,10 +1893,11 @@ const LIC=(()=>{
         if(!chave){S=calc(null,false);emit();return S}
         if(force||!p||Date.now()-p.iat*1000>6*36e5){
           let r=0;try{r=await check()}catch(e){r=0;DBG='Sem conexão com o servidor de licenças ('+String(e&&e.message||e).slice(0,100)+').'}
+          FAIL=r!==1;
           if(r===-1){S={st:'chave_invalida'};emit();return S}
           if(r===1)p=await verify(tok,chave);
         }
-        S=calc(p,true);emit();return S;
+        S=calc(p,true);if(p)paga(p);emit();return S;
       }finally{busy=null}
     })();
   }
@@ -1874,8 +1905,10 @@ const LIC=(()=>{
   function css(){
     if(document.getElementById('lic-css'))return;
     const st=document.createElement('style');st.id='lic-css';
-    st.textContent='#licbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9000;max-width:min(94vw,760px);display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;font:600 14px/1.35 system-ui,Segoe UI,Arial,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.28);border:1px solid rgba(0,0,0,.15)}'+
-    '#licbar.warn{background:#fff4d6;color:#5c3d00}#licbar.bad{background:#fde7e7;color:#7a1410}#licbar button{flex:none;border:0;border-radius:9px;padding:8px 12px;font:700 13px system-ui,Segoe UI,Arial;cursor:pointer;background:#123a6b;color:#fff}'+
+    st.textContent='#licbar{position:absolute;top:0;left:0;right:0;z-index:9000;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:5px 12px;min-height:30px;box-sizing:border-box;font:600 12.5px/1.3 system-ui,Segoe UI,Arial,sans-serif;border-bottom:1px solid rgba(0,0,0,.12)}body.licb{padding-top:30px!important}'+
+    '#licbar.warn{background:#fff4d6;color:#5c3d00}#licbar.bad{background:#fde7e7;color:#7a1410}#licbar button{flex:none;border:0;border-radius:5px;padding:3px 10px;font:700 12px system-ui,Segoe UI,Arial;cursor:pointer;background:#123a6b;color:#fff}#licbar .x{background:transparent;color:inherit;font-size:16px;padding:0 4px;opacity:.65}'+
+    '#licled{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 8px 0 4px;vertical-align:middle;cursor:pointer;flex:none;border:1px solid rgba(255,255,255,.55)}#licled.v{background:#2ecc71;box-shadow:0 0 8px #2ecc71}#licled.a{background:#f5a623;box-shadow:0 0 8px #f5a623}#licled.r{background:#e5484d;box-shadow:0 0 8px #e5484d}#licled.c{background:#98a2b3}'+
+    '#lictoast{position:fixed;top:16px;right:16px;z-index:9600;max-width:min(92vw,360px);background:#067647;color:#fff;padding:12px 16px;border-radius:12px;font:700 14px/1.35 system-ui,Segoe UI,Arial,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)}'+
     '#licov{position:fixed;inset:0;z-index:9500;background:rgba(10,15,30,.55);display:flex;align-items:center;justify-content:center;padding:14px}'+
     '#licbox{background:var(--card,#fff);color:var(--ink,#101828);border:1px solid var(--line,#d0d5dd);border-radius:16px;width:min(94vw,460px);max-height:92vh;overflow:auto;padding:18px;font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif}'+
     '#licbox h2{margin:0 0 4px;font-size:19px}#licbox .m{color:var(--mut,#667085);font-size:13px}#licbox .r{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line,#d0d5dd)}'+
@@ -1887,10 +1920,13 @@ const LIC=(()=>{
   function bar(){
     if(typeof document==='undefined'||!document.body)return;
     css();let b=document.getElementById('licbar');const m=msg();
-    if(!m){if(b)b.remove();return}
-    if(!b){b=document.createElement('div');b.id='licbar';b.setAttribute('role','status');document.body.appendChild(b)}
-    b.className=m.k;b.innerHTML='<span>'+esc(m.t)+'</span><button type="button">'+(m.pay?'Ver / pagar':'Detalhes')+'</button>';
-    b.querySelector('button').onclick=()=>open();
+    let hid=false;try{hid=m&&m.k==='warn'&&sessionStorage.getItem('lic_x')===m.t}catch(e){}
+    if(!m||hid){if(b)b.remove();document.body.classList.remove('licb');return}
+    if(!b){b=document.createElement('div');b.id='licbar';b.setAttribute('role','status');document.body.insertBefore(b,document.body.firstChild)}
+    document.body.classList.add('licb');
+    b.className=m.k;b.innerHTML='<span>'+esc(m.t)+'</span><button type="button">'+(m.pay?'Ver / pagar':'Detalhes')+'</button>'+(m.k==='warn'?'<button type="button" class="x" aria-label="Fechar">×</button>':'');
+    const bs=b.querySelectorAll('button');bs[0].onclick=()=>open();
+    if(bs[1])bs[1].onclick=()=>{try{sessionStorage.setItem('lic_x',m.t)}catch(e){}bar()};
   }
   const NOME={off:'Desligada',ok:'Ativa',teste:'Período de teste',aviso:'Ativa (vence em breve)',carencia:'Vencida (em carência)',consulta:'Vencida (somente consulta)',bloqueada:'Bloqueada',isenta:'Isenta',sem_chave:'Sem chave',sem_verif:'Sem conferência',chave_invalida:'Chave não reconhecida'};
   const COR={ok:'#d1fadf;color:#05603a',teste:'#d1e9ff;color:#175cd3',aviso:'#fef0c7;color:#93370d',carencia:'#fee4e2;color:#b42318',consulta:'#fee4e2;color:#b42318',bloqueada:'#fee4e2;color:#b42318',isenta:'#d1fadf;color:#05603a'};
@@ -1909,7 +1945,7 @@ const LIC=(()=>{
     (x.ate?'<div class="r"><span>Válida até</span><b>'+br(x.ate)+'</b></div>':'')+
     (x.car&&x.st!=='isenta'?'<div class="r"><span>Carência até</span><b>'+br(x.car)+'</b></div>':'')+
     (META.preco>0&&x.st!=='isenta'?'<div class="r"><span>Mensalidade</span><b>'+reais(META.preco)+'</b></div>':'')+
-    (x.iat?'<div class="r"><span>Última conferência</span><b>'+new Date(x.iat*1000).toLocaleString('pt-BR')+'</b></div>':'')+
+    (x.iat?'<div class="r"><span>Última conferência</span><b>'+new Date(x.iat*1000).toLocaleString('pt-BR')+'</b></div>':'')+(led()?'<div class="r"><span>Central de licenças</span><b><i style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:'+({v:'#2ecc71',a:'#f5a623',r:'#e5484d',c:'#98a2b3'})[led().c]+'"></i>'+({v:'Conectada',a:'Atenção',r:'Sem conferir',c:'Sem chave'})[led().c]+'</b></div>':'')+
     (m?'<p style="margin:10px 0 0">'+esc(m.t)+'</p>':'')+(DBG&&adm&&(x.st==='sem_verif'||x.st==='consulta'||x.st==='chave_invalida')?'<p class="m" style="margin:6px 0 0">Detalhe técnico: '+esc(DBG)+'</p>':'')+
     '<div id="licpix"></div>'+
     (adm?'<label style="display:block;margin-top:12px;font-weight:700;font-size:13px">Chave de licença</label><input id="lic_k" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" value="'+esc(chave)+'"><button class="b g" type="button" id="lic_sv">Salvar chave</button>':'')+
@@ -1951,7 +1987,7 @@ const LIC=(()=>{
   }
   return{init,refresh,open,close,pode,state:()=>S,msg,
     guard(op){if(pode())return true;open('Modo somente consulta: '+(op||'esta ação')+' volta a funcionar quando a licença estiver em dia.');return false},
-    _t:{calc,verify,ymd,dd,setKey:k=>{chave=k},setTok:t=>{tok=t}}};
+    led,_t:{calc,verify,ymd,dd,setKey:k=>{chave=k},setTok:t=>{tok=t}}};
 })();
 /*LIC-END*/
 function licInit(){try{LIC.init({sb,app:'pdv',ver:window.APP_VERSION,admin:()=>false})}catch(e){}}
