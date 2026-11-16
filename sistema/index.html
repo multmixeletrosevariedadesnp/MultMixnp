@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.8'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.9'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1197,9 +1197,10 @@ const ART_GR={dia:{t:'Bom dia',p:'Que o seu dia seja de muita paz e boas vendas!
 function artGreetP(o){const g=o&&o.greet;if(g&&g!=='auto'&&ART_GR[g])return g;const h=new Date().getHours();return h<12?'dia':h<18?'tarde':'noite'}
 function artSaudBg(E,o,W,H){
   const P=artGreetP(o),pz=Math.max(.3,Math.min(1.8,o.pz||1)),dk=(o.dark==null?100:o.dark)/100;
-  if(o.land){
+  if(o.land||o.ovl){
     E.push(`<defs><linearGradient id="sov" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="${Math.min(1,.45*dk).toFixed(2)}"/><stop offset=".32" stop-color="#000" stop-opacity="${Math.min(1,.08*dk).toFixed(2)}"/><stop offset=".58" stop-color="#000" stop-opacity="${Math.min(1,.12*dk).toFixed(2)}"/><stop offset="1" stop-color="#000" stop-opacity="${Math.min(1,.6*dk).toFixed(2)}"/></linearGradient><clipPath id="lk"><rect width="${W}" height="${H}"/></clipPath></defs>`);
-    E.push(`<g clip-path="url(#lk)"><g transform="translate(${(W/2+(o.px||0)).toFixed(1)} ${(H/2+(o.py||0)).toFixed(1)}) rotate(${+o.pr||0}) scale(${pz})"><image href="${o.land}" xlink:href="${o.land}" x="${-W/2}" y="${-H/2}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/></g></g><rect width="${W}" height="${H}" fill="url(#sov)"/>`);
+    if(!o.ovl)E.push(`<g clip-path="url(#lk)"><g transform="translate(${(W/2+(o.px||0)).toFixed(1)} ${(H/2+(o.py||0)).toFixed(1)}) rotate(${+o.pr||0}) scale(${pz})"><image href="${o.land}" xlink:href="${o.land}" x="${-W/2}" y="${-H/2}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/></g></g>`);
+    E.push(`<rect width="${W}" height="${H}" fill="url(#sov)"/>`);
     return;
   }
   const C={dia:['#1d9bf0','#8fd8ff','#fff1b8'],tarde:['#4b2fb0','#f0618f','#ffb347'],noite:['#050816','#161a55','#3b3a8f']}[P],r=artRnd(P.length*977+3);
@@ -1216,14 +1217,68 @@ function artSaudBg(E,o,W,H){
 const artN=(id,d)=>{const v=artVal(id);return v===''?d:+v};
 function artGv(e){const l=$('#'+e.id+'v');if(l)l.textContent=(e.dataset.u==='px'&&+e.value>0?'+':'')+e.value+(e.dataset.u==='px'?' px':'%');artRender()}
 function artGReset(){[['gdy',0],['gdx',0],['gdist',0],['gop',100],['pop',100],['gsz',100],['dark',100]].forEach(([i,v])=>{const e=$('#a_'+i);if(e){e.value=v;const l=$('#a_'+i+'v');if(l)l.textContent=v+(e.dataset.u==='px'?' px':'%')}});artRender()}
-function artLandUp(inp){const f=inp.files[0];if(!f)return;artBlobData(f,1600).then(d=>{artLand=d;artRender()}).catch(()=>alert('Não consegui ler essa imagem.'))}
-function artLandClear(){artLand=null;const e=$('#a_land');if(e)e.value='';artRender()}
+/* ---- vídeo de fundo (arte em vídeo) ---- */
+let artVid=null,artVidFile=null;
+function artVidDrop(){if(artVid){try{URL.revokeObjectURL(artVid.url)}catch(e){}artVid=null}artVidFile=null;const o=$('#a_vout');if(o)o.style.display='none';const s=$('#a_vst');if(s)s.textContent='';const f=$('#a_vup');if(f)f.value=''}
+async function artVidUp(inp){
+  const f=inp.files[0];if(!f)return;const st=$('#a_vst');if(st)st.textContent='Abrindo o vídeo...';
+  const u=URL.createObjectURL(f),v=document.createElement('video');v.muted=true;v.playsInline=true;v.loop=true;v.preload='auto';v.src=u;
+  const ok=await new Promise(r=>{v.onloadeddata=()=>r(true);v.onerror=()=>r(false);setTimeout(()=>r(false),15000)});
+  if(!ok||!v.videoWidth){URL.revokeObjectURL(u);if(st)st.textContent='';alert('Não consegui abrir esse vídeo. Use um arquivo MP4 ou WEBM do aparelho.');return}
+  try{v.currentTime=Math.min(.5,(v.duration||1)/2);await Promise.race([new Promise(r=>v.addEventListener('seeked',r,{once:true})),new Promise(r=>setTimeout(r,2000))])}catch(e){}
+  const k=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight)),cv=document.createElement('canvas');cv.width=Math.round(v.videoWidth*k);cv.height=Math.round(v.videoHeight*k);
+  cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+  artVidDrop();artVid={el:v,url:u};artLand=cv.toDataURL('image/jpeg',.85);
+  if(st)st.textContent='Vídeo carregado ('+(v.duration?Math.round(v.duration)+' s':'')+'). A prévia mostra o primeiro quadro. Toque em "Gerar vídeo".';
+  artRender();
+}
+async function artVidMake(){
+  const st=$('#a_vst'),btn=$('#a_vgo'),out=$('#a_vout');
+  if(!artVid)return alert('Escolha primeiro um vídeo de fundo.');
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return alert('Este navegador não consegue gerar vídeo. Use o Chrome ou o Edge atualizado.');
+  const MT=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'],mime=MT.find(m=>MediaRecorder.isTypeSupported(m));
+  if(!mime)return alert('Este navegador não consegue gerar vídeo.');
+  btn.disabled=true;out.style.display='none';artVidFile=null;
+  try{
+    const o=Object.assign(artOpts(),{ovl:true,land:null}),H0=o.fmt==='feed'?1350:1920,cw=720,ch=Math.round(H0*720/1080/2)*2,sc=720/1080,dur=+artVal('vdur')||8;
+    const svgUrl=URL.createObjectURL(new Blob([artSvg(o)],{type:'image/svg+xml;charset=utf-8'}));
+    const ovl=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src=svgUrl});
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d'),v=artVid.el;
+    const draw=t=>{
+      x.fillStyle='#000';x.fillRect(0,0,cw,ch);
+      const vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*Math.max(.3,Math.min(1.8,o.pz||1));
+      x.save();x.translate(cw/2+(o.px||0)*sc,ch/2+(o.py||0)*sc);x.rotate((+o.pr||0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
+      const p=Math.min(1,t/1.1),e=1-Math.pow(1-p,3),z=1+.06*(1-e);
+      x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ovl,-cw/2,-ch/2,cw,ch);x.restore();
+    };
+    const rec=new MediaRecorder(cv.captureStream(30),{mimeType:mime,videoBitsPerSecond:4000000}),chunks=[];
+    rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    const done=new Promise(r=>rec.onstop=r);
+    v.currentTime=0;await v.play();draw(0);rec.start(250);
+    const t0=performance.now();
+    await new Promise(res=>{const f=()=>{const t=(performance.now()-t0)/1000;draw(t);st.textContent='Gerando o vídeo... '+Math.min(100,Math.round(t/dur*100))+'% (não feche esta tela)';if(t>=dur)res();else requestAnimationFrame(f)};f()});
+    rec.stop();await done;v.pause();URL.revokeObjectURL(svgUrl);
+    const ext=mime.startsWith('video/mp4')?'mp4':'webm',base=artName().replace(/\.jpg$/,'');
+    artVidFile=new File([new Blob(chunks,{type:mime.split(';')[0]})],base+'.'+ext,{type:mime.split(';')[0]});
+    st.textContent='Vídeo pronto ('+ext.toUpperCase()+', '+(artVidFile.size/1048576).toFixed(1)+' MB).'+(ext==='webm'?' Este navegador gerou WEBM; o WhatsApp pode não aceitar. No Chrome ou Edge atualizado sai MP4.':'');
+    out.style.display='';
+  }catch(e){st.textContent='';alert('Não foi possível gerar o vídeo neste aparelho.')}
+  finally{btn.disabled=false;try{artVid&&artVid.el.pause()}catch(e){}}
+}
+function artVidDownload(){if(!artVidFile)return;const a=document.createElement('a');a.href=URL.createObjectURL(artVidFile);a.download=artVidFile.name;a.click()}
+function artVidShare(){
+  if(!artVidFile)return;
+  if(navigator.canShare&&navigator.canShare({files:[artVidFile]}))navigator.share({files:[artVidFile],text:artVal('cap')||artCaption()}).catch(e=>{if(!e||e.name!=='AbortError')alert('Não foi possível abrir o compartilhamento. Use "Baixar vídeo".')});
+  else{artVidDownload();alert('Este aparelho não permite enviar direto. O vídeo foi baixado: abra o WhatsApp, vá em Status, toque em + e escolha o vídeo.')}
+}
+function artLandUp(inp){const f=inp.files[0];if(!f)return;artVidDrop();artBlobData(f,1600).then(d=>{artLand=d;artRender()}).catch(()=>alert('Não consegui ler essa imagem.'))}
+function artLandClear(){artLand=null;artVidDrop();const e=$('#a_land');if(e)e.value='';artRender()}
 function artGrSync(force){const e=$('#a_gph');if(!e)return;if(force||!e.dataset.s){e.value=ART_GR[artGreetP({greet:artVal('greet')})].p;if(force)delete e.dataset.s}}
 function artModeUI(){
   const m=artVal('mode')||'prod',sd=m==='saud',md=$('#a_mode');if(!md)return;
   const sh=(id,on)=>{const e=$('#a_'+id);const d=e&&(e.closest('div'));if(d)d.style.display=on?'':'none'};
   ['q','p','name','price','old','nk','nc','ph','up','nop','parnote'].forEach(id=>{const e=$('#a_'+id);if(!e)return;const d=id==='parnote'?e:e.closest('div');d.style.display=sd?'none':''});
-  ['greet','gtxt','gfont','pfont','gph','land','gfine'].forEach(id=>sh(id,sd));
+  ['greet','gtxt','gfont','pfont','gph','land','vblock','gfine'].forEach(id=>sh(id,sd));
   if(md.dataset.last!==m){
     if(md.dataset.last!==undefined){
       const f=['l1','l2','valid'];
@@ -1242,7 +1297,7 @@ function artSvg(o){
   // fundo
   E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
     <clipPath id="pc"><rect id="pcr" x="0" y="0" width="1" height="1" rx="40"/></clipPath><clipPath id="lc"><rect id="lcr" x="0" y="0" width="1" height="1" rx="26"/></clipPath></defs>`);
-  E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
+  if(!o.ovl)E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
   const SD=o.mode==='saud';
   if(SD){artSaudBg(E,o,W,H)}
   else E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
@@ -1285,7 +1340,7 @@ function artSvg(o){
   // rodapé (altura fixa) e bloco de preço (altura variável) definem a altura da foto
   const footH=o.showFoot?Math.round(190*k):Math.round(50*k),M=60,CW=W-2*M;
   if(SD){
-    const g=ART_GR[artGreetP(o)],gt=(o.gtxt||g.t),gp=o.gph!=null&&o.gph!==''?o.gph:g.p,land=!!o.land,tc='#ffffff',end=H-footH-Math.round(24*k);
+    const g=ART_GR[artGreetP(o)],gt=(o.gtxt||g.t),gp=o.gph!=null&&o.gph!==''?o.gph:g.p,land=!!(o.land||o.ovl),tc='#ffffff',end=H-footH-Math.round(24*k);
     const lines=(o.lines||[]).filter(Boolean),lS=Math.round(46*k),lLH=Math.round(62*k),vS=Math.round(32*k),pS=Math.round(54*k),pLH=Math.round(70*k);
     const fG=o.gfont||F,fP=o.pfont||F,wf=(f,fn)=>{const q=ART_FONT;ART_FONT=f;try{return fn()}finally{ART_FONT=q}};
     let gs=Math.round(250*k);wf(fG,()=>{while(artW(gt,gs,true)>W-90&&gs>60)gs-=4});gs=Math.round(gs*(o.gsz||100)/100);
@@ -1457,6 +1512,7 @@ function artOpts(){
 }
 function artRender(){
   artModeUI();
+  if(artVidFile){artVidFile=null;const vo=$('#a_vout');if(vo)vo.style.display='none';const vs=$('#a_vst');if(vs)vs.textContent='Algo mudou na arte: gere o vídeo de novo.'}
   const o=artOpts(),box=$('#artv');if(!box)return;
   {const bt=$('#a_badget');if(bt)bt.parentNode.style.display=artVal('badge')==='__d'?'':'none';
    const th=ART_OCC[artOcc]?ART_OCC[artOcc].th:(ART_TH[artTheme]||ART_TH.azul);
@@ -1571,6 +1627,11 @@ async function vArte(){
   <div class="w"><label>Frase abaixo da saudação</label><input id="a_gph" oninput="this.dataset.s=1;artRender()"></div>
   <div class="w" id="a_gfine"><label>Ajuste fino da saudação</label><label style="margin-top:8px">Saudação: subir (-) / descer (+): <b id="a_gdyv">0 px</b></label><input type="range" id="a_gdy" data-u="px" min="-800" max="800" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Saudação: esquerda (-) / direita (+): <b id="a_gdxv">0 px</b></label><input type="range" id="a_gdx" data-u="px" min="-400" max="400" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Tamanho da saudação: <b id="a_gszv">100%</b></label><input type="range" id="a_gsz" data-u="%" min="40" max="150" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Distância entre a saudação e a frase: <b id="a_gdistv">0 px</b></label><input type="range" id="a_gdist" data-u="px" min="-250" max="400" step="5" value="0" oninput="artGv(this)"><label style="margin-top:8px">Transparência da saudação (100% = sólida): <b id="a_gopv">100%</b></label><input type="range" id="a_gop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Transparência da frase (100% = sólida): <b id="a_popv">100%</b></label><input type="range" id="a_pop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Escurecimento da foto de paisagem: <b id="a_darkv">100%</b></label><input type="range" id="a_dark" data-u="%" min="0" max="150" step="5" value="100" oninput="artGv(this)"><div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="artGReset()">Voltar ao padrão</button></div></div>
   <div class="w"><label>Foto de paisagem (fundo da arte)</label><div class="row" style="margin:0;align-items:center"><input id="a_land" type="file" accept="image/*" style="max-width:320px" onchange="artLandUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Usar paisagem do sistema</button></div><div class="sm">Sem foto, o sistema desenha céu, sol ou lua e morros conforme a saudação. Para enquadrar a sua foto use tamanho, posição e giro em "Foto". Logo, selo, textos, fonte, cores, mascote, rodapé e formato funcionam igual.</div></div>
+  <div class="w" id="a_vblock"><label>Vídeo de fundo (para gerar a arte em vídeo)</label><div class="row" style="margin:0;align-items:center"><input id="a_vup" type="file" accept="video/*" style="max-width:320px" onchange="artVidUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Tirar vídeo</button></div>
+  <div class="row" style="margin:8px 0 0;align-items:center"><label style="margin:0">Duração:</label><select id="a_vdur" style="width:auto"><option value="5">5 segundos</option><option value="8" selected>8 segundos</option><option value="10">10 segundos</option><option value="15">15 segundos</option></select><button type="button" class="btn" id="a_vgo" onclick="artVidMake()">Gerar vídeo</button></div>
+  <div class="sm" id="a_vst" role="status"></div>
+  <div class="row" id="a_vout" style="display:none;margin:6px 0 0"><button type="button" class="btn" onclick="artVidShare()">Enviar vídeo para o WhatsApp</button><button type="button" class="btn g" onclick="artVidDownload()">Baixar vídeo</button></div>
+  <div class="sm">O vídeo toca por trás das letras, com a saudação entrando no começo, e sai sem som. Envie um vídeo que está no aparelho (MP4). Vídeo do YouTube não dá para puxar direto: o YouTube não permite e o navegador bloqueia. Baixe vídeos de paisagem livres em sites como Pexels ou Pixabay e envie aqui. Evite vídeos de terceiros com direitos autorais (clipes, filmes). O tamanho, a posição e o giro da foto também valem para o vídeo.</div></div>
   <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
   <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
   <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
