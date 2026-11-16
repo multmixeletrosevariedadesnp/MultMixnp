@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.16'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.18'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -175,6 +175,7 @@ body.in.L-foco .sync{margin:0 0 0 auto;padding:0}
 <main id="app"></main>
 <div id="modal"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="manual.js"></script>
 <script>
 /* ========= MultMix PDV: app do vendedor (independente do sistema) =========
    O vendedor só enxerga produtos SEM custo, vende e vê as próprias vendas/comissão.
@@ -1412,6 +1413,74 @@ async function vArte(){
 function go(v){view=v;render()}
 const ICON={cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 001.6 1.6h7.7a2 2 0 002-1.5L21 8H6"/>',coin:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c.5-1 1.5-1.5 2.5-1.5 1.4 0 2.5.8 2.5 2s-1 1.7-2.5 2-2.5.8-2.5 2 1.1 2 2.5 2c1 0 2-.5 2.5-1.5"/>',img:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+const AJ_OK=()=>!!ME&&view!=='login';window.AJ_SUP='';
+/* ========= Ajuda: chat que responde só pelo manual (manual.js) ========= */
+ICON.help='<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17v.01"/>';
+const AJN=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const AJST=new Set('como faco fazer posso quero onde qual para pra uma um de do da no na o a e que se eu meu minha tem ter preciso usar tela sistema'.split(' '));
+const ajFmt=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+function ajBusca(q){
+  const tk=AJN(q).split(' ').filter(w=>w.length>1&&!AJST.has(w));if(!tk.length)return[];
+  const L=(window.MANUAL||[]).map(e=>{
+    const tt=AJN(e.t),kw=e.k.map(AJN),st=AJN(e.s.join(' ')),md=AJN(e.mod);let sc=0;
+    tk.forEach(w=>{const p=w.length>4?w.slice(0,5):w,lg=w.length>=4;
+      if(kw.includes(w))sc+=6;else if(lg&&kw.some(k=>k.length>3&&(k.startsWith(p)||p.startsWith(k.slice(0,5)))))sc+=4;
+      if(lg&&tt.includes(p))sc+=3;if(lg&&md.includes(p))sc+=1;if(lg&&st.includes(p))sc+=1});
+    return{e,sc}}).filter(x=>x.sc>=6).sort((a,b)=>b.sc-a.sc);
+  return L.filter(x=>x.sc>=L[0].sc*.5).slice(0,3).map(x=>x.e);
+}
+let AJLOG=[];
+const ajSemGet=()=>{try{return JSON.parse(localStorage.getItem('mm_aj_sem')||'[]')}catch(e){return[]}};
+function ajSemAdd(q){try{const l=ajSemGet();l.push({q,at:new Date().toISOString()});localStorage.setItem('mm_aj_sem',JSON.stringify(l.slice(-100)))}catch(e){}}
+function ajBot(h){AJLOG.push({b:1,h});ajDraw()}
+function ajMe(t){AJLOG.push({b:0,h:esc(t)});ajDraw()}
+function ajDraw(){
+  const l=document.getElementById('aj_l');if(!l)return;
+  l.innerHTML=AJLOG.map(m=>`<div style="max-width:92%;padding:8px 12px;border-radius:12px;font-size:14px;line-height:1.5;${m.b?'align-self:flex-start;background:var(--card);border:1px solid var(--line)':'align-self:flex-end;background:var(--pri);color:#fff'}">${m.h}</div>`).join('');
+  l.scrollTop=l.scrollHeight;
+}
+function ajTopic(e,more){
+  let h=`<b>${esc(e.t)}</b><ol style="margin:6px 0 6px 18px;padding:0">${e.s.map(x=>'<li>'+ajFmt(x)+'</li>').join('')}</ol>`;
+  if(e.n)h+=`<div class="sm" style="margin:0 0 6px">${ajFmt(e.n)}</div>`;
+  const acts=[];
+  if(e.go&&AJ_OK())acts.push(`<button type="button" class="btn s" onclick="ajGo('${e.go}')">Abrir esta tela</button>`);
+  (more||[]).forEach(m=>acts.push(`<button type="button" class="btn g s" onclick="ajShow('${m.id}')">${esc(m.t)}</button>`));
+  if(acts.length)h+=`<div style="display:flex;gap:6px;flex-wrap:wrap">${acts.join('')}</div>`;
+  return h;
+}
+function ajGo(v){closeM();go(v)}
+function ajShow(id){const e=(window.MANUAL||[]).find(x=>x.id===id);if(e){ajBot(ajTopic(e,[]))}}
+function ajAsk(ev){
+  if(ev)ev.preventDefault();
+  const i=document.getElementById('aj_q'),m=document.getElementById('aj_e'),q=(i.value||'').trim();
+  if(!q){m.textContent='Escreva a sua pergunta primeiro.';return}
+  m.textContent='';i.value='';ajMe(q);
+  const r=ajBusca(q);
+  if(!r.length){ajSemAdd(q);
+    const w=(window.AJ_SUP||'').replace(/\D/g,'');
+    ajBot('Não achei isso no manual.'+(w?` <a href="https://wa.me/${w}" target="_blank" rel="noopener">Falar com o suporte</a>`:' Procure o administrador ou o suporte.')+' <button type="button" class="btn g s" onclick="ajTemas()">Ver todos os temas</button>');return}
+  ajBot(ajTopic(r[0],r.slice(1)));
+}
+function ajTemas(){
+  const L=window.MANUAL||[],mods=[...new Set(L.map(x=>x.mod))],sem=ajSemGet();
+  modal(`<h2>Manual · todos os temas</h2>${mods.map(m=>`<h3 style="margin:10px 0 4px">${esc(m)}</h3><div style="display:flex;gap:6px;flex-wrap:wrap">${L.filter(x=>x.mod===m).map(x=>`<button type="button" class="btn g s" onclick="ajudaOpen('${x.id}')">${esc(x.t)}</button>`).join('')}</div>`).join('')}
+  <p style="margin-top:14px"><button type="button" class="btn s" onclick="ajudaOpen()">Voltar ao chat</button> ${sem.length?`<button type="button" class="btn g s" onclick="ajSem()">Perguntas sem resposta (${sem.length})</button>`:''}</p>`);
+}
+function ajSem(){
+  const l=ajSemGet().slice().reverse();
+  modal(`<h2>Perguntas sem resposta</h2><p class="sm">O que as pessoas perguntaram e o manual não tinha. Use para completar o manual.</p><ul style="margin:6px 0 10px 18px">${l.map(x=>`<li>${esc(x.q)} <span class="sm">· ${new Date(x.at).toLocaleDateString('pt-BR')}</span></li>`).join('')||'<li>Nenhuma.</li>'}</ul><button type="button" class="btn g s" onclick="try{localStorage.removeItem('mm_aj_sem')}catch(e){}ajTemas()">Limpar lista</button> <button type="button" class="btn s" onclick="ajTemas()">Voltar</button>`);
+}
+function ajudaOpen(id){
+  modal(`<h2>Ajuda</h2><div id="aj_l" style="display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;padding:2px"></div>
+  <form onsubmit="ajAsk(event)" style="display:flex;gap:8px;margin-top:10px"><input id="aj_q" placeholder="Pergunte, por exemplo: como emitir uma nota?" autocomplete="off" oninput="document.getElementById('aj_e').textContent=''"><button class="btn">Perguntar</button></form>
+  <p id="aj_e" class="bad" role="alert" style="min-height:1.2em;margin:4px 0"></p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${(window.MANUAL||[]).slice(0,4).map(x=>`<button type="button" class="btn g s" onclick="ajShow('${x.id}')">${esc(x.t)}</button>`).join('')}<button type="button" class="btn g s" onclick="ajTemas()">Ver todos os temas</button></div>`);
+  if(!AJLOG.length)AJLOG.push({b:1,h:'Oi! Pergunte como fazer qualquer coisa e eu mostro o passo a passo, direto do manual.'});
+  ajDraw();if(id)ajShow(id);
+  setTimeout(()=>{const q=document.getElementById('aj_q');if(q)q.focus()},40);
+}
+addEventListener('keydown',e=>{if(e.key==='F1'&&AJ_OK()){e.preventDefault();ajudaOpen()}});
+
 
 /* ----- aparência (por aparelho) ----- */
 const ACCS=[['','Azul','#00539f'],['verde','Verde','#0e8a5f'],['roxo','Roxo','#7048c8'],['laranja','Laranja','#c2570c'],['grafite','Cinza','#475467']];
@@ -1429,7 +1498,7 @@ function render(){
   if(!ME||view==='login'){view='login';return vLogin()}
   document.body.className='in L-'+LAY();
   const item=(v,l,i)=>`<button class="${view===v?'on':''}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,pend=mine().length+FAIL.filter(f=>f.s._by===ME.id).length;
-  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button onclick="temaOpen()">${ic('img')}<span>Aparência</span></button><button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
+  $('#nav').innerHTML=item('venda','Nova venda','cart')+item('caixa','Caixa'+(CX&&CX.aberto?' <b class="bdg" style="background:var(--ok);color:#fff">●</b>':((ME.cfg||{}).exige_caixa?' <b class="bdg" style="background:var(--bad);color:#fff">!</b>':'')),'coin')+item('minhas','Minhas vendas'+(pend?` <b class="bdg" style="background:var(--tag);color:#222">${pend}</b>`:''),'coin')+item('arte','Arte e cartão','img')+`<button onclick="ajudaOpen()" title="Ajuda (F1)">${ic('help')}<span>Ajuda</span></button><button onclick="temaOpen()">${ic('img')}<span>Aparência</span></button><button class="out" onclick="logout()">${ic('logout')}<span>Sair (${esc((ME.name||'').split(' ')[0])})</span></button>`;
   ({venda:vPdv,caixa:vCx,minhas:vMin,arte:vArte}[view]||vPdv)();
 }
 
@@ -1456,7 +1525,7 @@ function vPdv(){
    <div class="cact"><button class="btn fin" id="btnfin" onclick="finish()">Finalizar venda</button></div>
    <div class="bar" style="margin:0 0 8px"><button type="button" class="btn g s" onclick="holdSave()">Pausar venda</button><button type="button" class="btn g s" id="hbtn" onclick="holdList()">Em espera (0)</button></div>
    <div id="cartv"></div>
-   <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option>${carne?'<option value="crediario">Carnê (crediário)</option>':''}</select></div>
+   <div class="f pay"><div><label>Forma de pagamento</label><select id="s_t" onchange="cartView()"><option value="avista">À vista</option><option value="cartao">Cartão</option>${carne?'<option value="crediario">Carnê (crediário)</option>':(ME&&ME.role!=='admin'?'<option value="crediario">Carnê (com autorização do administrador)</option>':'')}</select></div>
    <div><label>Meio de pagamento</label><select id="s_m"><option>Dinheiro</option><option>Pix</option>${CO.mp_pix_on&&CO.pix_provider==='both'?'<option value="__mp">Gerar com Mercado Pago (QR Pix automático)</option><option value="__ip">Gerar com InfinitePay (link/QR automático)</option>':''}<option>Cartão débito</option><option>Cartão crédito</option></select></div>
    <div class="cr"><label>Entrada</label><input id="s_e" type="number" step="0.01" min="0" value="0" oninput="cartView()"></div>
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
@@ -1656,11 +1725,11 @@ function holdResume(id){
 function holdDel(id){if(!confirm('Descartar esta venda em espera?'))return;LS.set(holdKey(),holdGet().filter(v=>v.id!==id));holdList();cartView()}
 
 /* ----- autorização do administrador (e-mail e senha dele, numa sessão à parte; nada fica gravado) ----- */
-function askAdmin(valor){
+function askAdmin(valor,kind){
   return new Promise(res=>{
     window.__askRes=res;
-    modal(`<h2>Autorização do administrador</h2><p>Desconto de <b>${R(valor)}</b> para <b>${esc(ME.name)}</b>.</p>
-    <form onsubmit="askAdminGo(event,${valor})"><label for="ad_e">E-mail do administrador</label><input id="ad_e" type="email" autocomplete="off" required>
+    modal(`<h2>Autorização do administrador</h2><p>${kind==='carne'?'Venda no <b>carnê</b> para <b>'+esc(ME.name)+'</b>. A autorização vale só para esta venda.':'Desconto de <b>'+R(valor)+'</b> para <b>'+esc(ME.name)+'</b>.'}</p>
+    <form onsubmit="askAdminGo(event,${valor},'${kind||'desc'}')"><label for="ad_e">E-mail do administrador</label><input id="ad_e" type="email" autocomplete="off" required>
     <label for="ad_p">Senha do administrador</label><input id="ad_p" type="password" autocomplete="off" required>
     <div id="ad_2" style="display:none"><label for="ad_c">Código do autenticador (2 etapas)</label><input id="ad_c" inputmode="numeric" maxlength="6" autocomplete="off"></div>
     <p id="ad_m" class="bad" role="alert" style="min-height:1.3em"></p><div class="bar"><button class="btn" id="ad_b">Autorizar</button><button type="button" class="btn g" onclick="askAdminX()">Cancelar</button></div></form>`);
@@ -1669,7 +1738,7 @@ function askAdmin(valor){
 }
 function askAdminX(){closeM();const r=window.__askRes;window.__askRes=null;r&&r(null)}
 let adC=null;
-async function askAdminGo(ev,valor){
+async function askAdminGo(ev,valor,kind){
   ev.preventDefault();const m=$('#ad_m'),b=$('#ad_b');m.textContent='';b.disabled=true;
   try{
     if(!adC){adC=supabase.createClient(CFG.URL,CFG.KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'mm-pdv-auth'}});
@@ -1681,7 +1750,7 @@ async function askAdminGo(ev,valor){
       const{data:f}=await adC.auth.mfa.listFactors(),t=(f.totp||[]).find(x=>x.status==='verified');
       const{error}=await adC.auth.mfa.challengeAndVerify({factorId:t.id,code});if(error)throw new Error('Código incorreto.');
     }
-    const{data,error}=await adC.rpc('pdv_autorizar_desconto',{p_seller:ME.id,p_value:valor});
+    const{data,error}=await (kind==='carne'?adC.rpc('pdv_autorizar_carne',{p_seller:ME.id}):adC.rpc('pdv_autorizar_desconto',{p_seller:ME.id,p_value:valor}));
     if(error)throw new Error(/Somente o administrador/.test(error.message)?'Este usuário não é administrador.':error.message);
     try{await adC.auth.signOut()}catch(e){}adC=null;closeM();const r=window.__askRes;window.__askRes=null;r&&r(data);
   }catch(e){try{if(adC){await adC.auth.signOut()}}catch(x){}adC=null;m.textContent=e.message||'Não foi possível autorizar.';b.disabled=false}
@@ -1709,7 +1778,12 @@ async function finish(){
       if(navigator.onLine===false)return alert('Desconto acima de '+free+'% precisa da autorização do administrador e de internet. Reduza o desconto ou conecte-se.');
       authId=await askAdmin(cc.disc);if(!authId)return;
     }
-    const sale={id:uid(),_by:ME.id,pay_type:t,method:/^__(ip|mp)$/.test(s_m.value)?'Pix':s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
+    let carneId=null;
+    if(t==='crediario'&&ME.role!=='admin'&&!ME.can_carne){
+      if(navigator.onLine===false)return alert('Venda no carnê precisa da autorização do administrador e de internet. Conecte-se e tente de novo.');
+      carneId=await askAdmin(0,'carne');if(!carneId)return;
+    }
+    const sale={id:uid(),_by:ME.id,carne_auth_id:carneId,pay_type:t,method:/^__(ip|mp)$/.test(s_m.value)?'Pix':s_m.value,entry:e,n_inst:n,first_due:t==='crediario'?s_d.value:null,created_at:now(),disc_val:cc.sd,auth_id:authId,
       customer:nm?{id:selCli||null,name:nm,cpf:c_c.value.trim(),phone:c_p.value.trim()}:null,items:cart.map(i=>({id:i.id,qty:i.qty,disc_val:+i.disc||0}))};
     let mpId=null;
     const pvSel=/^__(ip|mp)$/.test(s_m.value)?s_m.value.slice(2):null;

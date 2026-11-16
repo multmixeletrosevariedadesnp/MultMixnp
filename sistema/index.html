@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.20'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.21'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -397,6 +397,7 @@ body:not(.in) .fbtn{display:none!important}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="manual.js"></script>
 <script>
 /* ========= CONFIG: preencha com os dados do seu projeto Supabase ========= */
 const CFG={URL:'https://meswiziqgcjwxslbgmeu.supabase.co',KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lc3dpemlxZ2Nqd3hzbGJnbWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzODg2NDcsImV4cCI6MjEwNzk2NDY0N30.ltoM4-4Z-vK8fYoZXaa7fKLBMOc0RBXrAsQlmlPW6x4',WHATS:'5593999999999',BUCKET:'produtos',MULTA:2,JURO_MES:1,CARENCIA:0,ADMIN_EMAIL:'multmixeletrosevariedades@gmail.com'};
@@ -2299,6 +2300,74 @@ const ICON={inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1L2 12v6a
  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
  logout:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'};
 ICON.menu='<path d="M4 6h16M4 12h16M4 18h16"/>';ICON.search='<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>';
+const AJ_OK=()=>view!=='login';window.AJ_SUP=(CFG.WHATS&&CFG.WHATS!=='5593999999999')?CFG.WHATS:'';
+/* ========= Ajuda: chat que responde só pelo manual (manual.js) ========= */
+ICON.help='<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17v.01"/>';
+const AJN=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const AJST=new Set('como faco fazer posso quero onde qual para pra uma um de do da no na o a e que se eu meu minha tem ter preciso usar tela sistema'.split(' '));
+const ajFmt=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+function ajBusca(q){
+  const tk=AJN(q).split(' ').filter(w=>w.length>1&&!AJST.has(w));if(!tk.length)return[];
+  const L=(window.MANUAL||[]).map(e=>{
+    const tt=AJN(e.t),kw=e.k.map(AJN),st=AJN(e.s.join(' ')),md=AJN(e.mod);let sc=0;
+    tk.forEach(w=>{const p=w.length>4?w.slice(0,5):w,lg=w.length>=4;
+      if(kw.includes(w))sc+=6;else if(lg&&kw.some(k=>k.length>3&&(k.startsWith(p)||p.startsWith(k.slice(0,5)))))sc+=4;
+      if(lg&&tt.includes(p))sc+=3;if(lg&&md.includes(p))sc+=1;if(lg&&st.includes(p))sc+=1});
+    return{e,sc}}).filter(x=>x.sc>=6).sort((a,b)=>b.sc-a.sc);
+  return L.filter(x=>x.sc>=L[0].sc*.5).slice(0,3).map(x=>x.e);
+}
+let AJLOG=[];
+const ajSemGet=()=>{try{return JSON.parse(localStorage.getItem('mm_aj_sem')||'[]')}catch(e){return[]}};
+function ajSemAdd(q){try{const l=ajSemGet();l.push({q,at:new Date().toISOString()});localStorage.setItem('mm_aj_sem',JSON.stringify(l.slice(-100)))}catch(e){}}
+function ajBot(h){AJLOG.push({b:1,h});ajDraw()}
+function ajMe(t){AJLOG.push({b:0,h:esc(t)});ajDraw()}
+function ajDraw(){
+  const l=document.getElementById('aj_l');if(!l)return;
+  l.innerHTML=AJLOG.map(m=>`<div style="max-width:92%;padding:8px 12px;border-radius:12px;font-size:14px;line-height:1.5;${m.b?'align-self:flex-start;background:var(--card);border:1px solid var(--line)':'align-self:flex-end;background:var(--pri);color:#fff'}">${m.h}</div>`).join('');
+  l.scrollTop=l.scrollHeight;
+}
+function ajTopic(e,more){
+  let h=`<b>${esc(e.t)}</b><ol style="margin:6px 0 6px 18px;padding:0">${e.s.map(x=>'<li>'+ajFmt(x)+'</li>').join('')}</ol>`;
+  if(e.n)h+=`<div class="sm" style="margin:0 0 6px">${ajFmt(e.n)}</div>`;
+  const acts=[];
+  if(e.go&&AJ_OK())acts.push(`<button type="button" class="btn s" onclick="ajGo('${e.go}')">Abrir esta tela</button>`);
+  (more||[]).forEach(m=>acts.push(`<button type="button" class="btn g s" onclick="ajShow('${m.id}')">${esc(m.t)}</button>`));
+  if(acts.length)h+=`<div style="display:flex;gap:6px;flex-wrap:wrap">${acts.join('')}</div>`;
+  return h;
+}
+function ajGo(v){closeM();go(v)}
+function ajShow(id){const e=(window.MANUAL||[]).find(x=>x.id===id);if(e){ajBot(ajTopic(e,[]))}}
+function ajAsk(ev){
+  if(ev)ev.preventDefault();
+  const i=document.getElementById('aj_q'),m=document.getElementById('aj_e'),q=(i.value||'').trim();
+  if(!q){m.textContent='Escreva a sua pergunta primeiro.';return}
+  m.textContent='';i.value='';ajMe(q);
+  const r=ajBusca(q);
+  if(!r.length){ajSemAdd(q);
+    const w=(window.AJ_SUP||'').replace(/\D/g,'');
+    ajBot('Não achei isso no manual.'+(w?` <a href="https://wa.me/${w}" target="_blank" rel="noopener">Falar com o suporte</a>`:' Procure o administrador ou o suporte.')+' <button type="button" class="btn g s" onclick="ajTemas()">Ver todos os temas</button>');return}
+  ajBot(ajTopic(r[0],r.slice(1)));
+}
+function ajTemas(){
+  const L=window.MANUAL||[],mods=[...new Set(L.map(x=>x.mod))],sem=ajSemGet();
+  modal(`<h2>Manual · todos os temas</h2>${mods.map(m=>`<h3 style="margin:10px 0 4px">${esc(m)}</h3><div style="display:flex;gap:6px;flex-wrap:wrap">${L.filter(x=>x.mod===m).map(x=>`<button type="button" class="btn g s" onclick="ajudaOpen('${x.id}')">${esc(x.t)}</button>`).join('')}</div>`).join('')}
+  <p style="margin-top:14px"><button type="button" class="btn s" onclick="ajudaOpen()">Voltar ao chat</button> ${sem.length?`<button type="button" class="btn g s" onclick="ajSem()">Perguntas sem resposta (${sem.length})</button>`:''}</p>`);
+}
+function ajSem(){
+  const l=ajSemGet().slice().reverse();
+  modal(`<h2>Perguntas sem resposta</h2><p class="sm">O que as pessoas perguntaram e o manual não tinha. Use para completar o manual.</p><ul style="margin:6px 0 10px 18px">${l.map(x=>`<li>${esc(x.q)} <span class="sm">· ${new Date(x.at).toLocaleDateString('pt-BR')}</span></li>`).join('')||'<li>Nenhuma.</li>'}</ul><button type="button" class="btn g s" onclick="try{localStorage.removeItem('mm_aj_sem')}catch(e){}ajTemas()">Limpar lista</button> <button type="button" class="btn s" onclick="ajTemas()">Voltar</button>`);
+}
+function ajudaOpen(id){
+  modal(`<h2>Ajuda</h2><div id="aj_l" style="display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;padding:2px"></div>
+  <form onsubmit="ajAsk(event)" style="display:flex;gap:8px;margin-top:10px"><input id="aj_q" placeholder="Pergunte, por exemplo: como emitir uma nota?" autocomplete="off" oninput="document.getElementById('aj_e').textContent=''"><button class="btn">Perguntar</button></form>
+  <p id="aj_e" class="bad" role="alert" style="min-height:1.2em;margin:4px 0"></p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${(window.MANUAL||[]).slice(0,4).map(x=>`<button type="button" class="btn g s" onclick="ajShow('${x.id}')">${esc(x.t)}</button>`).join('')}<button type="button" class="btn g s" onclick="ajTemas()">Ver todos os temas</button></div>`);
+  if(!AJLOG.length)AJLOG.push({b:1,h:'Oi! Pergunte como fazer qualquer coisa e eu mostro o passo a passo, direto do manual.'});
+  ajDraw();if(id)ajShow(id);
+  setTimeout(()=>{const q=document.getElementById('aj_q');if(q)q.focus()},40);
+}
+addEventListener('keydown',e=>{if(e.key==='F1'&&AJ_OK()){e.preventDefault();ajudaOpen()}});
+
 ICON.home='<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>';ICON.register='<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M6 11V7h12v4"/><path d="M9 4h6v3H9z"/><path d="M7 15h2M11 15h2M15 15h2M7 18h10"/>';ICON.clipboard='<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>';ICON.ticket='<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 8.5h16M4 14h16"/><path d="M8 5.8h4M8 11.3h4M8 16.8h4"/>';ICON.chatcoin='<path d="M4 5h16v11H9l-5 4z"/><path d="M12 7v7M14 8h-3a1.3 1.3 0 000 2.6h2a1.3 1.3 0 010 2.6h-3"/>';ICON.drawer='<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M10 7.5h4M10 16.5h4"/>';ICON.calpay='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h3M7.5 17.5h6"/>';ICON.nfok='<path d="M13 3H6a2 2 0 00-2 2v14a2 2 0 002 2h6"/><path d="M13 3l6 6v3"/><path d="M13 3v6h6"/><path d="M8 10h2M8 14h5M8 18h2"/><circle cx="17.5" cy="17.5" r="3.5"/><path d="M15.9 17.6l1.1 1.1 2.1-2.2"/>';ICON.pctdoc='<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 17l6-6"/><circle cx="9.5" cy="11.5" r="1"/><circle cx="14.5" cy="16.5" r="1"/>';ICON.docin='<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M12 11v6M9 14l3 3 3-3"/>';ICON.pct='<circle cx="12" cy="12" r="9"/><path d="M9 15l6-6"/><circle cx="9.5" cy="9.5" r="1"/><circle cx="14.5" cy="14.5" r="1"/>';ICON.history='<path d="M3 12a9 9 0 103-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 2"/>';ICON.bars='<path d="M3 21h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="13" width="3" height="5"/>';ICON.palette='<path d="M12 3a9 9 0 100 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2a4 4 0 004-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/>';ICON.userkey='<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6 1.4 0 2.6.3 3.7.8"/><circle cx="17" cy="15" r="2.5"/><path d="M17 17.5V22M17 20h2"/>';ICON.lock='<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.5"/>';ICON.brush='<path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M19 15l.8 1.7 1.7.8-1.7.8L19 20l-.8-1.7-1.7-.8 1.7-.8z"/>';
 const ICOL={"home": "#2563eb", "cart": "#16a34a", "register": "#0d9488", "clipboard": "#ea580c", "users": "#0284c7", "ticket": "#4f46e5", "chatcoin": "#d97706", "drawer": "#059669", "calpay": "#dc2626", "nfok": "#7c3aed", "pctdoc": "#c026d3", "docin": "#0891b2", "box": "#ca8a04", "pct": "#db2777", "history": "#475569", "bars": "#1d4ed8", "palette": "#e11d48", "building": "#00468f", "userkey": "#64748b", "bell": "#f59e0b", "search": "#0ea5e9", "menu": "#64748b", "logout": "#ef4444", "lock": "#334155", "brush": "#8b5cf6", "shield": "#475569", "image": "#e11d48", "wallet": "#059669", "coin": "#d97706", "receipt": "#7c3aed", "file": "#4f46e5", "inbox": "#ea580c"};
 const ic=n=>`<i class="icw" style="--c:${ICOL[n]||'#64748b'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg></i>`;
@@ -2316,6 +2385,7 @@ function render(){
   let h='';
   if(isAdmin()){
     h+=`<button onclick="searchOpen()" title="Buscar (Ctrl+K)">${ic('search')}<span>Buscar</span></button>`;
+    h+=`<button onclick="ajudaOpen()" title="Ajuda (F1)">${ic('help')}<span>Ajuda</span></button>`;
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'clipboard')+item('cli','Clientes','users')+item('car','Carnês','ticket')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'chatcoin')+(ADM()?'':item('com','Minhas comissões','pct')));
     if(ADM())h+=grp('Gestão',item('ini','Início','home')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'register')+item('pts','Pontos de venda','clipboard')+item('prod','Produtos','box')+item('cx','Caixa','drawer')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'calpay')+item('fis','Fiscal','nfok')+item('rtc','IBS / CBS / IS','pctdoc')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'docin')+item('com','Comissões','pct')+item('aud','Auditoria','history')+item('rel','Relatórios (PDF)','bars')+item('arte','Arte do produto','palette')+item('emp','Empresa','building')+item('usr','Usuários','userkey'));
@@ -2325,12 +2395,12 @@ function render(){
   NAVFULL=h;
   if(LAY()==='duo'&&isAdmin()&&innerWidth>=900){
     const gi=GR.findIndex(g=>g.inner.includes(`go('${view}')`)),ai=DUOS!=null&&GR[DUOS]?DUOS:(gi>=0?gi:0),GI={Vendas:'cart','Gestão':'wallet',Conta:'shield'};
-    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
+    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="ajudaOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
     h=top+GR.map((g,i)=>`<button class="rl ${i===ai?'on':''}" onclick="duoSel(${i})" title="${esc(g.t)}">${ic(GI[g.t]||'box')}<span>${esc(g.t)}</span></button>`).join('')+out+`<div class="duop"><div class="duoh">${esc(GR[ai].t)}</div>${GR[ai].inner}</div>`;
     document.body.className+=' duo';
   }
   if(LAY()==='dock'&&isAdmin()){
-    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
+    const top=(h.match(/<button onclick="searchOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="ajudaOpen\(\)"[\s\S]*?<\/button>/)||[''])[0]+(h.match(/<button onclick="notifOpen\(\)"[\s\S]*?<\/button>/)||[''])[0],out=(h.match(/<button class="out"[\s\S]*?<\/button>$/)||[''])[0];
     h=top+GR.map(g=>'<span class="dsep" aria-hidden="true"></span>'+g.inner).join('')+(out?'<span class="dsep" aria-hidden="true"></span>'+out:'');
     h=h.replace(/<span>([^<]*)\s*(<b class="bdg"[^>]*>[^<]*<\/b>)\s*<\/span>/g,'$2<span>$1</span>'); // no Dock o número (badge) fica no canto do ícone
   }
