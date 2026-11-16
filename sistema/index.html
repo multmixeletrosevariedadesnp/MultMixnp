@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.16'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.17'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -471,7 +471,7 @@ if(!db){db={products:[],customers:[],sales:[],installments:[],orders:[],company:
   ['Liquidificador 900W','Cozinha',169,179,199,['Potência: 900W','Copo: 2,2 L','Lâminas: aço inox','Voltagem: 127V'],'Potente e fácil de limpar.'],
   ['Ventilador de Mesa 40cm','Variedades',119,129,139,['Hélices: 6','Velocidades: 3','Potência: 80W'],'Silencioso, ideal para o calor.']
  ].forEach(p=>db.products.push({id:uid(),name:p[0],category:p[1],price_cash:p[2],price_card:p[3],price_credit:p[4],max_inst:10,stock:10,active:true,specs:p[5].map(s=>{const[k,...v]=s.split(':');return{k,v:v.join(':').trim()}}),photos:[],description:p[6],ncm:'',cfop:'5102',unit:'UN'}));}
-db.orders=db.orders||[];db.payables=db.payables||[];db.parcel_payments=db.parcel_payments||[];db.company=db.company||[];db.company_private=db.company_private||[];
+db.rejeitados=db.rejeitados||[];db.orders=db.orders||[];db.payables=db.payables||[];db.parcel_payments=db.parcel_payments||[];db.company=db.company||[];db.company_private=db.company_private||[];
 const save=()=>localStorage.mm=JSON.stringify(db);
 let session=null;
 let role=null;
@@ -481,19 +481,34 @@ const ADM=()=>!sb||role==='admin';
 function put(t,row,q){ // grava local + fila
   row.updated_at=now();
   const i=db[t].findIndex(r=>r.id===row.id);
+  // estoque só vai ao servidor quando esta edição o mudou (senão um cadastro velho desfazia vendas de outro aparelho)
+  const st=t==='products'&&(i<0||(+row.stock||0)!==(+db[t][i].stock||0));
   i<0?db[t].push(row):db[t][i]=row;
-  if(sb)db.outbox.push({t,row});
+  if(sb)db.outbox.push(st?{t,row,st:1}:{t,row});
   save();if(!q)sync();
 }
 let syncP=Promise.resolve();
+/* lê a tabela inteira em páginas de 1000 (o servidor corta em 1000 linhas por consulta) */
+async function pullAll(t){
+  const out=[],PG=1000;
+  for(let a=0;;a+=PG){
+    let r=await sb.from(t).select('*').order('id').range(a,a+PG-1);
+    if(r.error&&a===0)r=await sb.from(t).select('*'); // tabela sem coluna id: leitura simples
+    if(r.error)return{data:null,error:r.error};
+    const d=r.data||[];out.push(...d);
+    if(d.length<PG||a>=500000)break;
+  }
+  return{data:out,error:null};
+}
 function sync(){window.__syncing=true;return syncP=syncP.then(doSync,doSync).finally(()=>{window.__syncing=false})}
 async function doSync(){
   if(!sb)return setSync('modo demo (local)');
   try{
     if(role){
-      while(db.outbox.length){
-        const t=db.outbox[0].t;let n=0;while(n<100&&db.outbox[n]&&db.outbox[n].t===t)n++;
-        const rows=[...new Map(db.outbox.slice(0,n).map(o=>[o.row.id,o.row])).values()];
+      db.rejeitados=db.rejeitados||[];
+      // erro de dado (o servidor recusou a linha) ≠ erro de rede/sessão: só o primeiro tem a linha separada
+      const REJ=e=>{const m=(e&&e.message)||'',c=String((e&&e.code)||'');return !/JWT|permission|row-level|not authorized|Failed to fetch|NetworkError|Load failed/i.test(m)&&(/^(22|23)/.test(c)||/violates|invalid input|out of range|null value in column|duplicate key/i.test(m))};
+      const up=async(t,rows)=>{
         let er=null,tent=0,fora=[];
         for(;;){ // se o banco ainda não tem uma coluna nova (SQL não rodado), envia sem ela em vez de travar tudo
           er=(await sb.from(t).upsert(rows)).error;if(!er)break;
@@ -502,26 +517,53 @@ async function doSync(){
           if(!col||tent++>=6||!rows.some(r=>col in r))break;
           fora.push(col);rows.forEach(r=>{delete r[col]});
         }
-        if(er)throw er;
         if(fora.length)window.__colFalta=[...new Set(fora)];
+        return er;
+      };
+      while(db.outbox.length){
+        const t=db.outbox[0].t;let n=0;while(n<100&&db.outbox[n]&&db.outbox[n].t===t)n++;
+        const ents=db.outbox.slice(0,n),stIds=new Set(ents.filter(o=>o.st).map(o=>o.row.id));
+        const rows=[...new Map(ents.map(o=>[o.row.id,o.row])).values()];
+        const grupos=t==='products'?[rows.filter(r=>stIds.has(r.id)),rows.filter(r=>!stIds.has(r.id)).map(r=>{const c={...r};delete c.stock;return c})]:[rows];
+        for(const g of grupos){
+          if(!g.length)continue;
+          const er=await up(t,g);
+          if(!er)continue;
+          if(!REJ(er))throw er;
+          for(const r of g){ // isola a(s) linha(s) recusada(s) para o resto da fila seguir
+            const e1=g.length===1?er:await up(t,[r]);
+            if(e1){if(!REJ(e1))throw e1;db.rejeitados.push({t,row:r,msg:e1.message||'erro',at:now()})}
+          }
+        }
         db.outbox.splice(0,n);save();}
     }
     for(const t of role?T:['company']){
       if((t==='payables'||t==='parcel_payments')&&role!=='admin')continue; // contas a pagar e recebimentos: só administrador
-      const{data,error}=await sb.from(t).select('*');
+      const{data,error}=await pullAll(t);
       if(error){if(t==='payables'||t==='parcel_payments')continue;throw error} // se a tabela ainda não existir, não trava o resto
       if(!db.outbox.length)db[t]=data;
     }
-    save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+    save();setSync('sincronizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+((db.rejeitados||[]).length?' · '+db.rejeitados.length+' recusado(s)':''));
   }catch(e){
     const srv=e&&(e.code||e.status||/violates|does not exist|permission|JWT|row-level/i.test(e.message||''));
-    setSync((srv?'erro ao enviar · ':'offline · ')+db.outbox.length+' pendente(s)');
+    setSync((srv?'erro ao enviar · ':'offline · ')+db.outbox.length+' pendente(s)'+((db.rejeitados||[]).length?' · '+db.rejeitados.length+' recusado(s)':''));
     try{const el=document.getElementById('sync');if(el)el.title=(e&&e.message)||String(e);console.warn('sync:',e)}catch(x){}
   }
   render();
   try{loadPev().then(()=>notifCheck());certCheck();ibptMeta().then(()=>{notifCheck();fiscHealth()});ibptAuto();pacLoad();codLoad()}catch(e){}
 }
-const setSync=t=>$('#sync').textContent=t;
+const setSync=t=>{const e=$('#sync');e.textContent=t;e.style.cursor=(db.rejeitados||[]).length?'pointer':''};
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#sync')&&(db.rejeitados||[]).length)rejOpen()});
+const REJ_N={products:'Produto',customers:'Cliente',sales:'Venda',installments:'Parcela',orders:'Pedido',company:'Empresa',company_private:'Empresa',payables:'Conta a pagar',parcel_payments:'Recebimento'};
+function rejOpen(){
+  const L=db.rejeitados||[];
+  if(!L.length)return closeM();
+  modal(`<h2>Registros recusados pelo servidor</h2><p class="sm">Estes itens não foram enviados porque o servidor os recusou. O restante da fila segue normalmente. Corrija o dado e tente de novo, ou descarte.</p>
+  <div style="overflow:auto"><table><tr><th>Tipo</th><th>Registro</th><th>Motivo</th><th></th></tr>${L.map((x,i)=>`<tr><td>${esc(REJ_N[x.t]||x.t)}</td><td>${esc(x.row.name||x.row.number||x.row.id)}</td><td class="sm">${esc(x.msg)}</td>
+  <td><button class="btn g s" onclick="rejRetry(${i})">Tentar de novo</button> <button class="btn g s" onclick="rejDrop(${i})">Descartar</button></td></tr>`).join('')}</table></div>`);
+}
+function rejRetry(i){const x=db.rejeitados.splice(i,1)[0];if(x){db[x.t]=db[x.t]||[];if(!db[x.t].some(r=>r.id===x.row.id))db[x.t].push(x.row);db.outbox.push({t:x.t,row:x.row,st:1});save();sync()}rejOpen()}
+function rejDrop(i){if(!confirm('Descartar este registro? Ele não será enviado ao servidor.'))return;db.rejeitados.splice(i,1);save();setSync($('#sync').textContent.replace(/ · \d+ recusado\(s\)/,'')+((db.rejeitados||[]).length?' · '+db.rejeitados.length+' recusado(s)':''));rejOpen()}
 addEventListener('online',sync);
 
 /* ========= Usuários, comissão e senha ========= */

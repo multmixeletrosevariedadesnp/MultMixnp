@@ -1,5 +1,5 @@
 {
- "version": "1.95.16",
- "date": "2026-11-12",
- "notes": "Licença: a faixa de aviso não tampa mais o sistema (o app desce abaixo dela em todos os layouts)."
+ "version": "1.95.17",
+ "date": "2026-11-16",
+ "notes": "Sincronização mais segura: lê mais de 1000 registros, não desfaz baixa de estoque ao editar produto e linha recusada não trava a fila."
 }
