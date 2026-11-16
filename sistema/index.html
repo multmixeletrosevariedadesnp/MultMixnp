@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.9'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.10'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1240,27 +1240,28 @@ async function artVidMake(){
   if(!mime)return alert('Este navegador não consegue gerar vídeo.');
   btn.disabled=true;out.style.display='none';artVidFile=null;
   try{
-    const o=Object.assign(artOpts(),{ovl:true,land:null}),H0=o.fmt==='feed'?1350:1920,cw=720,ch=Math.round(H0*720/1080/2)*2,sc=720/1080,dur=+artVal('vdur')||8;
+    const o=Object.assign(artOpts(),{ovl:true,land:null}),H0=o.fmt==='feed'?1350:1920,cw=+artVal('vq')||720,ch=Math.round(H0*cw/1080/2)*2,sc=cw/1080,dur=+artVal('vdur')||8;
     const svgUrl=URL.createObjectURL(new Blob([artSvg(o)],{type:'image/svg+xml;charset=utf-8'}));
     const ovl=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src=svgUrl});
-    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d'),v=artVid.el;
+    const ob=document.createElement('canvas');ob.width=cw;ob.height=ch;ob.getContext('2d').drawImage(ovl,0,0,cw,ch);URL.revokeObjectURL(svgUrl);
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d',{alpha:false}),v=artVid.el;let nf=0;
     const draw=t=>{
       x.fillStyle='#000';x.fillRect(0,0,cw,ch);
       const vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*Math.max(.3,Math.min(1.8,o.pz||1));
       x.save();x.translate(cw/2+(o.px||0)*sc,ch/2+(o.py||0)*sc);x.rotate((+o.pr||0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
       const p=Math.min(1,t/1.1),e=1-Math.pow(1-p,3),z=1+.06*(1-e);
-      x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ovl,-cw/2,-ch/2,cw,ch);x.restore();
+      if(p>=1)x.drawImage(ob,0,0);else{x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ob,-cw/2,-ch/2);x.restore()}nf++;
     };
-    const rec=new MediaRecorder(cv.captureStream(30),{mimeType:mime,videoBitsPerSecond:4000000}),chunks=[];
+    const rec=new MediaRecorder(cv.captureStream(30),{mimeType:mime,videoBitsPerSecond:6000000}),chunks=[];
     rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
     const done=new Promise(r=>rec.onstop=r);
     v.currentTime=0;await v.play();draw(0);rec.start(250);
     const t0=performance.now();
     await new Promise(res=>{const f=()=>{const t=(performance.now()-t0)/1000;draw(t);st.textContent='Gerando o vídeo... '+Math.min(100,Math.round(t/dur*100))+'% (não feche esta tela)';if(t>=dur)res();else requestAnimationFrame(f)};f()});
-    rec.stop();await done;v.pause();URL.revokeObjectURL(svgUrl);
+    rec.stop();await done;v.pause();const fps=nf/dur;
     const ext=mime.startsWith('video/mp4')?'mp4':'webm',base=artName().replace(/\.jpg$/,'');
     artVidFile=new File([new Blob(chunks,{type:mime.split(';')[0]})],base+'.'+ext,{type:mime.split(';')[0]});
-    st.textContent='Vídeo pronto ('+ext.toUpperCase()+', '+(artVidFile.size/1048576).toFixed(1)+' MB).'+(ext==='webm'?' Este navegador gerou WEBM; o WhatsApp pode não aceitar. No Chrome ou Edge atualizado sai MP4.':'');
+    st.textContent='Vídeo pronto ('+ext.toUpperCase()+', '+(artVidFile.size/1048576).toFixed(1)+' MB).'+(fps<22?' Atenção: este aparelho gerou só '+Math.round(fps)+' quadros por segundo e o vídeo pode ficar travado. Escolha a qualidade "Leve (540 px)" ou um vídeo de fundo menor (720p) e gere de novo.':'')+(ext==='webm'?' Este navegador gerou WEBM; o WhatsApp pode não aceitar. No Chrome ou Edge atualizado sai MP4.':'');
     out.style.display='';
   }catch(e){st.textContent='';alert('Não foi possível gerar o vídeo neste aparelho.')}
   finally{btn.disabled=false;try{artVid&&artVid.el.pause()}catch(e){}}
@@ -1628,7 +1629,7 @@ async function vArte(){
   <div class="w" id="a_gfine"><label>Ajuste fino da saudação</label><label style="margin-top:8px">Saudação: subir (-) / descer (+): <b id="a_gdyv">0 px</b></label><input type="range" id="a_gdy" data-u="px" min="-800" max="800" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Saudação: esquerda (-) / direita (+): <b id="a_gdxv">0 px</b></label><input type="range" id="a_gdx" data-u="px" min="-400" max="400" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Tamanho da saudação: <b id="a_gszv">100%</b></label><input type="range" id="a_gsz" data-u="%" min="40" max="150" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Distância entre a saudação e a frase: <b id="a_gdistv">0 px</b></label><input type="range" id="a_gdist" data-u="px" min="-250" max="400" step="5" value="0" oninput="artGv(this)"><label style="margin-top:8px">Transparência da saudação (100% = sólida): <b id="a_gopv">100%</b></label><input type="range" id="a_gop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Transparência da frase (100% = sólida): <b id="a_popv">100%</b></label><input type="range" id="a_pop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Escurecimento da foto de paisagem: <b id="a_darkv">100%</b></label><input type="range" id="a_dark" data-u="%" min="0" max="150" step="5" value="100" oninput="artGv(this)"><div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="artGReset()">Voltar ao padrão</button></div></div>
   <div class="w"><label>Foto de paisagem (fundo da arte)</label><div class="row" style="margin:0;align-items:center"><input id="a_land" type="file" accept="image/*" style="max-width:320px" onchange="artLandUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Usar paisagem do sistema</button></div><div class="sm">Sem foto, o sistema desenha céu, sol ou lua e morros conforme a saudação. Para enquadrar a sua foto use tamanho, posição e giro em "Foto". Logo, selo, textos, fonte, cores, mascote, rodapé e formato funcionam igual.</div></div>
   <div class="w" id="a_vblock"><label>Vídeo de fundo (para gerar a arte em vídeo)</label><div class="row" style="margin:0;align-items:center"><input id="a_vup" type="file" accept="video/*" style="max-width:320px" onchange="artVidUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Tirar vídeo</button></div>
-  <div class="row" style="margin:8px 0 0;align-items:center"><label style="margin:0">Duração:</label><select id="a_vdur" style="width:auto"><option value="5">5 segundos</option><option value="8" selected>8 segundos</option><option value="10">10 segundos</option><option value="15">15 segundos</option></select><button type="button" class="btn" id="a_vgo" onclick="artVidMake()">Gerar vídeo</button></div>
+  <div class="row" style="margin:8px 0 0;align-items:center"><label style="margin:0">Duração:</label><select id="a_vdur" style="width:auto"><option value="5">5 segundos</option><option value="8" selected>8 segundos</option><option value="10">10 segundos</option><option value="15">15 segundos</option></select><label style="margin:0">Qualidade:</label><select id="a_vq" style="width:auto"><option value="720" selected>Normal (720 px)</option><option value="540">Leve (540 px, aparelho lento)</option></select><button type="button" class="btn" id="a_vgo" onclick="artVidMake()">Gerar vídeo</button></div>
   <div class="sm" id="a_vst" role="status"></div>
   <div class="row" id="a_vout" style="display:none;margin:6px 0 0"><button type="button" class="btn" onclick="artVidShare()">Enviar vídeo para o WhatsApp</button><button type="button" class="btn g" onclick="artVidDownload()">Baixar vídeo</button></div>
   <div class="sm">O vídeo toca por trás das letras, com a saudação entrando no começo, e sai sem som. Envie um vídeo que está no aparelho (MP4). Vídeo do YouTube não dá para puxar direto: o YouTube não permite e o navegador bloqueia. Baixe vídeos de paisagem livres em sites como Pexels ou Pixabay e envie aqui. Evite vídeos de terceiros com direitos autorais (clipes, filmes). O tamanho, a posição e o giro da foto também valem para o vídeo.</div></div>
