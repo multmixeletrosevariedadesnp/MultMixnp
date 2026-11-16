@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.2'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.3'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1905,8 +1905,12 @@ const LIC=(()=>{
   function css(){
     if(document.getElementById('lic-css'))return;
     const st=document.createElement('style');st.id='lic-css';
-    st.textContent='#licbar{position:absolute;top:0;left:0;right:0;z-index:9000;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:5px 12px;min-height:30px;box-sizing:border-box;font:600 12.5px/1.3 system-ui,Segoe UI,Arial,sans-serif;border-bottom:1px solid rgba(0,0,0,.12)}body.licb{padding-top:30px!important}'+
+    st.textContent='#licbar{position:fixed;top:0;left:0;right:0;z-index:10;height:28px;box-sizing:border-box;display:flex;gap:10px;align-items:center;justify-content:center;padding:0 12px;white-space:nowrap;font:600 12.5px/1 system-ui,Segoe UI,Arial,sans-serif;border-bottom:1px solid rgba(0,0,0,.12)}#licbar span{min-width:0;overflow:hidden;text-overflow:ellipsis}'+
     '#licbar.warn{background:#fff4d6;color:#5c3d00}#licbar.bad{background:#fde7e7;color:#7a1410}#licbar button{flex:none;border:0;border-radius:5px;padding:3px 10px;font:700 12px system-ui,Segoe UI,Arial;cursor:pointer;background:#123a6b;color:#fff}#licbar .x{background:transparent;color:inherit;font-size:16px;padding:0 4px;opacity:.65}'+
+    /* a faixa ocupa um espaço só dela: o app inteiro desce 28px e nada fica por baixo dela (vale para todos os layouts) */
+    'html.licb body{padding-top:28px!important;box-sizing:border-box}html.licb header{top:28px!important}html.licb body.in header{max-height:calc(100vh - 28px)}html.licb .duop{top:28px!important}'+
+    'html.licb .artp{top:40px!important}html.licb .pdvr{top:46px!important;max-height:calc(100vh - 64px)!important}html.licb .cact{top:28px!important}'+
+    '@media(max-width:900px){html.licb .artp{top:28px!important}}'+
     '#licled{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 8px 0 4px;vertical-align:middle;cursor:pointer;flex:none;border:1px solid rgba(255,255,255,.55)}#licled.v{background:#2ecc71;box-shadow:0 0 8px #2ecc71}#licled.a{background:#f5a623;box-shadow:0 0 8px #f5a623}#licled.r{background:#e5484d;box-shadow:0 0 8px #e5484d}#licled.c{background:#98a2b3}'+
     '#lictoast{position:fixed;top:16px;right:16px;z-index:9600;max-width:min(92vw,360px);background:#067647;color:#fff;padding:12px 16px;border-radius:12px;font:700 14px/1.35 system-ui,Segoe UI,Arial,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)}'+
     '#licov{position:fixed;inset:0;z-index:9500;background:rgba(10,15,30,.55);display:flex;align-items:center;justify-content:center;padding:14px}'+
@@ -1921,9 +1925,9 @@ const LIC=(()=>{
     if(typeof document==='undefined'||!document.body)return;
     css();let b=document.getElementById('licbar');const m=msg();
     let hid=false;try{hid=m&&m.k==='warn'&&sessionStorage.getItem('lic_x')===m.t}catch(e){}
-    if(!m||hid){if(b)b.remove();document.body.classList.remove('licb');return}
+    if(!m||hid){if(b)b.remove();document.documentElement.classList.remove('licb');return}
     if(!b){b=document.createElement('div');b.id='licbar';b.setAttribute('role','status');document.body.insertBefore(b,document.body.firstChild)}
-    document.body.classList.add('licb');
+    document.documentElement.classList.add('licb');
     b.className=m.k;b.innerHTML='<span>'+esc(m.t)+'</span><button type="button">'+(m.pay?'Ver / pagar':'Detalhes')+'</button>'+(m.k==='warn'?'<button type="button" class="x" aria-label="Fechar">×</button>':'');
     const bs=b.querySelectorAll('button');bs[0].onclick=()=>open();
     if(bs[1])bs[1].onclick=()=>{try{sessionStorage.setItem('lic_x',m.t)}catch(e){}bar()};
