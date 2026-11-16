@@ -1,5 +1,5 @@
 {
- "version": "1.95.2",
+ "version": "1.95.3",
  "date": "2026-11-12",
- "notes": "Arte do produto: a foto agora gira em qualquer ângulo (barra de -180° a 180°)."
+ "notes": "Licença: a faixa de aviso não tampa mais o sistema (o app desce abaixo dela em todos os layouts)."
 }
