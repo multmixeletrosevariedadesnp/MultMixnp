@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.12'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.13'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -620,8 +620,8 @@ async function artVidMakeWC(){ // gera quadro a quadro (sem depender da velocida
     const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d',{alpha:false});
     const draw=t=>{
       x.fillStyle='#000';x.fillRect(0,0,cw,ch);
-      const vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*Math.max(.3,Math.min(1.8,o.pz||1));
-      x.save();x.translate(cw/2+(o.px||0)*sc,ch/2+(o.py||0)*sc);x.rotate((+o.pr||0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
+      const sd=o.mode==='saud',vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*(sd?Math.max(.3,Math.min(1.8,o.pz||1)):1);
+      x.save();x.translate(cw/2+(sd?(o.px||0)*sc:0),ch/2+(sd?(o.py||0)*sc:0));x.rotate((sd?+o.pr||0:0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
       const p=Math.min(1,t/1.1),e=1-Math.pow(1-p,3),z=1+.06*(1-e);
       if(p>=1)x.drawImage(ob,0,0);else{x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ob,-cw/2,-ch/2);x.restore()}
     };
@@ -661,8 +661,8 @@ async function artVidMake(){
     const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d',{alpha:false}),v=artVid.el;let nf=0;
     const draw=t=>{
       x.fillStyle='#000';x.fillRect(0,0,cw,ch);
-      const vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*Math.max(.3,Math.min(1.8,o.pz||1));
-      x.save();x.translate(cw/2+(o.px||0)*sc,ch/2+(o.py||0)*sc);x.rotate((+o.pr||0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
+      const sd=o.mode==='saud',vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*(sd?Math.max(.3,Math.min(1.8,o.pz||1)):1);
+      x.save();x.translate(cw/2+(sd?(o.px||0)*sc:0),ch/2+(sd?(o.py||0)*sc:0));x.rotate((sd?+o.pr||0:0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
       const p=Math.min(1,t/1.1),e=1-Math.pow(1-p,3),z=1+.06*(1-e);
       if(p>=1)x.drawImage(ob,0,0);else{x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ob,-cw/2,-ch/2);x.restore()}nf++;
     };
@@ -693,7 +693,7 @@ function artModeUI(){
   const m=artVal('mode')||'prod',sd=m==='saud',md=$('#a_mode');if(!md)return;
   const sh=(id,on)=>{const e=$('#a_'+id);const d=e&&(e.closest('div'));if(d)d.style.display=on?'':'none'};
   ['q','p','name','price','old','nk','nc','ph','up','nop','parnote'].forEach(id=>{const e=$('#a_'+id);if(!e)return;const d=id==='parnote'?e:e.closest('div');d.style.display=sd?'none':''});
-  ['greet','gtxt','gfont','pfont','gph','land','vblock','gfine'].forEach(id=>sh(id,sd));
+  ['greet','gtxt','gfont','pfont','gph','gfine'].forEach(id=>sh(id,sd));
   if(md.dataset.last!==m){
     if(md.dataset.last!==undefined){
       const f=['l1','l2','valid'],bg=$('#a_badge');
@@ -706,9 +706,9 @@ function artModeUI(){
   if(sd)artGrSync(0);
 }
 function artSvg(o){
-  const oc=ART_OCC[o.occ],th=Object.assign({},oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),o.cols||{}),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
+  const oc=ART_OCC[o.occ],BM=!!(o.land||o.ovl)&&o.mode!=='saud',th=Object.assign({},oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),BM?{text:'#ffffff',sub:'#f1f5f9',foot:'rgba(0,0,0,.62)',footT:'#ffffff'}:{},o.cols||{}),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
   const F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
-  const T=(s,x,y,size,op={})=>{s=String(s);const _of=ART_FONT,_F=op.font||F;ART_FONT=_F;const w=artW(s,size,op.bold);ART_FONT=_of;const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
+  const T=(s,x,y,size,op={})=>{s=String(s);if(BM&&!op.stroke&&(op.color===undefined||op.color===th.text||op.color===th.sub||op.color===th.price||op.color===th.accent)){op=Object.assign({},op,{stroke:'#000000',sw:Math.max(5,Math.round(size*.07))})}const _of=ART_FONT,_F=op.font||F;ART_FONT=_F;const w=artW(s,size,op.bold);ART_FONT=_of;const x0=op.anchor==='m'?x-w/2:op.anchor==='e'?x-w:x;
     E.push(`<text x="${x0.toFixed(1)}" y="${y.toFixed(1)}" font-family="${_F.replace(/"/g,"'")}" font-size="${size}" font-weight="${op.bold?700:400}" fill="${op.color||th.text}"${op.stroke?` stroke="${op.stroke}" stroke-width="${op.sw||6}" stroke-linejoin="round" paint-order="stroke"`:''}${op.op?` fill-opacity="${op.op}"`:''}${op.italic?' font-style="italic"':''} textLength="${w.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${artX(s)}</text>`);return w};
   // fundo
   E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
@@ -716,8 +716,9 @@ function artSvg(o){
   if(!o.ovl)E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
   const SD=o.mode==='saud';
   if(SD){artSaudBg(E,o,W,H)}
-  else E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
-  if(!SD)E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  else if(!o.ovl)E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
+  if(!SD&&!o.ovl)E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  if(!SD&&(o.land||o.ovl))artSaudBg(E,Object.assign({},o,{pz:1,px:0,py:0,pr:0}),W,H);
   if(oc)oc.deco(E,W,H,th,artRnd(o.occ.split('').reduce((h,c)=>h*31+c.charCodeAt(0),7)));
   let y=Math.round(52*k);
   // cabeçalho: logo + nome
@@ -1327,13 +1328,13 @@ async function vArte(){
   <div><label>Fonte da saudação</label><select id="a_gfont" onchange="artRender()"><option value="">Igual à fonte geral</option>${ART_FONTS.map(([n,v])=>`<option value="${esc(v)}">${n}</option>`).join('')}</select></div>
   <div><label>Fonte da frase</label><select id="a_pfont" onchange="artRender()"><option value="">Igual à fonte geral</option>${ART_FONTS.map(([n,v])=>`<option value="${esc(v)}">${n}</option>`).join('')}</select></div>
   <div class="w"><label>Frase abaixo da saudação</label><input id="a_gph" oninput="this.dataset.s=1;artRender()"></div>
-  <div class="w" id="a_gfine"><label>Ajuste fino da saudação</label><label style="margin-top:8px">Saudação: subir (-) / descer (+): <b id="a_gdyv">0 px</b></label><input type="range" id="a_gdy" data-u="px" min="-800" max="800" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Saudação: esquerda (-) / direita (+): <b id="a_gdxv">0 px</b></label><input type="range" id="a_gdx" data-u="px" min="-400" max="400" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Tamanho da saudação: <b id="a_gszv">100%</b></label><input type="range" id="a_gsz" data-u="%" min="40" max="150" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Distância entre a saudação e a frase: <b id="a_gdistv">0 px</b></label><input type="range" id="a_gdist" data-u="px" min="-250" max="400" step="5" value="0" oninput="artGv(this)"><label style="margin-top:8px">Transparência da saudação (100% = sólida): <b id="a_gopv">100%</b></label><input type="range" id="a_gop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Transparência da frase (100% = sólida): <b id="a_popv">100%</b></label><input type="range" id="a_pop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Escurecimento da foto de paisagem: <b id="a_darkv">100%</b></label><input type="range" id="a_dark" data-u="%" min="0" max="150" step="5" value="100" oninput="artGv(this)"><div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="artGReset()">Voltar ao padrão</button></div></div>
-  <div class="w"><label>Foto de paisagem (fundo da arte)</label><div class="row" style="margin:0;align-items:center"><input id="a_land" type="file" accept="image/*" style="max-width:320px" onchange="artLandUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Usar paisagem do sistema</button></div><div class="sm">Sem foto, o sistema desenha céu, sol ou lua e morros conforme a saudação. Para enquadrar a sua foto use tamanho, posição e giro em "Foto". Logo, selo, textos, fonte, cores, mascote, rodapé e formato funcionam igual.</div></div>
+  <div class="w" id="a_gfine"><label>Ajuste fino da saudação</label><label style="margin-top:8px">Saudação: subir (-) / descer (+): <b id="a_gdyv">0 px</b></label><input type="range" id="a_gdy" data-u="px" min="-800" max="800" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Saudação: esquerda (-) / direita (+): <b id="a_gdxv">0 px</b></label><input type="range" id="a_gdx" data-u="px" min="-400" max="400" step="10" value="0" oninput="artGv(this)"><label style="margin-top:8px">Tamanho da saudação: <b id="a_gszv">100%</b></label><input type="range" id="a_gsz" data-u="%" min="40" max="150" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Distância entre a saudação e a frase: <b id="a_gdistv">0 px</b></label><input type="range" id="a_gdist" data-u="px" min="-250" max="400" step="5" value="0" oninput="artGv(this)"><label style="margin-top:8px">Transparência da saudação (100% = sólida): <b id="a_gopv">100%</b></label><input type="range" id="a_gop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><label style="margin-top:8px">Transparência da frase (100% = sólida): <b id="a_popv">100%</b></label><input type="range" id="a_pop" data-u="%" min="10" max="100" step="5" value="100" oninput="artGv(this)"><div class="row" style="margin:6px 0 0"><button type="button" class="btn g s" onclick="artGReset()">Voltar ao padrão</button></div></div>
+  <div class="w"><label>Foto de fundo (paisagem, raios etc.)</label><div class="row" style="margin:0;align-items:center"><input id="a_land" type="file" accept="image/*" style="max-width:320px" onchange="artLandUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Usar paisagem do sistema</button></div><div class="sm">Na saudação, sem foto o sistema desenha céu, sol ou lua e morros; para enquadrar a foto use tamanho, posição e giro em "Foto". Na oferta de produto a foto ou o vídeo fica atrás de tudo, com o produto, o preço e os textos por cima.</div><label style="margin-top:8px">Escurecimento do fundo (foto ou vídeo): <b id="a_darkv">100%</b></label><input type="range" id="a_dark" data-u="%" min="0" max="150" step="5" value="100" oninput="artGv(this)"></div>
   <div class="w" id="a_vblock"><label>Vídeo de fundo (para gerar a arte em vídeo)</label><div class="row" style="margin:0;align-items:center"><input id="a_vup" type="file" accept="video/*" style="max-width:320px" onchange="artVidUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Tirar vídeo</button></div>
   <div class="row" style="margin:8px 0 0;align-items:center"><label style="margin:0">Duração:</label><select id="a_vdur" style="width:auto"><option value="5">5 segundos</option><option value="8" selected>8 segundos</option><option value="10">10 segundos</option><option value="15">15 segundos</option></select><label style="margin:0">Qualidade:</label><select id="a_vq" style="width:auto"><option value="720" selected>Normal (720 px)</option><option value="540">Leve (540 px, aparelho lento)</option></select><button type="button" class="btn" id="a_vgo" onclick="artVidMake()">Gerar vídeo</button></div>
   <div class="sm" id="a_vst" role="status"></div>
   <div class="row" id="a_vout" style="display:none;margin:6px 0 0"><button type="button" class="btn" onclick="artVidShare()">Enviar vídeo para o WhatsApp</button><button type="button" class="btn g" onclick="artVidDownload()">Baixar vídeo</button></div>
-  <div class="sm">O vídeo toca por trás das letras, com a saudação entrando no começo, e sai sem som. Envie um vídeo que está no aparelho (MP4). Vídeo do YouTube não dá para puxar direto: o YouTube não permite e o navegador bloqueia. Baixe vídeos de paisagem livres em sites como Pexels ou Pixabay e envie aqui. Evite vídeos de terceiros com direitos autorais (clipes, filmes). O tamanho, a posição e o giro da foto também valem para o vídeo.</div></div>
+  <div class="sm">O vídeo toca por trás da arte (saudação ou oferta de produto), que entra com efeito suave no começo, e sai sem som. Para a oferta, use o produto "direto na arte" (sem painel branco) se quiser ver mais o vídeo. Envie um vídeo que está no aparelho (MP4). Vídeo do YouTube não dá para puxar direto: o YouTube não permite e o navegador bloqueia. Baixe vídeos de paisagem livres em sites como Pexels ou Pixabay e envie aqui. Evite vídeos de terceiros com direitos autorais (clipes, filmes). Na saudação, o tamanho, a posição e o giro da foto também valem para o vídeo.</div></div>
   <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
   <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
   <div class="w"><label>Nome na arte</label><input id="a_name" oninput="artRender()"></div>
