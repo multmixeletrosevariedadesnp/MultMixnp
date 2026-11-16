@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.3'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.4'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -1192,6 +1192,45 @@ function artDates(from){
   const t=new Date(from.getFullYear(),from.getMonth(),from.getDate());
   return out.filter(([,d])=>d>=t).sort((a,b)=>a[1]-b[1]).filter((x,i,a)=>a.findIndex(z=>z[0]===x[0])===i);
 }
+/* ---- arte de saudação (Bom dia / Boa tarde / Boa noite) ---- */
+const ART_GR={dia:{t:'Bom dia',p:'Que o seu dia seja de muita paz e boas vendas!'},tarde:{t:'Boa tarde',p:'Uma tarde abençoada para você e sua família!'},noite:{t:'Boa noite',p:'Que a sua noite seja de descanso e tranquilidade!'}};
+function artGreetP(o){const g=o&&o.greet;if(g&&g!=='auto'&&ART_GR[g])return g;const h=new Date().getHours();return h<12?'dia':h<18?'tarde':'noite'}
+function artSaudBg(E,o,W,H){
+  const P=artGreetP(o),pz=Math.max(.3,Math.min(1.8,o.pz||1));
+  if(o.land){
+    E.push(`<defs><linearGradient id="sov" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset=".32" stop-color="#000" stop-opacity=".08"/><stop offset=".58" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></linearGradient><clipPath id="lk"><rect width="${W}" height="${H}"/></clipPath></defs>`);
+    E.push(`<g clip-path="url(#lk)"><g transform="translate(${(W/2+(o.px||0)).toFixed(1)} ${(H/2+(o.py||0)).toFixed(1)}) rotate(${+o.pr||0}) scale(${pz})"><image href="${o.land}" xlink:href="${o.land}" x="${-W/2}" y="${-H/2}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/></g></g><rect width="${W}" height="${H}" fill="url(#sov)"/>`);
+    return;
+  }
+  const C={dia:['#1d9bf0','#8fd8ff','#fff1b8'],tarde:['#4b2fb0','#f0618f','#ffb347'],noite:['#050816','#161a55','#3b3a8f']}[P],r=artRnd(P.length*977+3);
+  E.push(`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C[0]}"/><stop offset=".55" stop-color="${C[1]}"/><stop offset="1" stop-color="${C[2]}"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="${P==='noite'?'#fff7d6':P==='tarde'?'#ffd27a':'#fff6b0'}" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="${W}" height="${H}" fill="url(#sky)"/>`);
+  const sx=P==='dia'?W*.72:P==='tarde'?W*.3:W*.8,sy=P==='dia'?H*.2:P==='tarde'?H*.6:H*.17,sr=P==='noite'?95:P==='tarde'?150:120;
+  if(P==='noite'){for(let i=0;i<70;i++)E.push(`<circle cx="${(r()*W).toFixed(0)}" cy="${(r()*H*.6).toFixed(0)}" r="${(1+r()*3).toFixed(1)}" fill="#fff" fill-opacity="${(.4+r()*.6).toFixed(2)}"/>`)}
+  E.push(`<circle cx="${sx}" cy="${sy}" r="${sr*3}" fill="url(#glow)"/>`);
+  if(P==='noite')E.push(`<defs><mask id="mn"><rect width="${W}" height="${H}" fill="#fff"/><circle cx="${sx+sr*.42}" cy="${sy-sr*.2}" r="${sr*.86}" fill="#000"/></mask></defs><circle cx="${sx}" cy="${sy}" r="${sr}" fill="#fff7d6" mask="url(#mn)"/>`);
+  else E.push(`<circle cx="${sx}" cy="${sy}" r="${sr}" fill="${P==='tarde'?'#ff9a3c':'#ffe066'}"/>`);
+  if(P!=='noite')for(let i=0;i<4;i++){const cx=r()*W,cy=H*(.05+r()*.16),w=140+r()*160;E.push(`<g fill="#fff" fill-opacity=".8"><ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="${w.toFixed(0)}" ry="${(w*.22).toFixed(0)}"/><ellipse cx="${(cx+w*.4).toFixed(0)}" cy="${(cy-w*.14).toFixed(0)}" rx="${(w*.5).toFixed(0)}" ry="${(w*.2).toFixed(0)}"/></g>`)}
+  const HC={dia:['#3fbf6a','#23a05a','#127a45'],tarde:['#7a3b8f','#5a2a78','#3a1a55'],noite:['#1f2a5e','#141c47','#0a1030']}[P];
+  [[.64,.58,HC[0]],[.72,.8,HC[1]],[.82,.7,HC[2]]].forEach(([a,b,c],i)=>{let d=`M0 ${H*a}`;for(let x=0;x<=W;x+=60)d+=` L${x} ${(H*(a+.05*Math.sin(x/W*3.1+i*1.7)+(b-.6)*.04*Math.cos(x/90))).toFixed(0)}`;E.push(`<path d="${d} L${W} ${H} L0 ${H}Z" fill="${c}"/>`)});
+}
+function artLandUp(inp){const f=inp.files[0];if(!f)return;artBlobData(f,1600).then(d=>{artLand=d;artRender()}).catch(()=>alert('Não consegui ler essa imagem.'))}
+function artLandClear(){artLand=null;const e=$('#a_land');if(e)e.value='';artRender()}
+function artGrSync(force){const e=$('#a_gph');if(!e)return;if(force||!e.dataset.s){e.value=ART_GR[artGreetP({greet:artVal('greet')})].p;if(force)delete e.dataset.s}}
+function artModeUI(){
+  const m=artVal('mode')||'prod',sd=m==='saud',md=$('#a_mode');if(!md)return;
+  const sh=(id,on)=>{const e=$('#a_'+id);const d=e&&(e.closest('div'));if(d)d.style.display=on?'':'none'};
+  ['q','p','name','price','old','nk','nc','ph','up','nop','parnote'].forEach(id=>{const e=$('#a_'+id);if(!e)return;const d=id==='parnote'?e:e.closest('div');d.style.display=sd?'none':''});
+  ['greet','gtxt','gph','land'].forEach(id=>sh(id,sd));
+  if(md.dataset.last!==m){
+    if(md.dataset.last!==undefined){
+      const f=['l1','l2','valid'];
+      if(sd){f.forEach(i=>{const e=$('#a_'+i);if(e){md.dataset['s_'+i]=e.value;e.value=''}})}
+      else f.forEach(i=>{const e=$('#a_'+i);if(e&&md.dataset['s_'+i]!==undefined)e.value=md.dataset['s_'+i]});
+    }
+    md.dataset.last=m;
+  }
+  if(sd)artGrSync(0);
+}
 function artSvg(o){
   const oc=ART_OCC[o.occ],th=Object.assign({},oc?oc.th:(ART_TH[o.theme]||ART_TH.azul),o.cols||{}),W=1080,feed=o.fmt==='feed',H=feed?1350:1920,k=feed?.76:1;
   const F=o.font||'Arial,Helvetica,sans-serif',E=[];ART_FONT=F;
@@ -1201,8 +1240,10 @@ function artSvg(o){
   E.push(`<defs><linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="${th.a}"/><stop offset="1" stop-color="${th.b}"/></linearGradient>
     <clipPath id="pc"><rect id="pcr" x="0" y="0" width="1" height="1" rx="40"/></clipPath><clipPath id="lc"><rect id="lcr" x="0" y="0" width="1" height="1" rx="26"/></clipPath></defs>`);
   E.push(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
-  E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
-  E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
+  const SD=o.mode==='saud';
+  if(SD){artSaudBg(E,o,W,H)}
+  else E.push(`<circle cx="${W+60}" cy="${H*.2}" r="${H*.22}" fill="${th.shape}" fill-opacity=".07"/><circle cx="-80" cy="${H*.62}" r="${H*.18}" fill="${th.shape}" fill-opacity=".06"/>`);
+  if(!SD)E.push(`<polygon points="0,${H*.78} ${W},${H*.66} ${W},${H} 0,${H}" fill="${th.shape}" fill-opacity=".05"/>`);
   if(oc)oc.deco(E,W,H,th,artRnd(o.occ.split('').reduce((h,c)=>h*31+c.charCodeAt(0),7)));
   let y=Math.round(52*k);
   // cabeçalho: logo + nome
@@ -1240,6 +1281,27 @@ function artSvg(o){
   }
   // rodapé (altura fixa) e bloco de preço (altura variável) definem a altura da foto
   const footH=o.showFoot?Math.round(190*k):Math.round(50*k),M=60,CW=W-2*M;
+  if(SD){
+    const g=ART_GR[artGreetP(o)],gt=(o.gtxt||g.t),gp=o.gph!=null&&o.gph!==''?o.gph:g.p,land=!!o.land,tc='#ffffff',end=H-footH-Math.round(24*k);
+    const lines=(o.lines||[]).filter(Boolean),lS=Math.round(46*k),lLH=Math.round(62*k),vS=Math.round(32*k),pS=Math.round(54*k),pLH=Math.round(70*k);
+    let gs=Math.round(250*k);while(artW(gt,gs,true)>W-90&&gs>60)gs-=4;
+    const pl=gp?artWrap(gp,W-150,pS,false).slice(0,3):[];
+    const bodyH=gs*.95+(pl.length?pl.length*pLH+20*k:0)+(lines.length?lines.length*lLH+18*k:0)+(o.valid?vS+34*k:0),avail=end-y;
+    let yy=y+Math.max(10,(avail-bodyH)*(o.mascot?.2:.32));
+    const gy=yy+gs*.82;
+    T(gt,W/2+6,gy+8,gs,{bold:1,color:'#000000',op:.30,anchor:'m'});
+    T(gt,W/2,gy,gs,{bold:1,color:th.accent,anchor:'m',stroke:land?'#000000':th.badgeT,sw:Math.round(14*k)});
+    yy=gy+Math.round(24*k);
+    pl.forEach(l=>{yy+=pLH;T(l,W/2,yy-pS*.22,pS,{anchor:'m',color:tc,bold:1,stroke:'#000000',sw:Math.round(8*k)})});
+    if(pl.length)yy+=Math.round(18*k);
+    lines.forEach(l=>{yy+=lLH;T(artFit(l,CW,lS,true),W/2,yy-lS*.25,lS,{bold:1,anchor:'m',color:tc,stroke:'#000000',sw:Math.round(8*k)})});
+    if(lines.length)yy+=Math.round(18*k);
+    if(o.valid){yy+=Math.round(34*k);T(artFit(o.valid,CW,vS,false),W/2,yy+vS*.7,vS,{anchor:'m',color:'#ffffff',italic:1,stroke:'#000000',sw:Math.round(6*k)})}
+    const mas=o.mascot;
+    if(mas){let mh=Math.min((end-y)*.5*(mas.z||1),mas.h),mw=mh*mas.ar;if(mw>W*.5){mw=W*.5;mh=mw/mas.ar}
+      const mimg=artMasImg(mas.id,mh),mx=Math.max(0,Math.min(W-mw-4,mas.r?W-mw-20-(mas.dx||0):20+(mas.dx||0))),my=Math.max(6,Math.min(H-footH-mh-2,end-mh+(mas.dy||0)));
+      E.push(`<ellipse cx="${(mx+mw*.45).toFixed(0)}" cy="${(my+mh-4).toFixed(0)}" rx="${(mw*.36).toFixed(0)}" ry="14" fill="#000" fill-opacity=".25"/><image href="${mimg}" xlink:href="${mimg}" x="${mx.toFixed(0)}" y="${my.toFixed(0)}" width="${mw.toFixed(0)}" height="${mh.toFixed(0)}" preserveAspectRatio="xMidYMax meet"/>`)}
+  }else{
   let nameS=Math.round(68*k),nl=artWrap(o.name,CW-20,nameS,true);
   if(nl.length>2){nameS=Math.round(56*k);nl=artWrap(o.name,CW-20,nameS,true)}
   if(nl.length>2){nl.length=2;nl[1]=artFit(nl[1]+' ...',CW-20,nameS,true)}
@@ -1283,6 +1345,7 @@ function artSvg(o){
   lines.forEach(l=>{y+=lLH;T(artFit(l,CW,lS,true),W/2,y-lS*.25,lS,{bold:1,anchor:'m'})});
   if(lines.length)y+=Math.round(10*k);
   if(o.valid){y+=Math.round(30*k);T(artFit(o.valid,CW,vS,false),W/2,y+vS*.7,vS,{anchor:'m',color:th.sub,italic:1})}
+  }
   // rodapé
   if(o.showFoot){
     const fy=H-footH;E.push(`<rect x="0" y="${fy}" width="${W}" height="${footH}" fill="${th.foot}"/><rect x="0" y="${fy}" width="${W}" height="${Math.round(6*k)}" fill="${th.accent}"/>`);
@@ -1320,7 +1383,7 @@ async function artMasLoad(){
   if(id&&!ART_MASD[id]){try{const r=await fetch(ART_MAS[id].f);if(!r.ok)throw 0;const b=await r.blob();ART_MASD[id]=await new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=no;f.readAsDataURL(b)})}catch(e){alert('Não consegui carregar o mascote. Confira a internet e tente de novo.')}}
   artRender();
 }
-let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='';
+let artCut=null,artCutGen=0,artPhoto=null,artLogo=null,artFile=null,artTimer=null,artCapDirty=false,artTheme='azul',artGen=0,artOcc='',artLand=null;
 const artCache=new Map();
 async function artBlobData(blob,max){
   const u=URL.createObjectURL(blob);
@@ -1368,6 +1431,7 @@ function artRotStep(d){const e=$('#a_pr');if(!e)return;e.value=Math.max(-180,Mat
 function artNopRefresh(){artCut=null;const e=$('#a_nop');if(e&&e.checked)artCutRun();else artRender()}
 const artVal=id=>{const e=$('#a_'+id);return e?e.value:''};
 function artCaption(){
+  if(artVal('mode')==='saud'){const g=ART_GR[artGreetP({greet:artVal('greet')})],t=artVal('gtxt').trim()||g.t,ph=artVal('gph').trim(),L=['*'+t+'!*'];if(ph)L.push(ph);[artVal('l1'),artVal('l2'),artVal('valid')].map(x=>x.trim()).filter(Boolean).forEach(x=>L.push(x));L.push('','Chame no WhatsApp: https://wa.me/'+waNum());return L.join('\n')}
   const nm=artVal('name').trim(),pr=+String(artVal('price')).replace(',','.')||0,old=+String(artVal('old')).replace(',','.')||0,b=artBadge();
   const pid=artVal('p'),tt=artVal('ttl').trim(),sb=artVal('sub').trim(),L=[...(tt?[`*${tt}*`+(sb?' - '+sb:''),'']:[]),`*${nm}*`,(b?b.toUpperCase()+'! ':'')+`Por apenas *R$ ${artBRL(pr)}*`+(old>0?` (de R$ ${artBRL(old)})`:'')];
   [artVal('l1'),artVal('l2'),artVal('valid')].map(s=>s.trim()).filter(Boolean).forEach(s=>L.push(s));
@@ -1378,11 +1442,12 @@ function artCaption(){
 function artOpts(){
   const co=CO(),addr=co.street?`${co.street}, ${co.number||'s/n'} - ${co.district||''}, ${co.city||''}/${co.uf||''}`:'';
   const ck=id=>{const e=$('#a_'+id);return !!(e&&e.checked)};
-  return{fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0,r:ART_MAS[artVal('mas')].r||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,pr:+artVal('pr')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
+  return{mode:artVal('mode')||'prod',greet:artVal('greet')||'auto',gtxt:artVal('gtxt').trim(),gph:artVal('gph').trim(),land:artLand,fmt:artVal('fmt')||'status',theme:artTheme,occ:artOcc,ttl:artVal('ttl').trim(),sub:artVal('sub').trim(),badge:artBadge(),font:artVal('font')||undefined,bstyle:artVal('bstyle'),nop:ck('nop'),mascot:ART_MASD[artVal('mas')]?{id:artVal('mas'),ar:ART_MAS[artVal('mas')].ar,h:ART_MAS[artVal('mas')].h,z:(+artVal('masz')||100)/100,dy:+artVal('masy')||0,dx:+artVal('masx')||0,r:ART_MAS[artVal('mas')].r||0}:null,pz:(+artVal('pz')||100)/100,px:+artVal('px')||0,py:+artVal('py')||0,pr:+artVal('pr')||0,cols:artCols(),name:artVal('name').trim()||'Nome do produto',price:+String(artVal('price')).replace(',','.')||0,
     old:+String(artVal('old')).replace(',','.')||0,lines:[artVal('l1').trim(),artVal('l2').trim()],valid:artVal('valid').trim(),
     co:{name:co.trade_name||co.legal_name||'MultMix',phone:co.whatsapp||co.phone||'',addr},photo:(ck('nop')&&artCut)||artPhoto,logo:artLogo,showLogo:ck('logo'),showFoot:ck('foot')};
 }
 function artRender(){
+  artModeUI();
   const o=artOpts(),box=$('#artv');if(!box)return;
   {const bt=$('#a_badget');if(bt)bt.parentNode.style.display=artVal('badge')==='__d'?'':'none';
    const th=ART_OCC[artOcc]?ART_OCC[artOcc].th:(ART_TH[artTheme]||ART_TH.azul);
@@ -1420,7 +1485,7 @@ async function artRaster(){
     return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.92));
   }finally{URL.revokeObjectURL(url)}
 }
-const artName=()=>'arte-'+norm(artVal('name')).replace(/ /g,'-').slice(0,32)+'.jpg';
+const artName=()=>artVal('mode')==='saud'?'arte-'+{dia:'bom-dia',tarde:'boa-tarde',noite:'boa-noite'}[artGreetP({greet:artVal('greet')})]+'.jpg':'arte-'+norm(artVal('name')).replace(/ /g,'-').slice(0,32)+'.jpg';
 async function artPrep(){
   const g=++artGen;
   try{const b=await artRaster();if(g===artGen)artFile=new File([b],artName(),{type:'image/jpeg'})}catch(e){artFile=null}
@@ -1489,6 +1554,11 @@ async function vArte(){
   <div class="f"><div class="w"><label>Buscar produto</label><input id="a_q" placeholder="Digite parte do nome" oninput="artFilter()"></div>
   <div class="w"><label>Produto</label><select id="a_p" onchange="artPick()"></select></div>
   <div><label>Formato</label><select id="a_fmt" onchange="artRender()"><option value="status">Status (9:16)</option><option value="feed">Feed (4:5)</option></select></div>
+  <div><label>Tipo de arte</label><select id="a_mode" onchange="artRender()"><option value="prod">Oferta de produto</option><option value="saud">Saudação (Bom dia / Boa tarde / Boa noite)</option></select></div>
+  <div><label>Saudação</label><select id="a_greet" onchange="artGrSync(1);artRender()"><option value="auto">Automática (pelo horário)</option><option value="dia">Bom dia</option><option value="tarde">Boa tarde</option><option value="noite">Boa noite</option></select></div>
+  <div><label>Texto da saudação (opcional)</label><input id="a_gtxt" placeholder="Ex.: Feliz sexta-feira" oninput="artRender()"></div>
+  <div class="w"><label>Frase abaixo da saudação</label><input id="a_gph" oninput="this.dataset.s=1;artRender()"></div>
+  <div class="w"><label>Foto de paisagem (fundo da arte)</label><div class="row" style="margin:0;align-items:center"><input id="a_land" type="file" accept="image/*" style="max-width:320px" onchange="artLandUp(this)"><button type="button" class="btn g s" onclick="artLandClear()">Usar paisagem do sistema</button></div><div class="sm">Sem foto, o sistema desenha céu, sol ou lua e morros conforme a saudação. Para enquadrar a sua foto use tamanho, posição e giro em "Foto". Logo, selo, textos, fonte, cores, mascote, rodapé e formato funcionam igual.</div></div>
   <div><label>Selo</label><select id="a_badge" onchange="artRender()">${['Oferta','Super oferta','Promoção','Imperdível','Lançamento','Últimas unidades',''].map((b,i)=>`<option value="${b}" ${i?'':'selected'}>${b||'Sem selo'}</option>`).join('')}<option value="__d">Digitar meu selo...</option></select></div>
   <div style="display:none"><label>Texto do selo</label><input id="a_badget" maxlength="24" placeholder="Ex.: SÓ HOJE" oninput="artRender()"></div>
   <div><label>Estilo do selo</label><select id="a_bstyle" onchange="artRender()"><option value="balao">Com balão</option><option value="solto">Sem balão (só o texto)</option></select></div>
@@ -1504,16 +1574,16 @@ async function vArte(){
   <div><label>Preço antigo, riscado (opcional)</label><input id="a_old" inputmode="decimal" oninput="artRender()"></div>
   <div><label>Carnê: parcelas</label><select id="a_nk" onchange="artPar()"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option><option value="16">16x</option><option value="17">17x</option><option value="18">18x</option><option value="19">19x</option><option value="20">20x</option><option value="21">21x</option><option value="22">22x</option><option value="23">23x</option><option value="24">24x</option></select></div>
   <div><label>Cartão: em até quantas vezes</label><select id="a_nc" onchange="artPar()"><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>
-  <div class="w sm" style="margin-top:-6px">O valor da parcela é o preço do carnê (ou do cartão) dividido pelo número escolhido, sem juros. Se a maquininha cobrar juros do cliente, ajuste o texto abaixo.</div>
+  <div class="w sm" id="a_parnote" style="margin-top:-6px">O valor da parcela é o preço do carnê (ou do cartão) dividido pelo número escolhido, sem juros. Se a maquininha cobrar juros do cliente, ajuste o texto abaixo.</div>
   <div class="w"><label>Condição 1 (opcional)</label><input id="a_l1" oninput="artRender()"></div>
   <div class="w"><label>Condição 2 (opcional)</label><input id="a_l2" oninput="artRender()"></div>
   <div class="w"><label>Validade (opcional)</label><input id="a_valid" value="Válido enquanto durar o estoque" oninput="artRender()"></div>
   <div><label>Foto do produto</label><select id="a_ph" onchange="artLoadPhoto()"></select></div>
-  <div><label>Usar outra foto</label><input type="file" accept="image/*" onchange="artUpload(this)"></div>
+  <div><label>Usar outra foto</label><input id="a_up" type="file" accept="image/*" onchange="artUpload(this)"></div>
   <div class="w sm" id="a_st" role="status"></div>
   <div class="w"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_nop" style="width:auto" onchange="artNopRefresh()"> Produto direto na arte (sem painel branco, remove o fundo claro da foto)</label>
   <label style="margin-top:6px">Força da remoção do fundo</label><input type="range" id="a_tol" min="10" max="90" value="35" onchange="artNopRefresh()"><div class="sm">Funciona melhor com foto de fundo liso e claro. Se cortar demais o produto, diminua; se sobrar fundo, aumente.</div></div>
-<div class="w"><label>Tamanho da foto do produto: <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
+<div class="w"><label>Tamanho da foto (produto ou paisagem): <b id="a_pzv">100%</b></label><input type="range" id="a_pz" min="30" max="180" value="100" oninput="$('#a_pzv').textContent=this.value+'%';artRender()"><div class="sm">De 30% a 180%. Acima de 100% a foto cresce e pode passar por cima do texto; use as barras abaixo para reposicionar.</div>
   <label style="margin-top:8px">Foto: esquerda / direita: <b id="a_pxv">padrão</b></label><input type="range" id="a_px" min="-500" max="500" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: subir / descer: <b id="a_pyv">padrão</b></label><input type="range" id="a_py" min="-600" max="600" step="10" value="0" oninput="artPosLbl()">
   <label style="margin-top:8px">Foto: girar / inclinar: <b id="a_prv">padrão</b></label><div class="row" style="margin:0;align-items:center"><button type="button" class="btn g s" onclick="artRotStep(-1)" aria-label="Girar 1 grau à esquerda">↶</button><input type="range" id="a_pr" min="-180" max="180" step="1" value="0" style="flex:1;min-width:140px" oninput="artPosLbl()"><button type="button" class="btn g s" onclick="artRotStep(1)" aria-label="Girar 1 grau à direita">↷</button></div><div class="sm">Gira a foto no ângulo que quiser (de -180° a 180°), sem perder qualidade. Os botões ↶ ↷ ajustam de 1 em 1 grau.</div>
