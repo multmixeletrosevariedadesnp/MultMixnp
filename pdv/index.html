@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.14'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.16'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -161,7 +161,7 @@ body.in.L-foco .sync{margin:0 0 0 auto;padding:0}
 .moreg button:hover{background:var(--bg)}.moreg button.on{font-weight:700;color:var(--pri)}
 .lay2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}.lay2 .btn{white-space:normal;text-align:left}
 </style>
-</head>
+<style>a:not(.btn):not(.skip),a:not(.btn):not(.skip):visited{color:color-mix(in srgb,var(--pri) 55%,var(--ink));text-decoration:underline}a:not(.btn):not(.skip):hover{color:var(--ink)}</style></head>
 <body>
 <header>
   <div class="brand"><img class="lg" src="logo-icon.png" alt="MultMix"><h1>Mult<span>Mix</span> PDV</h1></div>
@@ -196,6 +196,10 @@ const saveQ=()=>{LS.set('pdv_q',Q);LS.set('pdv_fail',FAIL)};
 /* ponto de venda (consignação): stock = estoque do ponto, sl = quantidade na loja (sem custo). Vendedor sem ponto: sl vem vazio */
 const pAv=p=>(+p.stock||0)+(p.sl!=null?Math.max(0,+p.sl||0):0);
 function pDec(p,q){if(p.sl==null){p.stock=(+p.stock||0)-q;return}const a=Math.max(0,Math.min(+p.stock||0,q));p.stock=(+p.stock||0)-a;p.sl=(+p.sl||0)-(q-a)}
+const pVis=()=>LS.get('pdv_vis','ponto');
+function ptChip(){const v=pVis(),b=(k,t)=>`<button type="button" class="btn ${v===k?'':'g'} s" onclick="pdvVis('${k}')" aria-pressed="${v===k}">${t}</button>`;
+  return `<span><b>${esc(PT.name)}</b> · no ponto: <b>${+PT.itens||0}</b> peça(s)</span><span style="margin-left:auto;display:flex;gap:4px">${b('ponto','Meu ponto')}${b('geral','Geral (loja)')}</span>`}
+function pdvVis(v){LS.set('pdv_vis',v);const c=$('#ptchip');if(c)c.innerHTML=ptChip();pdvSearch()}
 const mine=()=>Q.filter(s=>s._by===(ME&&ME.id)),setSync=t=>{const e=$('#sync');if(e)e.textContent=t};
 
 /* ----- entrar / sair ----- */
@@ -1444,7 +1448,7 @@ function vPdv(){
   $('#app').innerHTML=`<div class="pdv">
   <section class="pdvl box" aria-label="Produtos"><h2>Nova venda</h2>
    <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p>
-   ${PT?`<div class="sm" style="margin:0 0 6px;padding:6px 10px;border:1px solid var(--line);border-radius:10px"><b>${esc(PT.name)}</b> · no ponto: <b>${+PT.itens||0}</b> peça(s)</div>`:''}<div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
+   ${PT?`<div id="ptchip" class="sm" style="margin:0 0 6px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ptChip()}</div>`:''}<div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
     <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
     <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
    <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div></section>
@@ -1476,7 +1480,7 @@ function cliPick(i){const c=(window.CLIS||[])[i];if(!c)return;selCli=c.id;$('#c_
 
 function pdvList(){
   const k=norm($('#p_q').value),d=digits($('#p_q').value);
-  return P.filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
+  return P.filter(p=>!(PT&&pVis()==='ponto'&&p.sl!=null&&(+p.stock||0)<=0)).filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
     .sort((a,b)=>(pAv(b)>0)-(pAv(a)>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
 }
 function pdvSearch(){

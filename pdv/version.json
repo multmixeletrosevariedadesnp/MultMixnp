@@ -1,5 +1,5 @@
 {
- "version": "1.33.14",
+ "version": "1.33.16",
  "date": "2026-11-16",
- "notes": "Vendedor com ponto vê o estoque do ponto e a quantidade da loja. Requer o supabase-v52.sql."
+ "notes": "Links ficam legíveis (não mais roxos no tema escuro)."
 }

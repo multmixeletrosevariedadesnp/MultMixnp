@@ -1,5 +1,5 @@
 {
- "version": "1.95.19",
+ "version": "1.95.20",
  "date": "2026-11-16",
- "notes": "Pontos de venda (consignação): estoque por vendedor, remessa e retorno. Rode o supabase-v52.sql."
+ "notes": "Links ficam legíveis (não mais roxos no tema escuro)."
 }
