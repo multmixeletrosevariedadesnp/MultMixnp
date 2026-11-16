@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.17'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.19'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -291,6 +291,7 @@ td,th,.pr b,.tile .v{font-variant-numeric:tabular-nums}
 .dseg{display:flex;gap:4px}.dseg button{font-size:12px;padding:2px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}.dseg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
 .dtb{width:100%;border-collapse:collapse;font-size:12.5px}.dtb td,.dtb th{padding:5px 4px;text-align:left;border-top:1px solid var(--line)}.dtb th{border-top:0;color:var(--mut);font-weight:600}.dpill{border-radius:6px;padding:1px 8px;font-size:12px;white-space:nowrap}.dpill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.dpill.w{background:color-mix(in srgb,var(--tag) 30%,transparent);color:var(--ink)}.dpill.b{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
 .wall .dp,.wall .dst{background:color-mix(in srgb,var(--card) 94%,transparent)}
+.desk{position:relative;border-radius:16px;background-size:cover;background-position:center;min-height:calc(100vh - 150px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center;color:var(--ink)}.desk.wp{color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.55)}.dkc{display:flex;flex-direction:column;align-items:center;gap:6px}.dkl{width:min(180px,50vw);max-height:180px;object-fit:contain;background:#fff;border-radius:28px;padding:12px;box-shadow:0 6px 28px rgba(0,0,0,.25)}.dkn{font-size:22px;font-weight:800;margin-top:4px}.dkt{font-size:clamp(48px,10vw,96px);font-weight:300;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums}.dkd{font-size:16px;opacity:.9}.dkd::first-letter{text-transform:uppercase}.dka{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;text-shadow:none}.desk .btn.g{background:color-mix(in srgb,var(--card) 92%,transparent)}.dkv,.dkp{position:absolute;text-shadow:none;border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;background:color-mix(in srgb,var(--card) 92%,transparent);color:var(--ink)}.dkv{top:14px;right:14px;font-weight:700}.dkp{bottom:14px;right:14px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
 .tile{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;font:inherit;color:inherit}
 .tile[onclick]{cursor:pointer}.tile[onclick]:hover{border-color:var(--pri)}
@@ -2047,7 +2048,7 @@ function searchOpen(){
 }
 function searchRun(){
   const raw=($('#kq')||{}).value||'',q=norm(raw),qd=digits(raw),out=[];
-  const T=[['ini','Início'],['pdv','Nova venda'],['ped','Pedidos'],['cli','Clientes'],['car','Carnês'],['cob','Cobrança'],...(ADM()?[['bal','Balcão (PDV)'],['prod','Produtos'],['cx','Caixa'],['pag','Contas a pagar'],['fis','Fiscal'],['rtc','IBS / CBS / IS'],['dfe','Notas recebidas'],['com','Comissões'],['aud','Auditoria'],['rel','Relatórios (PDF)'],['arte','Arte do produto'],['emp','Empresa'],['usr','Usuários']]:[])];
+  const T=[['ini','Início'],['pdv','Nova venda'],['ped','Pedidos'],['cli','Clientes'],['car','Carnês'],['cob','Cobrança'],...(ADM()?[['bal','Balcão (PDV)'],['pts','Pontos de venda'],['prod','Produtos'],['cx','Caixa'],['pag','Contas a pagar'],['fis','Fiscal'],['rtc','IBS / CBS / IS'],['dfe','Notas recebidas'],['com','Comissões'],['aud','Auditoria'],['rel','Relatórios (PDF)'],['arte','Arte do produto'],['emp','Empresa'],['usr','Usuários']]:[])];
   const add=(g,t,sub,a)=>out.push({g,t,sub,a});
   T.filter(([v,l])=>!q||norm(l).includes(q)).slice(0,q?5:8).forEach(([v,l])=>add('Ir para',l,'',{k:'go',v}));
   if(q.length>=2||qd.length>=3){
@@ -2307,7 +2308,7 @@ function icsSet(k){try{localStorage.mm_ics=k}catch(e){}render();layoutOpen()}
 function render(){
   try{applyTema(CO())}catch(e){}
   if(sb&&!role&&view!=='login')view='login';
-  if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal'].includes(view)&&!ADM())view='pdv';
+  if(['ini','prod','cx','fis','dfe','emp','usr','arte','pag','bal','pts'].includes(view)&&!ADM())view='pdv';
   document.body.className=(isAdmin()?'in':'out')+' L-'+LAY()+' ics-'+ICS();
   const GR=[],grp=(t,inner,cls)=>(GR.push({t,inner,cls}),`<div class="ng ${cls||''}"><div class="grp" onclick="ngTog(event,this)">${t}</div><div class="nd">${inner}</div></div>`),
     item=(v,l,i)=>`<button class="${view===v?'on':''}" title="${l.replace(/<[^>]*>/g,'').trim()}" onclick="go('${v}')">${ic(i)}<span>${l}</span></button>`,np=NN();
@@ -2317,7 +2318,7 @@ function render(){
     h+=`<button onclick="searchOpen()" title="Buscar (Ctrl+K)">${ic('search')}<span>Buscar</span></button>`;
     h+=`<button onclick="notifOpen()" aria-label="Central de avisos">${ic('bell')}<span>Avisos${NL.length?` <b class="bdg" ${NL.some(n=>n.days<=0)?'style="background:var(--bad);color:#fff"':''}>${NL.length}</b>`:''}</span></button>`;
     h+=grp('Vendas',item('pdv','Nova venda','cart')+item('ped','Pedidos'+(np?` <b class="bdg">${np}</b>`:''),'clipboard')+item('cli','Clientes','users')+item('car','Carnês','ticket')+item('cob','Cobrança'+(nc?` <b class="bdg" ${ncl?'style="background:var(--bad);color:#fff"':''}>${nc}</b>`:''),'chatcoin')+(ADM()?'':item('com','Minhas comissões','pct')));
-    if(ADM())h+=grp('Gestão',item('ini','Início','home')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'register')+item('prod','Produtos','box')+item('cx','Caixa','drawer')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'calpay')+item('fis','Fiscal','nfok')+item('rtc','IBS / CBS / IS','pctdoc')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'docin')+item('com','Comissões','pct')+item('aud','Auditoria','history')+item('rel','Relatórios (PDF)','bars')+item('arte','Arte do produto','palette')+item('emp','Empresa','building')+item('usr','Usuários','userkey'));
+    if(ADM())h+=grp('Gestão',item('ini','Início','home')+item('bal','Balcão (PDV)'+(pevNew().length?` <b class="bdg" style="background:var(--bad);color:#fff">${pevNew().length}</b>`:''),'register')+item('pts','Pontos de venda','clipboard')+item('prod','Produtos','box')+item('cx','Caixa','drawer')+item('pag','Contas a pagar'+(np2?` <b class="bdg" ${np2l?'style="background:var(--bad);color:#fff"':''}>${np2}</b>`:''),'calpay')+item('fis','Fiscal','nfok')+item('rtc','IBS / CBS / IS','pctdoc')+item('dfe','Notas recebidas'+(dfePend()?` <b class="bdg">${dfePend()}</b>`:''),'docin')+item('com','Comissões','pct')+item('aud','Auditoria','history')+item('rel','Relatórios (PDF)','bars')+item('arte','Arte do produto','palette')+item('emp','Empresa','building')+item('usr','Usuários','userkey'));
     h+=grp('Conta',(sb?`<button onclick="pwForm()">${ic('lock')}<span>Alterar senha</span></button><button onclick="mfaOpen()">${ic('shield')}<span>Verificação em 2 etapas</span></button>`:'')+`<button onclick="layoutOpen()" title="Layout do menu">${ic('brush')}<span>Aparência</span></button>`,'gconta');
     if(sb)h+=`<button class="out" onclick="logout()">${ic('logout')}<span>Sair</span></button>`;
   }
@@ -2338,7 +2339,7 @@ function render(){
     h=bell+item('ini','Início','home')+item('pdv','Venda','cart')+item('cli','Clientes','users')+(ADM()?item('fis','Fiscal','nfok'):'')+`<button onclick="moreOpen()">${ic('menu')}<span>Mais</span></button>`;
   }
   $('#nav').innerHTML=h;try{dkApply()}catch(e){}
-  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
+  ({dfe:vDfe,ini:vIni,prod:vProd,pdv:vPdv,ped:vPed,cli:vCli,car:vCar,cob:vCob,pag:vPag,cx:vCx,fis:vFis,emp:vEmp,usr:vUsr,com:vCom,aud:vAud,bal:vBal,pts:vPts,rel:vRel,rtc:vRtc,arte:vArte,login:vLogin}[view]||vPdv)();
 }
 
 const prices=p=>({cash:+p.price_cash,card:+(p.price_card||p.price_cash),cred:+(p.price_credit||p.price_card||p.price_cash)});
@@ -4827,9 +4828,27 @@ function wallUp(inp){const f=inp.files[0];if(!f)return;artBlobData(f,1600).then(
 function wallMenu(){
   const cur=wallGet().m,o=(m,t,d)=>`<button type="button" class="pri" onclick="wallSet('${m}')"><span style="flex:1"><b>${t}</b><div class="sm">${d}</div></span>${cur===m?'<span class="ok">✓</span>':''}</button>`;
   const dm=dashGet(),od=(m,t,d)=>`<button type="button" class="pri" onclick="dashSet('${m}')"><span style="flex:1"><b>${t}</b><div class="sm">${d}</div></span>${dm===m?'<span class="ok">✓</span>':''}</button>`;
-  modal(`<h2>Aparência do Início</h2><p class="sm">Fica só neste aparelho.</p><h3 style="margin:8px 0 4px">Dashboard</h3><div class="pres">${od('off','Desligado','Início simples, como antes.')}${od('foco','Modelo 1 · Foco no dia','Vendas de hoje em destaque, mini gráfico e lista de atenção.')}${od('neon','Modelo 2 · Painel com anéis','Indicadores com anel, gráfico de vendas por dia e últimas vendas.')}</div><h3 style="margin:10px 0 4px">Papel de parede</h3><p class="sm">Os cartões continuam legíveis por cima da imagem.</p><div class="pres">${o('none','Sem papel de parede','Início simples, como antes.')}${o('auto','Paisagem do horário','Muda sozinha: dia, tarde e noite.')}${o('dia','Dia','Céu azul e sol.')}${o('tarde','Tarde','Pôr do sol.')}${o('noite','Noite','Lua e estrelas.')}${o('img','Minha foto'+(cur==='img'?' (atual)':''),'Envie uma paisagem sua, escolhida abaixo.')}</div><label class="sm">Enviar minha foto</label><input type="file" accept="image/*" onchange="wallUp(this)">`);
+  modal(`<h2>Aparência do Início</h2><p class="sm">Fica só neste aparelho.</p><h3 style="margin:8px 0 4px">Dashboard</h3><div class="pres">${od('off','Desligado','Início simples, como antes.')}${od('foco','Modelo 1 · Foco no dia','Vendas de hoje em destaque, mini gráfico e lista de atenção.')}${od('neon','Modelo 2 · Painel com anéis','Indicadores com anel, gráfico de vendas por dia e últimas vendas.')}${od('desk','Área de trabalho','Sem números: só o papel de parede ou a logo da empresa, como uma área de trabalho.')}</div>${dm==='desk'?deskOpts():''}<h3 style="margin:10px 0 4px">Papel de parede</h3><p class="sm">Os cartões continuam legíveis por cima da imagem.</p><div class="pres">${o('none','Sem papel de parede','Início simples, como antes.')}${o('auto','Paisagem do horário','Muda sozinha: dia, tarde e noite.')}${o('dia','Dia','Céu azul e sol.')}${o('tarde','Tarde','Pôr do sol.')}${o('noite','Noite','Lua e estrelas.')}${o('img','Minha foto'+(cur==='img'?' (atual)':''),'Envie uma paisagem sua, escolhida abaixo.')}</div><label class="sm">Enviar minha foto</label><input type="file" accept="image/*" onchange="wallUp(this)">`);
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
+/* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
+const deskGet=()=>{try{return Object.assign({logo:1,rel:1,atl:1,aviso:1},JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return{logo:1,rel:1,atl:1,aviso:1}}};
+function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
+function deskOpts(){const d=deskGet(),c=(k,t)=>`<label class="sm" style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" style="width:auto" ${d[k]?'checked':''} onchange="deskSet('${k}',this.checked)"> ${t}</label>`;
+  return `<div style="margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px"><b class="sm">Mostrar na área de trabalho</b>${c('logo','Logo e nome da empresa')}${c('rel','Relógio e data')}${c('atl','Atalhos (Nova venda, Novo cliente, Buscar)')}${c('aviso','Aviso discreto quando houver pendências')}<p class="sm" style="margin:4px 0 0">Para ver só a logo, escolha "Sem papel de parede" abaixo. Para ver só a foto, desmarque a logo.</p></div>`}
+let deskT=null;
+function deskTick(){const t=document.getElementById('dkT'),dd=document.getElementById('dkD');if(!t&&!dd){clearInterval(deskT);deskT=null;return}const n=new Date();if(t)t.textContent=n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(dd)dd.textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});if(!deskT)deskT=setInterval(deskTick,15000)}
+function deskAv(){modal('<h2>Pendências</h2>'+(window.__deskTD||''))}
+function deskBuild(wc,nAv){
+  const d=deskGet(),co=CO(),nome=co.trade_name||co.legal_name||'',img=wc?'':'background-image:linear-gradient(135deg,color-mix(in srgb,var(--pri) 20%,var(--bg)),var(--bg))';
+  $('#app').innerHTML=`<div class="desk ${wc?'wp':''}" style="${wc||img}">
+  <div class="dkc">${d.logo?`<img class="dkl" src="${esc(logoIcon())}" alt="${esc(nome)}">${nome?`<div class="dkn">${esc(nome)}</div>`:''}`:''}
+  ${d.rel?`<div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div>`:''}</div>
+  ${d.atl?`<div class="dka"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar</button></div>`:''}
+  ${d.aviso&&nAv?`<button type="button" class="dkv" onclick="deskAv()">🔔 ${nAv} pendência(s)</button>`:''}
+  <button type="button" class="dkp" onclick="wallMenu()" aria-label="Aparência do Início">⚙ Aparência</button></div>`;
+  if(d.rel)deskTick();
+}
 let dashDias=7;
 const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'off'}catch(e){return'off'}};
 function dashSet(m){try{localStorage.setItem('mm_dash',m)}catch(e){}closeM();vIni()}
@@ -4893,6 +4912,7 @@ function vIni(){
   </div>`,dm=dashGet();
   const DASH=dm==='off'?'':dashBuild(dm,{today,vd,vm,rec,late,hoje,open,ticket,TD});
   const wc=wallCss();
+  if(dm==='desk'){window.__deskTD=TD;deskBuild(wc,T.length);return}
   $('#app').innerHTML=`${wc?`<div class="gr"><h2>${ART_GR[artGreetP({})].t}</h2><div class="sm">Hoje, ${fmtD(today)}</div></div>`:`<h2 style="margin:0 0 2px">Hoje, ${fmtD(today)}</h2>`}
   <div class="qa"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar (Ctrl+K)</button><button class="btn g" onclick="wallMenu()">Aparência</button></div>
   ${dm==='foco'?DASH:dm==='neon'?DASH+`<h3 style="margin:10px 0 0">Para fazer</h3>${TD}`:`<h3 style="margin:10px 0 0">Para fazer</h3>${TD}${TILES}`}
@@ -4900,6 +4920,82 @@ function vIni(){
   <p class="sm">Produtos ativos com ${stockMin()} unidade(s) ou menos. Mude o limite em Avisos &gt; Configurar avisos.</p>
   ${lo.length?`<div style="overflow:auto"><table><tr><th>Produto</th><th>Estoque</th><th></th></tr>${lo.slice(0,50).map(p=>`<tr><td>${esc(p.name)}</td><td><span class="stk ${(+p.stock||0)<=0?'bad':'warn'}">${+p.stock||0}</span></td><td><button class="btn g s" onclick="iniProd('${p.id}')">Abrir</button></td></tr>`).join('')}</table></div>`:'<p>Nenhum produto com estoque baixo. 🎉</p>'}</div>`;
   wallApply(wc);
+}
+
+/* ========= Pontos de venda (consignação): estoque por vendedor ========= */
+let PTS={loc:[],sp:[],mv:[]},PTL=[],PTID=null;
+const PTK={remessa:'Remessa',retorno:'Retorno à loja',venda:'Venda',estorno:'Estorno',devolucao:'Devolução'};
+async function ptsLoad(){
+  const[a,b,c]=await Promise.all([sb.from('stock_locations').select('*').order('name'),sb.from('stock_points').select('*'),sb.from('stock_moves').select('*').order('at',{ascending:false}).limit(80)]);
+  if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;
+  PTS.loc=a.data||[];PTS.sp=b.data||[];PTS.mv=c.data||[];
+}
+const ptsProd=id=>db.products.find(p=>p.id===id)||{};
+const ptsQty=lid=>PTS.sp.filter(x=>x.location_id===lid&&+x.qty!==0);
+async function vPts(){
+  if(!sb){$('#app').innerHTML='<p>Os pontos de venda ficam disponíveis quando o sistema está conectado ao Supabase.</p>';return}
+  if(navigator.onLine===false){$('#app').innerHTML='<p>Sem internet: os pontos de venda precisam de conexão.</p>';return}
+  $('#app').innerHTML='<p class="sm">Carregando pontos...</p>';
+  try{await Promise.all([ptsLoad(),loadProf()])}catch(e){$('#app').innerHTML=`<p>Não consegui carregar os pontos: ${esc(e.message||e)}.</p><p class="sm">Se for a primeira vez, rode o <b>supabase-v52.sql</b> no Supabase (SQL Editor) e abra de novo.</p>`;return}
+  const sn=id=>(PROF.find(u=>u.id===id)||{}).name||'—';
+  const rows=PTS.loc.map(l=>{const q=ptsQty(l.id),n=q.reduce((t,x)=>t+(+x.qty||0),0),v=q.reduce((t,x)=>t+(+x.qty||0)*(+ptsProd(x.product_id).price_cash||0),0),neg=q.some(x=>+x.qty<0);
+    return`<tr><td><b>${esc(l.name)}</b>${l.active===false?' <span class="tag">Inativo</span>':''}</td><td>${esc(sn(l.seller_id))}</td><td>${neg?'<span class="bad">'+n+'</span>':n}</td><td>${R(v)}</td>
+    <td><button class="btn s" onclick="ptsSend('${l.id}')">Enviar mercadoria</button> <button class="btn g s" onclick="ptsStock('${l.id}')">Ver estoque / receber</button> <button class="btn g s" onclick="ptsForm('${l.id}')">Editar</button></td></tr>`}).join('');
+  const mv=PTS.mv.slice(0,40).map(m=>`<tr><td>${new Date(m.at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${esc((PTS.loc.find(l=>l.id===m.location_id)||{}).name||'—')}</td><td>${PTK[m.kind]||esc(m.kind)}</td><td>${esc(ptsProd(m.product_id).name||'Produto')}</td><td>${+m.qty>0?'+':''}${m.qty}</td><td class="sm">${esc(m.by_name||'')}</td></tr>`).join('');
+  $('#app').innerHTML=`<div class="bar"><button class="btn" onclick="ptsForm()">Novo ponto</button><span class="sm" style="align-self:center">${PTS.loc.length} ponto(s). Mercadoria em consignação: sai do estoque da loja e fica no PDV do vendedor.</span></div>
+  ${rows?`<div style="overflow:auto"><table><tr><th>Ponto</th><th>Vendedor</th><th>Peças</th><th>Valor (preço à vista)</th><th></th></tr>${rows}</table></div>`:'<p>Nenhum ponto ainda. Toque em <b>Novo ponto</b> e escolha o vendedor.</p>'}
+  <div class="box" style="max-width:none;margin-top:14px"><h2>Últimas movimentações</h2>${mv?`<div style="overflow:auto"><table><tr><th>Quando</th><th>Ponto</th><th>Tipo</th><th>Produto</th><th>Qtd</th><th>Por</th></tr>${mv}</table></div>`:'<p class="sm">Nada movimentado ainda.</p>'}</div>`;
+}
+function ptsForm(id){
+  const l=PTS.loc.find(x=>x.id===id)||{active:true},used=new Set(PTS.loc.filter(x=>x.id!==id&&x.seller_id).map(x=>x.seller_id));
+  const opts=PROF.filter(u=>u.role==='vendedor'&&u.active!==false&&!used.has(u.id)).map(u=>`<option value="${u.id}" ${l.seller_id===u.id?'selected':''}>${esc(u.name)}</option>`).join('');
+  modal(`<h2>${id?'Editar ponto':'Novo ponto de venda'}</h2><div class="f"><div class="w"><label>Nome do ponto</label><input id="pt_nm" value="${esc(l.name||'')}" placeholder="Ex.: Ponto do João"></div>
+  <div class="w"><label>Vendedor responsável</label><select id="pt_sl"><option value="">— escolha —</option>${opts}</select></div>
+  <div><label>Situação</label><select id="pt_ac"><option value="true" ${l.active!==false?'selected':''}>Ativo</option><option value="false" ${l.active===false?'selected':''}>Inativo (o vendedor volta a ver a loja)</option></select></div></div>
+  <p class="sm">O vendedor precisa ter usuário (perfil Vendedor) em Usuários. No PDV dele aparecem o estoque do ponto e a quantidade da loja, sem custos.</p><button class="btn" onclick="ptsSave('${id||''}')">Salvar</button>`);
+}
+async function ptsSave(id){
+  const nm=$('#pt_nm').value.trim(),sl=$('#pt_sl').value;
+  if(nm.length<2)return alert('Dê um nome ao ponto.');if(!sl)return alert('Escolha o vendedor responsável.');
+  const{error}=await sb.from('stock_locations').upsert({id:id||uid(),name:nm,seller_id:sl,active:$('#pt_ac').value==='true',updated_at:now()});
+  if(error)return alert(/duplicate|unique/i.test(error.message)?'Esse vendedor já tem um ponto.':error.message);
+  closeM();vPts();
+}
+function ptsSend(id){
+  PTID=id;PTL=[];const l=PTS.loc.find(x=>x.id===id)||{};
+  modal(`<h2>Enviar mercadoria · ${esc(l.name||'')}</h2><p class="sm">A quantidade sai do estoque da loja e entra no estoque do ponto.</p>
+  <input id="pt_q" type="search" placeholder="Buscar produto pelo nome ou código" oninput="ptsSearch()" autocomplete="off"><div id="pt_res" style="max-height:170px;overflow:auto"></div>
+  <h3 style="margin:10px 0 4px">Itens da remessa</h3><div id="pt_ln"></div>
+  <div style="margin-top:8px"><input id="pt_nt" placeholder="Observação (opcional)"></div><p><button class="btn" onclick="ptsSendGo()">Confirmar remessa</button></p>`);
+  ptsLines();
+}
+function ptsSearch(){
+  const q=$('#pt_q').value.trim().toLowerCase(),r=$('#pt_res');if(!q){r.innerHTML='';return}
+  const l=db.products.filter(p=>p.active!==false&&!(p.kit&&p.kit.length)&&((p.name||'').toLowerCase().includes(q)||String(p.ean||'')===q||String(p.internal_code||'')===q)).slice(0,8);
+  r.innerHTML=l.length?l.map(p=>`<button type="button" class="btn g s" style="display:block;width:100%;text-align:left;margin:2px 0" onclick="ptsAdd('${p.id}')">${esc(p.name)} <span class="sm">· loja: ${+p.stock||0}</span></button>`).join(''):'<p class="sm">Nenhum produto (kits não são enviados: envie as peças).</p>';
+}
+function ptsAdd(pid){const x=PTL.find(i=>i.id===pid);if(x)x.qty++;else PTL.push({id:pid,qty:1});$('#pt_q').value='';$('#pt_res').innerHTML='';ptsLines()}
+function ptsLines(){
+  const e=$('#pt_ln');if(!e)return;
+  e.innerHTML=PTL.length?PTL.map((i,ix)=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><span style="flex:1">${esc(ptsProd(i.id).name)} <span class="sm">· loja: ${+ptsProd(i.id).stock||0}</span></span><input type="number" min="1" style="width:80px" value="${i.qty}" onchange="PTL[${ix}].qty=Math.max(1,Math.round(+this.value)||1)"><button type="button" class="btn g s" onclick="PTL.splice(${ix},1);ptsLines()" aria-label="Tirar">×</button></div>`).join(''):'<p class="sm">Nenhum item. Busque um produto acima.</p>';
+}
+async function ptsSendGo(){
+  if(!PTL.length)return alert('Escolha ao menos um produto.');
+  const{error}=await sb.rpc('ponto_remessa',{p:{location_id:PTID,items:PTL,note:($('#pt_nt')||{}).value||''}});
+  if(error)return alert(error.message);
+  closeM();await sync();vPts();
+}
+function ptsStock(id){
+  PTID=id;const l=PTS.loc.find(x=>x.id===id)||{},q=ptsQty(id).sort((a,b)=>String(ptsProd(a.product_id).name).localeCompare(ptsProd(b.product_id).name,'pt-BR'));
+  modal(`<h2>Estoque do ponto · ${esc(l.name||'')}</h2><p class="sm">Para receber peças de volta na loja, digite a quantidade na coluna "Receber" e confirme.</p>
+  ${q.length?`<div style="overflow:auto"><table><tr><th>Produto</th><th>No ponto</th><th>Receber</th></tr>${q.map(x=>`<tr><td>${esc(ptsProd(x.product_id).name||'Produto')}</td><td>${+x.qty<0?'<span class="bad">'+x.qty+'</span>':x.qty}</td><td><input type="number" min="0" max="${Math.max(0,+x.qty)}" value="0" class="ptr" data-id="${x.product_id}" style="width:80px"></td></tr>`).join('')}</table></div><p><button class="btn" onclick="ptsRetGo()">Receber na loja</button></p>`:'<p>Este ponto está sem mercadoria.</p>'}`);
+}
+async function ptsRetGo(){
+  const items=[...document.querySelectorAll('.ptr')].map(e=>({id:e.dataset.id,qty:Math.round(+e.value)||0})).filter(i=>i.qty>0);
+  if(!items.length)return alert('Digite a quantidade a receber.');
+  const{error}=await sb.rpc('ponto_retorno',{p:{location_id:PTID,items}});
+  if(error)return alert(error.message);
+  closeM();await sync();vPts();
 }
 
 /* ========= Tela de cobrança (parcelas a receber) ========= */

@@ -1,5 +1,5 @@
 {
- "version": "1.33.13",
- "date": "2026-11-12",
- "notes": "Licença: a faixa de aviso não tampa mais o sistema (o app desce abaixo dela em todos os layouts)."
+ "version": "1.33.14",
+ "date": "2026-11-16",
+ "notes": "Vendedor com ponto vê o estoque do ponto e a quantidade da loja. Requer o supabase-v52.sql."
 }

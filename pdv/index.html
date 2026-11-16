@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.13'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.14'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -191,8 +191,11 @@ const fmtD=iso=>String(iso||'').slice(0,10).split('-').reverse().join('/');
 const fmtDH=iso=>{if(!iso)return'';if(String(iso).length<=10)return fmtD(iso);const d=new Date(iso);return isNaN(d)?fmtD(iso):d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
 const ld=iso=>{const d=new Date(iso);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let ME=LS.get('pdv_me',null),P=LS.get('pdv_prod',[]),Q=LS.get('pdv_q',[]),FAIL=LS.get('pdv_fail',[]),CO=LS.get('pdv_co',{}),MY=[],COM=0,view='login',cart=[],selCli=null,loginMsg='';
+let PT=LS.get('pdv_pt',null),ME=LS.get('pdv_me',null),P=LS.get('pdv_prod',[]),Q=LS.get('pdv_q',[]),FAIL=LS.get('pdv_fail',[]),CO=LS.get('pdv_co',{}),MY=[],COM=0,view='login',cart=[],selCli=null,loginMsg='';
 const saveQ=()=>{LS.set('pdv_q',Q);LS.set('pdv_fail',FAIL)};
+/* ponto de venda (consignação): stock = estoque do ponto, sl = quantidade na loja (sem custo). Vendedor sem ponto: sl vem vazio */
+const pAv=p=>(+p.stock||0)+(p.sl!=null?Math.max(0,+p.sl||0):0);
+function pDec(p,q){if(p.sl==null){p.stock=(+p.stock||0)-q;return}const a=Math.max(0,Math.min(+p.stock||0,q));p.stock=(+p.stock||0)-a;p.sl=(+p.sl||0)-(q-a)}
 const mine=()=>Q.filter(s=>s._by===(ME&&ME.id)),setSync=t=>{const e=$('#sync');if(e)e.textContent=t};
 
 /* ----- entrar / sair ----- */
@@ -250,7 +253,8 @@ async function sync(){
       Q.splice(i,1);saveQ();
     }
     const r1=await sb.rpc('pdv_catalogo');if(r1.error)throw r1.error;
-    P=r1.data||[];mine().forEach(s=>(s.items||[]).forEach(it=>{const p=P.find(x=>x.id===it.id);if(p)p.stock=(+p.stock||0)-it.qty}));LS.set('pdv_prod',P);
+    P=(r1.data||[]).map(x=>{if(x.stock_loja!=null){x.sl=x.stock_loja}delete x.stock_loja;return x});mine().forEach(s=>(s.items||[]).forEach(it=>{const p=P.find(x=>x.id===it.id);if(p)pDec(p,it.qty)}));LS.set('pdv_prod',P);
+    try{const rp=await sb.rpc('pdv_ponto');if(!rp.error){PT=rp.data||null;LS.set('pdv_pt',PT)}}catch(e){}
     for(const f of FAIL){if(f.rep||f.s._by!==ME.id)continue;const{error:er}=await sb.rpc('pdv_reportar',{p_kind:'venda_recusada',p_ref:String(f.s.id),p_detail:f.msg,p_payload:{pay_type:f.s.pay_type,items:f.s.items,created_at:f.s.created_at,customer:f.s.customer&&f.s.customer.name}});if(!er){f.rep=true;saveQ()}}
     await loadCx();
     const r2=await sb.rpc('pdv_eu');if(r2.error&&/Sem permiss/i.test(r2.error.message)){loginMsg='Seu acesso foi desativado. Fale com o administrador.';syncing=false;return logout(true)}
@@ -1440,7 +1444,7 @@ function vPdv(){
   $('#app').innerHTML=`<div class="pdv">
   <section class="pdvl box" aria-label="Produtos"><h2>Nova venda</h2>
    <p class="sm pkeys">Atalhos: <b>F2</b> buscar · <b>F4</b> finalizar · <b>F6</b> quantidade · <b>F8</b> limpar carrinho · <b>3*código</b> para 3 unidades</p>
-   <div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
+   ${PT?`<div class="sm" style="margin:0 0 6px;padding:6px 10px;border:1px solid var(--line);border-radius:10px"><b>${esc(PT.name)}</b> · no ponto: <b>${+PT.itens||0}</b> peça(s)</div>`:''}<div class="psr"><div class="pq"><label for="p_q">Buscar produto (nome, categoria ou código de barras)</label><input id="p_q" type="search" autocomplete="off" placeholder="Digite para buscar…" oninput="pdvSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();pdvEnter()}"></div>
     <div class="pqq"><label for="s_q">Qtd</label><input id="s_q" type="number" min="1" value="1"></div>
     <button type="button" class="btn g" onclick="scanOpen(pdvScanned,true)">Escanear</button></div>
    <p id="p_msg" class="sm pmsg" role="status" aria-live="polite"></p><div id="p_res" class="pgrid"></div></section>
@@ -1473,15 +1477,15 @@ function cliPick(i){const c=(window.CLIS||[])[i];if(!c)return;selCli=c.id;$('#c_
 function pdvList(){
   const k=norm($('#p_q').value),d=digits($('#p_q').value);
   return P.filter(p=>!k.trim()||norm([p.name,p.category,p.supplier_code,p.internal_code].join(' ')).includes(k)||(d.length>=6&&p.ean===d))
-    .sort((a,b)=>(b.stock>0)-(a.stock>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
+    .sort((a,b)=>(pAv(b)>0)-(pAv(a)>0)||a.name.localeCompare(b.name,'pt-BR')).slice(0,12);
 }
 function pdvSearch(){
   if(!$('#p_res'))return;
   const t=($('#s_t')||{}).value||'avista',qv=$('#p_q').value.trim();
   if(!qv&&pdvNarrow()){$('#p_res').innerHTML='<p class="sm pgh">Digite o nome, escaneie ou use o leitor para achar um produto.</p>';return}
   const l=pdvList();
-  $('#p_res').innerHTML=l.length?l.map(p=>{const st=+p.stock||0,pr=promoPct(p);return`<button type="button" class="pcard ${st>0?'':'off'}" onclick="pdvPick('${p.id}')">
-    <span class="pimg">${pPhoto(p)?`<img src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=pno>sem foto</span>'">`:'<span class="pno">sem foto</span>'}${pr?`<span class="pdis">-${pr}%</span>`:''}<span class="pst ${st>0?(st<=stockMin()?'low':''):'bad'}">${st>0?'Estoque '+st:'Sem estoque'}</span></span>
+  $('#p_res').innerHTML=l.length?l.map(p=>{const st=pAv(p),pr=promoPct(p);return`<button type="button" class="pcard ${st>0?'':'off'}" onclick="pdvPick('${p.id}')">
+    <span class="pimg">${pPhoto(p)?`<img src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=pno>sem foto</span>'">`:'<span class="pno">sem foto</span>'}${pr?`<span class="pdis">-${pr}%</span>`:''}<span class="pst ${st>0?(st<=stockMin()?'low':''):'bad'}">${p.sl!=null?(st>0?'Ponto '+(+p.stock||0)+' · Loja '+Math.max(0,+p.sl||0):'Sem estoque'):(st>0?'Estoque '+st:'Sem estoque')}</span></span>
     <span class="pt"><b class="pn2">${esc(p.name)}</b>${p.category?`<span class="sm">${esc(p.category)}</span>`:''}</span>
     <span class="pp"><b>${R(unit(p,t))}</b>${pr?`<span class="sm"><s>${R(unit0(p,t))}</s></span>`:''}</span></button>`}).join('')
     :(P.length?'<p class="sm pgh">Nenhum produto encontrado.</p>':'<p class="sm pgh">Nenhum produto carregado ainda. Conecte-se à internet para baixar a lista.</p>');
@@ -1551,7 +1555,7 @@ function pdvCode(raw){
 }
 function pdvAdd(p,q){
   const sq=$('#s_q');if(sq)sq.value=q;addProd(p.id);
-  const st=+p.stock||0,i=cart.find(x=>x.id===p.id),over=i&&i.qty>st;
+  const st=pAv(p),i=cart.find(x=>x.id===p.id),over=i&&i.qty>st;
   const t='Adicionado: '+(q>1?q+' × ':'')+p.name+(over?' · atenção: estoque '+st:'');pdvMsg(t,!over);return t;
 }
 function pdvScanned(code){return pdvCode(code)||('Código '+digits(code)+' não cadastrado.')}
@@ -1609,7 +1613,7 @@ function cartView(){
   const hb=$('#hbtn');if(hb)hb.textContent='Em espera ('+holdGet().length+')';
   $('#cartv').innerHTML=(cart.length?`<div class="citems">${cc.L.map((l,ix)=>{const p=l.p,i=l.i;if(!p.id)return'';const pr=promoPct(p);return`<div class="citem">
     ${pPhoto(p)?`<img class="cthumb" src="${esc(pPhoto(p))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=cthumb>·</span>'">`:'<span class="cthumb">·</span>'}
-    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(l.un)} un.${l.un<l.u-0.004?` <s>${R(l.u)}</s>`:pr?` <s>${R(unit0(p,t))}</s>`:''}${(+p.stock||0)<i.qty?' · <span class="bad">estoque '+(+p.stock||0)+'</span>':''} · <button type="button" class="lk" onclick="itemDisc(${ix})">${i.disc?'desc. −'+R(i.disc):'desconto'}</button></span></div>
+    <div class="cn"><b>${esc(p.name)}</b><span class="sm">${R(l.un)} un.${l.un<l.u-0.004?` <s>${R(l.u)}</s>`:pr?` <s>${R(unit0(p,t))}</s>`:''}${pAv(p)<i.qty?' · <span class="bad">estoque '+pAv(p)+'</span>':(p.sl!=null&&i.qty>(+p.stock||0)?' · <span class="sm">'+(i.qty-Math.max(0,+p.stock||0))+' un. saem da loja</span>':'')} · <button type="button" class="lk" onclick="itemDisc(${ix})">${i.disc?'desc. −'+R(i.disc):'desconto'}</button></span></div>
     <div class="stp"><button type="button" aria-label="Diminuir" onclick="cartQty(${ix},-1)">−</button><span>${i.qty}</span><button type="button" aria-label="Aumentar" onclick="cartQty(${ix},1)">+</button></div>
     <b class="lt">${R(l.line)}</b><button type="button" class="rx" aria-label="Remover item" onclick="cart.splice(${ix},1);cartView()">×</button></div>`}).join('')}</div>`
    :'<p class="cempty">Carrinho vazio.<br><span class="sm">Busque, toque num produto ou escaneie o código de barras.</span></p>')
@@ -1692,7 +1696,7 @@ async function finish(){
     if(!s_d.value)return alert('Informe o 1º vencimento.');
   }
   if(cfg.exige_caixa&&ME.role!=='admin'&&!(CX&&CX.aberto))return alert('Abra o caixa (aba Caixa) antes de vender.');
-  const low=cart.filter(i=>(+(P.find(p=>p.id===i.id)||{}).stock||0)<i.qty).map(i=>P.find(p=>p.id===i.id).name);
+  const low=cart.filter(i=>pAv(P.find(p=>p.id===i.id)||{})<i.qty).map(i=>P.find(p=>p.id===i.id).name);
   if(low.length&&!confirm('Estoque insuficiente para: '+low.join(', ')+'.\nRegistrar a venda mesmo assim?'))return;
   finishing=true;
   try{
@@ -1712,7 +1716,7 @@ async function finish(){
     const rec={...sale,seller:ME.name,total:tot,disc:cc.disc,lines:cc.L.map(l=>({name:l.p.name,qty:l.q,price:l.un}))};
     Q.push(sale);saveQ();
     if(mpId)mpCall({action:'aplicado',id:mpId,note:'venda '+sale.id}).catch(()=>{});
-    cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)p.stock=(+p.stock||0)-i.qty});LS.set('pdv_prod',P);
+    cart.forEach(i=>{const p=P.find(x=>x.id===i.id);if(p)pDec(p,i.qty)});LS.set('pdv_prod',P);
     cart=[];saleDisc={mode:'val',val:0};window.lastRec=rec;
     modal(`<h2>Venda registrada</h2><p><b>${R(tot)}</b> · ${esc(t==='crediario'?'Carnê '+n+'x':sale.method)}${cc.disc>0.004?` · desconto ${R(cc.disc)}`:''}</p><p class="sm">Se estiver sem internet, a venda fica guardada e é enviada sozinha quando a conexão voltar.</p>
     <div class="f"><div class="w"><label>WhatsApp do cliente (para enviar o recibo)</label><input id="wa_n" inputmode="tel" placeholder="(93) 99999-0000" value="${esc((rec.customer&&rec.customer.phone)||'')}"></div></div>
