@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.10'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.11'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -586,9 +586,69 @@ async function artVidUp(inp){
   if(st)st.textContent='Vídeo carregado ('+(v.duration?Math.round(v.duration)+' s':'')+'). A prévia mostra o primeiro quadro. Toque em "Gerar vídeo".';
   artRender();
 }
+function artMp4(chunks,desc,w,h,fps){
+  const enc=s=>[...s].map(c=>c.charCodeAt(0)),u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255],u16=n=>[(n>>8)&255,n&255],
+  cat=a=>{const o=new Uint8Array(a.reduce((s,x)=>s+x.length,0));let p=0;a.forEach(x=>{o.set(x,p);p+=x.length});return o},
+  B=(t,...p)=>{const b=cat(p.map(x=>x instanceof Uint8Array?x:Uint8Array.from(x)));return cat([Uint8Array.from([...u32(b.length+8),...enc(t)]),b])},
+  N=chunks.length,TS=fps*1000,dur=N*1000,mdur=Math.round(N*1000/fps),mat=[0x10000,0,0,0,0x10000,0,0,0,0x40000000].flatMap(u32);
+  const mvhd=B('mvhd',[0,0,0,0],u32(0),u32(0),u32(1000),u32(mdur),u32(0x10000),u16(0x100),u16(0),u32(0),u32(0),mat,new Array(24).fill(0),u32(2));
+  const tkhd=B('tkhd',[0,0,0,3],u32(0),u32(0),u32(1),u32(0),u32(mdur),u32(0),u32(0),u16(0),u16(0),u16(0),u16(0),mat,u32(w*65536),u32(h*65536));
+  const mdhd=B('mdhd',[0,0,0,0],u32(0),u32(0),u32(TS),u32(dur),u16(0x55c4),u16(0));
+  const hdlr=B('hdlr',[0,0,0,0],u32(0),enc('vide'),u32(0),u32(0),u32(0),[...enc('VideoHandler'),0]);
+  const vmhd=B('vmhd',[0,0,0,1],u16(0),u16(0),u16(0),u16(0));
+  const dinf=B('dinf',B('dref',[0,0,0,0],u32(1),B('url ',[0,0,0,1])));
+  const avc1=B('avc1',new Array(6).fill(0),u16(1),u16(0),u16(0),u32(0),u32(0),u32(0),u16(w),u16(h),u32(0x480000),u32(0x480000),u32(0),u16(1),new Array(32).fill(0),u16(0x18),u16(0xffff),B('avcC',new Uint8Array(desc)));
+  const stsd=B('stsd',[0,0,0,0],u32(1),avc1),stts=B('stts',[0,0,0,0],u32(1),u32(N),u32(1000)),keys=[];
+  chunks.forEach((c,i)=>{if(c.key)keys.push(i+1)});
+  const stss=B('stss',[0,0,0,0],u32(keys.length),keys.flatMap(u32)),stsc=B('stsc',[0,0,0,0],u32(1),u32(1),u32(N),u32(1)),stsz=B('stsz',[0,0,0,0],u32(0),u32(N),chunks.flatMap(c=>u32(c.d.length)));
+  const mk=off=>B('moov',mvhd,B('trak',tkhd,B('mdia',mdhd,hdlr,B('minf',vmhd,dinf,B('stbl',stsd,stts,stss,stsc,stsz,B('stco',[0,0,0,0],u32(1),u32(off)))))));
+  const ftyp=B('ftyp',enc('isom'),u32(512),enc('isom'),enc('iso2'),enc('avc1'),enc('mp41')),m0=mk(0),moov=mk(ftyp.length+m0.length+8),total=chunks.reduce((s,c)=>s+c.d.length,0);
+  return new Blob([ftyp,moov,Uint8Array.from([...u32(total+8),...enc('mdat')]),...chunks.map(c=>c.d)],{type:'video/mp4'});
+}
+async function artVidMakeWC(){ // gera quadro a quadro (sem depender da velocidade do aparelho): sempre 30 quadros por segundo
+  const st=$('#a_vst'),btn=$('#a_vgo'),out=$('#a_vout');
+  const o=Object.assign(artOpts(),{ovl:true,land:null}),H0=o.fmt==='feed'?1350:1920,cw=+artVal('vq')||720,ch=Math.round(H0*cw/1080/2)*2,sc=cw/1080,dur=+artVal('vdur')||8,FPS=30,N=Math.round(dur*FPS);
+  let cfg=null;
+  for(const codec of ['avc1.640028','avc1.4d0028','avc1.42001f']){const c={codec,width:cw,height:ch,bitrate:6000000,framerate:FPS,avc:{format:'avc'}};try{const r=await VideoEncoder.isConfigSupported(c);if(r&&r.supported){cfg=c;break}}catch(e){}}
+  if(!cfg)return false;
+  btn.disabled=true;out.style.display='none';artVidFile=null;
+  try{
+    const v=artVid.el;v.pause();
+    const svgUrl=URL.createObjectURL(new Blob([artSvg(o)],{type:'image/svg+xml;charset=utf-8'}));
+    const ovl=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('svg'));i.src=svgUrl});
+    const ob=document.createElement('canvas');ob.width=cw;ob.height=ch;ob.getContext('2d').drawImage(ovl,0,0,cw,ch);URL.revokeObjectURL(svgUrl);
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const x=cv.getContext('2d',{alpha:false});
+    const draw=t=>{
+      x.fillStyle='#000';x.fillRect(0,0,cw,ch);
+      const vw=v.videoWidth,vh=v.videoHeight,s=Math.max(cw/vw,ch/vh)*Math.max(.3,Math.min(1.8,o.pz||1));
+      x.save();x.translate(cw/2+(o.px||0)*sc,ch/2+(o.py||0)*sc);x.rotate((+o.pr||0)*Math.PI/180);x.drawImage(v,-vw*s/2,-vh*s/2,vw*s,vh*s);x.restore();
+      const p=Math.min(1,t/1.1),e=1-Math.pow(1-p,3),z=1+.06*(1-e);
+      if(p>=1)x.drawImage(ob,0,0);else{x.save();x.globalAlpha=e;x.translate(cw/2,ch/2);x.scale(z,z);x.drawImage(ob,-cw/2,-ch/2);x.restore()}
+    };
+    const seek=(t)=>new Promise(r=>{if(Math.abs(v.currentTime-t)<.002){r();return}let d=0;const f=()=>{if(d)return;d=1;v.removeEventListener('seeked',f);r()};v.addEventListener('seeked',f);v.currentTime=t;setTimeout(f,4000)});
+    const chunks=[];let desc=null,err=null;
+    const enc=new VideoEncoder({output:(c,m)=>{if(m&&m.decoderConfig&&m.decoderConfig.description)desc=m.decoderConfig.description;const d=new Uint8Array(c.byteLength);c.copyTo(d);chunks.push({d,key:c.type==='key'})},error:e=>{err=e}});
+    enc.configure(cfg);
+    const vd=v.duration||dur;
+    for(let i=0;i<N;i++){
+      if(err)throw err;
+      const t=i/FPS;await seek(Math.min(t%vd,Math.max(0,vd-.05)));draw(t);
+      const fr=new VideoFrame(cv,{timestamp:Math.round(i*1e6/FPS),duration:Math.round(1e6/FPS)});enc.encode(fr,{keyFrame:i%FPS===0});fr.close();
+      while(enc.encodeQueueSize>8)await new Promise(r=>setTimeout(r,5));
+      if(i%4===0){st.textContent='Gerando o vídeo... '+Math.round(i/N*100)+'% (não feche esta tela)';await new Promise(r=>setTimeout(r,0))}
+    }
+    await enc.flush();enc.close();if(err)throw err;if(!desc||!chunks.length)throw new Error('enc');
+    const blob=artMp4(chunks,desc,cw,ch,FPS),base=artName().replace(/\.jpg$/,'');
+    artVidFile=new File([blob],base+'.mp4',{type:'video/mp4'});
+    st.textContent='Vídeo pronto (MP4, 30 quadros por segundo, '+(artVidFile.size/1048576).toFixed(1)+' MB).';out.style.display='';
+    return true;
+  }catch(e){return false}
+  finally{btn.disabled=false}
+}
 async function artVidMake(){
   const st=$('#a_vst'),btn=$('#a_vgo'),out=$('#a_vout');
   if(!artVid)return alert('Escolha primeiro um vídeo de fundo.');
+  if(window.VideoEncoder&&window.VideoFrame&&await artVidMakeWC())return;
   if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return alert('Este navegador não consegue gerar vídeo. Use o Chrome ou o Edge atualizado.');
   const MT=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'],mime=MT.find(m=>MediaRecorder.isTypeSupported(m));
   if(!mime)return alert('Este navegador não consegue gerar vídeo.');
