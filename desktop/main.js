@@ -189,6 +189,22 @@ ipcMain.handle('mm-print', (e, html) => printHtml(String(html || ''), true));
 app.on('select-client-certificate', (event, wc, url, list, callback) => { event.preventDefault(); callback(); });
 /* IBPT (De Olho no Imposto): consulta feita pelo computador da loja. O servidor do IBPT recusa as conexões dos servidores em nuvem
    (Supabase e Render), mas atende o computador comum; o Sistema usa este resultado ao emitir a nota. */
+/* A consulta é feita como uma página (janela escondida), igual ao navegador: assim o servidor do IBPT, que pede certificado de cliente
+   na conexão segura, é atendido sem certificado. A chamada direta do Electron (net.fetch) para com ERR_SSL_CLIENT_AUTH_CERT_NEEDED. */
+function ibptJanela(url) {
+  return new Promise(resolve => {
+    const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, partition: 'mm-ibpt' } });
+    let fim = false;
+    const fin = v => { if (fim) return; fim = true; clearTimeout(t); try { w.destroy(); } catch (e) {} resolve(v); };
+    const t = setTimeout(() => fin({ erro: 'tempo esgotado (15 s)' }), 15000);
+    w.webContents.on('did-fail-load', (e, code, desc, u, isMain) => { if (isMain && code !== -3) fin({ erro: desc }); });
+    w.webContents.on('did-finish-load', async () => {
+      try { fin({ txt: await w.webContents.executeJavaScript('document.body ? document.body.innerText : new XMLSerializer().serializeToString(document)') }); }
+      catch (e) { fin({ erro: e.message }); }
+    });
+    w.loadURL(url, { extraHeaders: 'Accept: application/json' }).catch(() => {});
+  });
+}
 ipcMain.handle('mm-ibpt', async (e, a) => {
   try {
     const ncm = String(a && a.ncm || '').replace(/\D/g, ''), cnpj = String(a && a.cnpj || '').replace(/\D/g, ''), token = String(a && a.token || '').trim();
@@ -197,11 +213,12 @@ ipcMain.handle('mm-ibpt', async (e, a) => {
     if (!token) return { ok: false, erro: 'Token do IBPT não cadastrado (Empresa).' };
     if (cnpj.length !== 14) return { ok: false, erro: 'CNPJ da empresa não cadastrado (Empresa).' };
     const q = new URLSearchParams({ token, cnpj, codigo: ncm, uf, ex: '0', descricao: String(a.desc || 'Produto').slice(0, 120), unidadeMedida: String(a.un || 'UN'), valor: Math.max(Number(a.valor) || 100, 0.01).toFixed(2), gtin: 'SEM GTIN', codigoInterno: ncm });
-    const r = await net.fetch('https://apidoni.ibpt.org.br/api/v1/produtos?' + q.toString(), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12000) });
-    const txt = await r.text();
+    const got = await ibptJanela('https://apidoni.ibpt.org.br/api/v1/produtos?' + q.toString());
+    if (got.erro) return { ok: false, erro: 'Não consegui falar com o IBPT: ' + String(got.erro).replace(/token=[^&\s)]+/gi, 'token=***') };
+    const txt = got.txt;
     let k = null;
     try { let j = JSON.parse(txt); if (Array.isArray(j)) j = j[0]; if (j && typeof j === 'object') k = Object.fromEntries(Object.entries(j).map(([x, y]) => [x.toLowerCase(), y])); } catch (er) { /* talvez XML */ }
-    if (!k) { const g = n => { const m = txt.match(new RegExp('<' + n + '>([^<]*)</' + n + '>', 'i')); return m ? m[1] : undefined; }; if (g('Nacional') !== undefined) k = { nacional: g('Nacional'), estadual: g('Estadual'), importado: g('Importado'), chave: g('Chave'), versao: g('Versao'), fonte: g('Fonte'), vigenciafim: g('VigenciaFim') }; else { const m = txt.match(/<Message>([^<]*)<\/Message>/i); return { ok: false, erro: 'IBPT: ' + (m ? m[1] : txt.replace(token, '***').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)) }; } }
+    if (!k) { const g = n => { const m = txt.match(new RegExp('<' + n + '>\\s*([^<]*?)\\s*</' + n + '>', 'i')); return m ? m[1] : undefined; }; if (g('Nacional') !== undefined) k = { nacional: g('Nacional'), estadual: g('Estadual'), importado: g('Importado'), chave: g('Chave'), versao: g('Versao'), fonte: g('Fonte'), vigenciafim: g('VigenciaFim') }; else { const m = txt.match(/<Message>\s*([^<]*?)\s*<\/Message>/i); return { ok: false, erro: 'IBPT: ' + (m ? m[1] : txt.replace(token, '***').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)) }; } }
     if (k.nacional === undefined && k.estadual === undefined) return { ok: false, erro: 'IBPT: ' + String(k.message || k.erro || 'resposta sem percentuais').replace(token, '***').slice(0, 200) };
     return { ok: true, nacional: Number(k.nacional) || 0, importado: Number(k.importado) || 0, estadual: Number(k.estadual) || 0, chave: String(k.chave || ''), versao: String(k.versao || ''), fonte: String(k.fonte || 'IBPT'), vigencia_fim: String(k.vigenciafim || '') };
   } catch (er) { return { ok: false, erro: 'Não consegui falar com o IBPT: ' + String(er && er.message || er).replace(/token=[^&\s)]+/gi, 'token=***').slice(0, 200) }; }

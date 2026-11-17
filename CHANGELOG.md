@@ -1,5 +1,8 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.6 — 17/11/2026
+- IBPT: a consulta passou a ser feita por uma janela escondida (como o navegador faz), pois a chamada direta do Electron continuava dando `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. A resposta é lida em JSON ou XML.
+
 ## Instalador Windows 1.3.5 — 17/11/2026
 - IBPT: o servidor do IBPT pede um certificado de cliente na conexão segura; o app dava `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. Agora segue sem certificado (e nunca envia o certificado digital da empresa a ele).
 
