@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.20'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==='dark'||_t==='light'||_t==='graphite')document.documentElement.setAttribute('data-theme',_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute('data-acc',_a)}catch(e){}</script><script>window.APP_VERSION='1.33.21'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix PDV"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix PDV"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · PDV</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 .pmsg{min-height:1.3em;margin:6px 0}.pmsg.ok{color:#0a7a3d}.pmsg.bad{color:#b42318;font-weight:600}.pkeys{margin:-4px 0 10px}.lk{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font:inherit;text-decoration:underline}
@@ -1565,9 +1565,16 @@ function vPdv(){
 let cliT=null;
 function cliSug(){
   clearTimeout(cliT);const v=$('#c_n').value.trim(),box=$('#cs');if(!box)return;
-  if(!ME.can_carne||v.length<3||navigator.onLine===false){box.innerHTML='';return}
-  cliT=setTimeout(async()=>{const{data,error}=await sb.rpc('pdv_find_customer',{q:v});if(error||!$('#cs'))return;
-    window.CLIS=data||[];$('#cs').innerHTML=window.CLIS.map((c,i)=>`<button type="button" class="btn g s" onclick="cliPick(${i})">${esc(c.name)}${c.cpf?' · '+esc(c.cpf):''}</button>`).join(' ')},300);
+  if(v.length<3){box.innerHTML='';return}
+  if(!(ME&&(ME.can_carne||ME.role==='admin'))){box.innerHTML='<span class="sm">Busca de cliente liberada só para quem vende no carnê. Digite os dados.</span>';return}
+  box.innerHTML='<span class="sm">Buscando…</span>';
+  cliT=setTimeout(async()=>{
+    let r;try{r=await sb.rpc('pdv_find_customer',{q:v})}catch(e){r={error:e}}
+    if(!$('#cs')||$('#c_n').value.trim()!==v)return;
+    const{data,error}=r||{};
+    if(error){const m=String(error.message||error);$('#cs').innerHTML='<span class="sm">'+(/permiss|liberada/i.test(m)?esc(m):/could not find|schema cache|does not exist/i.test(m)?'Busca de cliente não instalada no servidor (rodar supabase-v26.sql).':'Sem conexão com o servidor agora. Digite os dados do cliente.')+'</span>';return}
+    window.CLIS=data||[];
+    $('#cs').innerHTML=window.CLIS.length?window.CLIS.map((c,i)=>`<button type="button" class="btn g s" onclick="cliPick(${i})">${esc(c.name)}${c.cpf?' · '+esc(c.cpf):''}</button>`).join(' '):'<span class="sm">Nenhum cliente encontrado. Digite os dados para cadastrar.</span>'},300);
 }
 function cliPick(i){const c=(window.CLIS||[])[i];if(!c)return;selCli=c.id;$('#c_n').value=c.name;$('#c_c').value=c.cpf||'';$('#c_p').value=c.phone||'';$('#cs').innerHTML=''}
 
