@@ -1,5 +1,8 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.5 — 17/11/2026
+- IBPT: o servidor do IBPT pede um certificado de cliente na conexão segura; o app dava `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. Agora segue sem certificado (e nunca envia o certificado digital da empresa a ele).
+
 ## Instalador Windows 1.3.4 + Sistema 1.95.46 + função fiscal — 17/11/2026
 - **IBPT pelo computador da loja**: o servidor do IBPT recusa as conexões vindas dos servidores em nuvem (Supabase e Render), mas atende o computador comum (testado no navegador: NCM 84796000, PA, tabela 26.2.C, federal 13,45% e estadual 19,00%). No app do Windows, o Sistema agora consulta o IBPT com o token da empresa antes de emitir a nota e envia os percentuais para a função fiscal. Modo "só API": todos os NCMs; modo "automático": só os que a tabela não tem. O botão "Testar consulta" também usa o computador. No navegador, nada muda.
 - Função fiscal: aceita os percentuais enviados pelo app (só do administrador, valores de 0 a 100).

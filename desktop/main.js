@@ -184,6 +184,9 @@ function printHtml(html, silent = true) {
 }
 
 ipcMain.handle('mm-print', (e, html) => printHtml(String(html || ''), true));
+/* O servidor do IBPT pede um certificado de cliente na conexão segura (e dispensa a resposta se não vier). Nunca enviamos o certificado
+   digital da empresa para ele: seguimos sem certificado. Sem isto o Chromium para com ERR_SSL_CLIENT_AUTH_CERT_NEEDED. */
+app.on('select-client-certificate', (event, wc, url, list, callback) => { event.preventDefault(); callback(); });
 /* IBPT (De Olho no Imposto): consulta feita pelo computador da loja. O servidor do IBPT recusa as conexões dos servidores em nuvem
    (Supabase e Render), mas atende o computador comum; o Sistema usa este resultado ao emitir a nota. */
 ipcMain.handle('mm-ibpt', async (e, a) => {
