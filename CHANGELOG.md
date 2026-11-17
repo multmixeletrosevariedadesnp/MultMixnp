@@ -1,5 +1,103 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.1 — 16/11/2026
+- Corrigido: ao abrir o Sistema/PDV/Catálogo pelo instalador, o Windows mostrava "Obter um aplicativo para abrir este 'mm' link" e a janela ficava azul vazia. O endereço interno `mm://` agora é atendido na sessão própria de cada programa. Gere o instalador de novo (GitHub Actions) para valer.
+
+## Sistema 1.95.42 — 16/11/2026
+- Ao abrir o app já logado (ou depois de "Forçar atualização"), o administrador cai direto no **Início**. Antes só o login novo ia ao Início; a reabertura ainda abria em Produtos.
+
+## Sistema 1.95.41 — 16/11/2026
+- **Início no celular: grade de atalhos grandes** (estilo aplicativo): foto da empresa no alto, relógio e uma grade com Nova venda, Clientes, Produtos, Pedidos, Carnês, Cobrança, Caixa, Contas a pagar, Fiscal, Balcão, Relatórios, Buscar e Ajuda, com contagem de pendências. É o padrão no celular; dá para desligar em Aparência.
+- Corrigido: ao mexer em Aparência o sistema guardava todas as posições (inclusive as automáticas), e o celular ficava preso na disposição errada do relógio e dos atalhos. Agora só guarda o que a pessoa escolheu, e limpa a escolha antiga errada no celular.
+
+## Sistema 1.95.40 — 16/11/2026
+- Celular deitado no Início: o cabeçalho some só nessa tela e o espaço extra vai para a foto (maior). Gire para em pé para ver versão e "Forçar atualização".
+
+## Sistema 1.95.39 — 16/11/2026
+- Ao girar o celular (deitado ↔ em pé) o Início agora se reorganiza sempre; antes podia ficar com a disposição do modo anterior (relógio sobre a logo, atalhos espremidos).
+
+## Sistema 1.95.38 — 16/11/2026
+- **Celular deitado:** o Início usa a disposição do computador (relógio embaixo à esquerda, atalhos embaixo), cabe na tela sem esconder os atalhos atrás do menu, e o menu inferior ocupa a largura toda. Gira o aparelho e a tela se ajusta.
+
+## Sistema 1.95.37 — 16/11/2026
+- Depois do login, o administrador agora cai direto no **Início** (Área de trabalho), no celular e no computador. Antes abria em Produtos.
+
+## Sistema 1.95.31 a 1.95.36 — 16/11/2026
+- **Celular — verificação completa:** 19 telas e 25 janelas testadas em iPhone SE, Android 360 e Pixel 7, sem texto cortado nem tela passando da largura.
+- **Tabelas viram cartões no celular** (Clientes, Produtos, Carnês, Cobrança, etc.): cada linha mostra os campos com o nome acima, em vez de colunas apertadas.
+- **Carrinho da Venda:** nome do produto completo, quantidade e valor em linha própria, botão Finalizar abaixo do cabeçalho e barra do carrinho sem quebrar.
+- **Janelas** passam por cima do menu inferior (os botões de baixo não ficam escondidos).
+- Caixinhas de marcar com tamanho normal; links do WhatsApp com área de toque maior.
+- Botão Voltar do aparelho não prende em janelas quando se usa o menu "Mais".
+
+## Sistema 1.95.30 — 16/11/2026
+- **Celular, tela Venda:** a barra "Ver carrinho" cobria o menu inferior e não dava para sair da Venda sem fechar o sistema. Agora ela fica acima do menu.
+- **Botão Voltar do aparelho (Android/iPhone):** fecha a janela aberta ou volta para a tela anterior, em vez de sair do sistema.
+
+## Sistema 1.95.29 — 16/11/2026
+- Fiscal no celular: o quadro "Emissão (API fiscal e SEFAZ)" (certificado, tabela IBPT) agora quebra em linhas e não corta o texto na direita. Vale para todas as linhas de resumo.
+
+## PDV 1.33.20 — 16/11/2026
+- Correção: no celular o cabeçalho podia ficar com altura de tela inteira (defeito da 1.33.19).
+
+## Sistema 1.95.28 — 16/11/2026
+- **Modo celular automático:** o sistema reconhece sozinho o celular (tela estreita ou aparelho de toque pequeno, inclusive deitado) e usa o menu inferior, a Área de trabalho adaptada (foto inteira, relógio no topo, atalhos embaixo em linha) e área segura do iPhone. Em Aparência › Modo de tela dá para forçar Celular ou Computador. Corrige também o cabeçalho que ficava gigante no celular na 1.95.22.
+
+## Sistema 1.95.27 — 16/11/2026
+- **Início padrão:** o sistema abre na Área de trabalho com a imagem da MultMix (`inicio.jpg`), relógio no canto inferior esquerdo e atalhos embaixo. Quem já escolheu outra aparência mantém a escolha; para voltar ao padrão, limpar os dados do navegador/app ou escolher de novo em Aparência.
+
+## Sistema 1.95.26 — 16/11/2026
+- **Área de trabalho com foto própria:** a imagem agora é ajustada à tela sem cortar (as sobras ficam preenchidas com a própria foto desfocada). Em Aparência há a opção "Preencher (corta as bordas)".
+
+## Sistema 1.95.25 — 16/11/2026
+- **Área de trabalho:** o tamanho do relógio e da data agora é uma barra deslizante (40% a 300%) que muda na hora.
+
+## Sistema 1.95.24 — 16/11/2026
+- **Aparência › Área de trabalho:** escolha em qual lugar da tela ficam a logo, o relógio e os atalhos (9 posições: cantos, laterais, topo, base e centro) e o tamanho do relógio (pequeno/médio/grande).
+
+## Sistema 1.95.23 — 16/11/2026
+- **Início "Área de trabalho"** agora ocupa a tela inteira (sem as margens laterais e bordas arredondadas), ajustando a altura até o rodapé.
+
+## Sistema 1.95.22 + PDV 1.33.19 — 16/11/2026
+- **Celular (iPhone e Android):** área segura (notch/barra inferior do iPhone), `100dvh` (barra do Safari/Chrome não corta a tela), campos com 16px no celular (o iPhone não dá mais zoom ao tocar no campo), botões e links com área de toque de 44px (PDV incluído), barra de status do iPhone integrada ao app instalado.
+
+## Sistema 1.95.21 + PDV 1.33.18 — 16/11/2026
+- **Ajuda:** botão **Ajuda** (ou tecla F1) abre um chat que responde só pelo manual, com passo a passo e botão "Abrir esta tela". Sistema: 34 temas; PDV: 14 temas. Funciona offline. Perguntas sem resposta ficam registradas (Ver todos os temas › Perguntas sem resposta) para completar o manual.
+- O texto do manual está em `manual.js` de cada app (e `manual.json` na raiz). `MANUAL-MultMix.md` é a versão para ler e imprimir.
+
+## PDV 1.33.17 — 16/11/2026
+- **Carnê com autorização do administrador, venda a venda** (rode `supabase-v53.sql`). Vendedor sem a liberação fixa de carnê vê a opção "Carnê (com autorização do administrador)"; ao finalizar, o administrador digita e-mail e senha (e o código de 2 etapas, se tiver) na tela do PDV. A autorização vale 20 minutos e só uma vez, e só para aquele vendedor. Precisa de internet.
+
+## Sistema 1.95.20 + PDV 1.33.16 — 16/11/2026
+- Links (ex.: "WhatsApp Web") aparecem em azul claro legível nos temas escuro e grafite, em vez do roxo padrão do navegador que sumia no fundo escuro.
+
+## PDV 1.33.15 — 16/11/2026
+- Vendedor com ponto: botões **Meu ponto** (só o que está no ponto dele, padrão) e **Geral (loja)** (todos os produtos, com a quantidade da loja) na tela de venda. A escolha fica salva no aparelho.
+
+## Sistema 1.95.19 + PDV 1.33.14 — 16/11/2026
+**Pontos de venda (consignação)** — rode `supabase-v52.sql` no Supabase.
+- **Sistema › Pontos de venda:** cadastra o ponto de um vendedor, envia mercadoria da loja ao ponto (remessa), recebe de volta (retorno) e mostra o estoque, o valor e as últimas movimentações de cada ponto.
+- **PDV do vendedor com ponto:** vê todos os produtos com "Ponto N · Loja M" (só quantidades, sem custo). A venda baixa primeiro do ponto e o que faltar sai da loja automaticamente. Venda cancelada ou devolvida volta para onde saiu.
+- A venda sobe para o Sistema como sempre e só o administrador emite a nota.
+- Vendedor sem ponto: nada muda.
+- Próximas etapas: saldo e comissão por ponto, acerto, carnê só com autorização, contagem do ponto.
+
+## Sistema 1.95.18 — 16/11/2026
+- **Início · Área de trabalho:** nova opção em Aparência. Esconde dashboard, avisos e números e deixa só o papel de parede e/ou a logo da empresa, como uma área de trabalho. Dá para ligar ou desligar logo, relógio, atalhos e um aviso discreto de pendências. Fica só neste aparelho.
+
+## Sistema 1.95.17 — 16/11/2026
+Sincronização (auditoria + correções):
+- **Leitura completa:** o sistema lia só as primeiras 1000 linhas de cada tabela e apagava o resto do aparelho. Agora lê em páginas até o fim.
+- **Estoque protegido:** editar preço ou dados de um produto não envia mais o estoque antigo (que desfazia a baixa de vendas feitas em outro aparelho). O estoque só vai quando a edição o altera de propósito.
+- **Fila não trava:** se o servidor recusar um registro, só ele sai da fila e vai para "recusados" (clique no indicador de sincronização para tentar de novo ou descartar). As demais vendas seguem.
+- Pendente: mover o banco local do localStorage (~5 MB) para IndexedDB.
+
+## sistema 1.95.16 — 2026-11-16
+Início com dashboard opcional (desligado por padrão), em dois modelos escolhidos no botão "Aparência" (junto do papel de parede): Modelo 1 "Foco no dia" (vendas de hoje, mini gráfico dos 7 dias, mês, recebido, atraso e lista de atenção) e Modelo 2 "Painel com anéis" (4 indicadores com anel de porcentagem, anel do recebido no mês, gráfico de vendas por dia com 7, 15 ou 30 dias e últimas vendas). Acompanham o tema claro ou escuro do sistema, usam só dados que o sistema já tem e funcionam offline. Cada aparelho guarda a sua escolha. Sem SQL. O PDV não muda (1.33.13).
+
+## sistema 1.95.15 — 2026-11-16
+Início com papel de parede opcional (sem dashboard): botão "Papel de parede" no Início, com paisagem do horário (muda sozinha entre dia, tarde e noite), dia, tarde, noite ou foto do próprio usuário. Mostra a saudação (Bom dia, Boa tarde, Boa noite) e deixa os cartões legíveis por cima da imagem. A escolha fica só no aparelho. Sem SQL. O PDV não muda (1.33.13).
+
 ## sistema 1.95.14 — 2026-11-16
 Tela Fiscal: o texto de apoio deixou de dizer só "em homologação" e passou a explicar os dois ambientes (homologação sem valor fiscal; produção vale de verdade). Sem SQL. O PDV continua na 1.33.13.
 

@@ -1,5 +1,5 @@
 /* MultMix (computador): abre Sistema, Catálogo e/ou PDV, usa o cache para funcionar sem internet e imprime o cupom direto. */
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, protocol, net, session } = require('electron');
 const { Store } = require('./store');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -107,8 +107,11 @@ const iconFile = k => { const p = app.isPackaged ? path.join(process.resourcesPa
 function openApp(key) {
   if (!APPS[key]) return;
   if (wins[key] && !wins[key].isDestroyed()) { if (wins[key].isMinimized()) wins[key].restore(); wins[key].focus(); return; }
+  /* cada programa usa sua própria sessão (dados separados); o endereço mm:// precisa ser atendido NESSA sessão, senão o Windows pergunta "obter um aplicativo para abrir este 'mm' link" */
+  const ses = session.fromPartition('persist:mm-' + key);
+  if (!ses.__mm) { try { ses.protocol.handle('mm', handleMm); } catch (e) {} ses.__mm = true; }
   const w = new BrowserWindow({ width: 1280, height: 820, minWidth: 900, minHeight: 600, backgroundColor: '#00468f', title: 'MultMix · ' + APPS[key].nome, icon: iconFile(key),
-    webPreferences: { preload: preloadApp, partition: 'persist:mm-' + key, contextIsolation: false, nodeIntegration: false, sandbox: true } });
+    webPreferences: { preload: preloadApp, session: ses, contextIsolation: false, nodeIntegration: false, sandbox: true } });
   wins[key] = w;
   const url = () => appUrl(key);
   w.webContents.on('did-fail-load', (e, code, d, u, isMain) => { if (isMain && code !== -3) w.loadFile(path.join(__dirname, 'offline.html')); });
