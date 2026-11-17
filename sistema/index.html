@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.27'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.28'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -385,7 +385,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
 button,a,.btn,nav button,.chip,select,label{touch-action:manipulation}
 @supports(height:100dvh){
-body.in header{height:100dvh}
+@media(min-width:901px){body.in header{height:100dvh}}
 .wall,.desk{min-height:calc(100dvh - 150px)}
 .pdvr{max-height:calc(100dvh - 36px)}
 }
@@ -416,6 +416,15 @@ main:has(>.desk) .desk{border-radius:0;padding:24px max(24px,env(safe-area-inset
 .desk.fit::before{content:"";position:absolute;inset:-40px;background:var(--wi) center/cover no-repeat;filter:blur(26px) brightness(.75);z-index:0}
 .desk.fit::after{content:"";position:absolute;inset:0;background:var(--wi) center/contain no-repeat;z-index:0}
 .desk .dc{position:relative;z-index:1}.desk .dkv,.desk .dkp{z-index:2}
+html.cel .desk{padding:64px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+html.cel .desk.fit::after{background-size:auto 96%}
+html.cel .desk .dka{flex-wrap:nowrap;width:100%;gap:6px}html.cel .desk .dka .btn{flex:1 1 0;padding:12px 4px;font-size:14px;min-width:0;white-space:nowrap}
+html.cel .desk .dkp{top:12px;left:12px;bottom:auto;right:auto}html.cel .desk .dkv{top:12px;right:12px}
+html.cel .desk .dkt{font-size:calc(clamp(44px,16vw,72px)*var(--dks,1))}
+html.cel header{gap:4px 10px;padding-bottom:6px}
+html.cel header .ibtn{min-height:30px;padding:3px 8px;font-size:12px}html.cel header .appv{min-height:22px;padding:0 6px;font-size:11px}html.cel header .brand h1{font-size:18px}
+html.cel header .sync{font-size:12px}
+@media(max-width:360px){html.cel .desk .dka .btn{font-size:12px;padding:12px 2px}}
 </style>
 </head>
 <body>
@@ -2125,7 +2134,12 @@ function temaSet(k){try{if(k==='auto')localStorage.removeItem('mm_tema_ui');else
 
 /* ========= Layout do menu (por aparelho) ========= */
 const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.'],top:['Superior','Barra no topo com menus que abrem ao clicar (Vendas, Gestão, Conta). Sobra mais espaço para as telas. Em celular continua como a lateral.'],mini:['Lateral compacta','Barra fina só com ícones; abre ao passar o mouse. É a que dá mais espaço.'],duo:['Duas colunas','Faixa fina só com os grupos (Vendas, Gestão, Conta) e, ao lado, a lista do grupo escolhido. O menu fica curto e organizado. Só em tela grande; no celular usa a lateral.'],foco:['Modo foco','Sem menu na tela: só uma barra fina com ☰ Menu e Buscar (Ctrl+K). O menu abre por cima quando precisa. Dá a tela inteira para a venda e os relatórios.'],bot:['Barra inferior','Abas embaixo, como aplicativo de celular. Boa para tablet e celular.'],dock:['Dock (estilo Mac)','Barra flutuante só com ícones, em vidro. Ao passar o mouse o ícone cresce e os vizinhos acompanham. Escolha embaixo, em cima ou nas laterais e o tamanho (abaixo).']};
-const LAY=()=>{try{const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
+/* Modo celular: reconhecido sozinho (tela estreita ou aparelho de toque pequeno); dá para forçar em Aparência */
+const CEL=()=>{try{const m=localStorage.mm_modo||'auto';if(m==='cel')return true;if(m==='pc')return false;const mm=q=>matchMedia(q).matches;return mm('(max-width:820px)')||(mm('(pointer:coarse)')&&Math.min(screen.width,screen.height)<520)}catch(e){return false}};
+const celApply=()=>{const on=CEL();document.documentElement.classList.toggle('cel',on);return on};
+celApply();addEventListener('resize',celApply);addEventListener('orientationchange',()=>setTimeout(celApply,200));
+function modoSet(v){try{if(v==='auto')localStorage.removeItem('mm_modo');else localStorage.setItem('mm_modo',v)}catch(e){}location.reload()}
+const LAY=()=>{try{if(CEL())return'bot';const v=localStorage.mm_layout;return LAYS[v]?v:'side'}catch(e){return'side'}};
 const LAYSVG={duo:'<rect x="2" y="2" width="12" height="56" rx="3" fill="#00468f"/><rect x="17" y="2" width="26" height="56" rx="3" fill="#9fb4d3"/><rect x="46" y="2" width="52" height="56" rx="3" fill="#cfd8e6"/>',foco:'<rect x="2" y="2" width="96" height="9" rx="3" fill="#00468f"/><rect x="2" y="14" width="96" height="44" rx="3" fill="#cfd8e6"/>',side:'<rect x="2" y="2" width="22" height="56" rx="3" fill="#00468f"/><rect x="28" y="2" width="70" height="56" rx="3" fill="#cfd8e6"/>',top:'<rect x="2" y="2" width="96" height="12" rx="3" fill="#00468f"/><rect x="2" y="18" width="96" height="40" rx="3" fill="#cfd8e6"/>',mini:'<rect x="2" y="2" width="9" height="56" rx="3" fill="#00468f"/><rect x="15" y="2" width="83" height="56" rx="3" fill="#cfd8e6"/>',dock:'<rect x="2" y="2" width="96" height="56" rx="3" fill="#cfd8e6"/><rect x="22" y="45" width="56" height="10" rx="5" fill="#00468f"/><circle cx="30" cy="50" r="3" fill="#ffc21a"/><circle cx="39" cy="49" r="4" fill="#ffc21a"/><circle cx="50" cy="48" r="5.5" fill="#ffc21a"/><circle cx="61" cy="49" r="4" fill="#ffc21a"/><circle cx="70" cy="50" r="3" fill="#ffc21a"/>',bot:'<rect x="2" y="2" width="96" height="8" rx="3" fill="#00468f"/><rect x="2" y="13" width="96" height="33" rx="3" fill="#cfd8e6"/><rect x="2" y="49" width="96" height="9" rx="3" fill="#00468f"/>'};
 function layoutOpen(){
   const TE=TEMAUI();
@@ -4924,7 +4938,7 @@ function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('p
 /* papel de parede do Início (fica só neste aparelho) */
 const WALK='mm_wall';
 /* padrão de fábrica do Início (vale só enquanto o usuário não escolheu nada em Aparência) */
-const INICIO_IMG='inicio.jpg',INICIO_DESK={logo:0,rel:1,atl:1,aviso:1,pl:'mc',pr:'bl',pa:'bc',sz:2,fit:'fit'};
+const INICIO_IMG='inicio.jpg',INICIO_DESK={logo:0,rel:1,atl:1,aviso:1,pl:'mc',pr:'bl',pa:'bc',sz:2,fit:'fit'},INICIO_DESK_CEL=Object.assign({},INICIO_DESK,{pr:'bc',pa:'bc',sz:2});
 const wallGet=()=>{try{return JSON.parse(localStorage.getItem(WALK)||'null')||{m:'img',u:INICIO_IMG}}catch(e){return{m:'img',u:INICIO_IMG}}};
 function wallCss(){
   const w=wallGet();
@@ -4938,11 +4952,11 @@ function wallUp(inp){const f=inp.files[0];if(!f)return;artBlobData(f,1600).then(
 function wallMenu(){
   const cur=wallGet().m,o=(m,t,d)=>`<button type="button" class="pri" onclick="wallSet('${m}')"><span style="flex:1"><b>${t}</b><div class="sm">${d}</div></span>${cur===m?'<span class="ok">✓</span>':''}</button>`;
   const dm=dashGet(),od=(m,t,d)=>`<button type="button" class="pri" onclick="dashSet('${m}')"><span style="flex:1"><b>${t}</b><div class="sm">${d}</div></span>${dm===m?'<span class="ok">✓</span>':''}</button>`;
-  modal(`<h2>Aparência do Início</h2><p class="sm">Fica só neste aparelho.</p><h3 style="margin:8px 0 4px">Dashboard</h3><div class="pres">${od('off','Desligado','Início simples, como antes.')}${od('foco','Modelo 1 · Foco no dia','Vendas de hoje em destaque, mini gráfico e lista de atenção.')}${od('neon','Modelo 2 · Painel com anéis','Indicadores com anel, gráfico de vendas por dia e últimas vendas.')}${od('desk','Área de trabalho','Sem números: só o papel de parede ou a logo da empresa, como uma área de trabalho.')}</div>${dm==='desk'?deskOpts():''}<h3 style="margin:10px 0 4px">Papel de parede</h3><p class="sm">Os cartões continuam legíveis por cima da imagem.</p><div class="pres">${o('none','Sem papel de parede','Início simples, como antes.')}${o('auto','Paisagem do horário','Muda sozinha: dia, tarde e noite.')}${o('dia','Dia','Céu azul e sol.')}${o('tarde','Tarde','Pôr do sol.')}${o('noite','Noite','Lua e estrelas.')}${o('img','Minha foto'+(cur==='img'?' (atual)':''),'Envie uma paisagem sua, escolhida abaixo.')}</div><label class="sm">Enviar minha foto</label><input type="file" accept="image/*" onchange="wallUp(this)">`);
+  modal(`<h2>Aparência do Início</h2><p class="sm">Fica só neste aparelho.</p><h3 style="margin:8px 0 4px">Modo de tela</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">${[['auto','Automático'],['cel','Celular'],['pc','Computador']].map(([v,l])=>`<button type="button" class="btn s ${(localStorage.mm_modo||'auto')===v?'':'g'}" onclick="modoSet('${v}')">${l}</button>`).join('')}</div><p class="sm" style="margin:0 0 6px">Automático reconhece o celular sozinho. Agora: <b>${CEL()?'celular':'computador'}</b>.</p><h3 style="margin:8px 0 4px">Dashboard</h3><div class="pres">${od('off','Desligado','Início simples, como antes.')}${od('foco','Modelo 1 · Foco no dia','Vendas de hoje em destaque, mini gráfico e lista de atenção.')}${od('neon','Modelo 2 · Painel com anéis','Indicadores com anel, gráfico de vendas por dia e últimas vendas.')}${od('desk','Área de trabalho','Sem números: só o papel de parede ou a logo da empresa, como uma área de trabalho.')}</div>${dm==='desk'?deskOpts():''}<h3 style="margin:10px 0 4px">Papel de parede</h3><p class="sm">Os cartões continuam legíveis por cima da imagem.</p><div class="pres">${o('none','Sem papel de parede','Início simples, como antes.')}${o('auto','Paisagem do horário','Muda sozinha: dia, tarde e noite.')}${o('dia','Dia','Céu azul e sol.')}${o('tarde','Tarde','Pôr do sol.')}${o('noite','Noite','Lua e estrelas.')}${o('img','Minha foto'+(cur==='img'?' (atual)':''),'Envie uma paisagem sua, escolhida abaixo.')}</div><label class="sm">Enviar minha foto</label><input type="file" accept="image/*" onchange="wallUp(this)">`);
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
 /* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
-const deskGet=()=>{try{return Object.assign({},INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
+const deskGet=()=>{try{return Object.assign({},CEL()?INICIO_DESK_CEL:INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
 function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
 function deskPos(k,v){const d=deskGet();d[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
 const deskEsc=d=>Math.round(d.esc||({1:60,2:100,3:150}[d.sz])||100);
@@ -4967,7 +4981,7 @@ function deskBuild(wc,nAv){
   if(d.rel)deskTick();
   deskFit();
 }
-function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(320,innerHeight-t)+'px'}
+function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(320,innerHeight-t-(parseFloat(getComputedStyle(document.body).paddingBottom)||0))+'px'}
 addEventListener('resize',()=>{try{deskFit()}catch(e){}});
 let dashDias=7;
 const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'desk'}catch(e){return'desk'}};

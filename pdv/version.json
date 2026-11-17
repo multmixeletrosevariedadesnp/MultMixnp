@@ -1,5 +1,5 @@
 {
- "version": "1.33.19",
+ "version": "1.33.20",
  "date": "2026-11-16",
- "notes": "Celular: iPhone/Android (área segura, zoom de campos, toques maiores)."
+ "notes": "Correção do cabeçalho no celular."
 }
