@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.44'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.46'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2307,9 +2307,14 @@ async function ibptRepo(auto,say){
   say=say||(()=>{});
   if(!sb||!ADM()||navigator.onLine===false)return{st:'offline'};
   say('Procurando a tabela no repositório…');
-  let r;try{r=await fetch(IBPT_URL()+'?t='+Date.now(),{cache:'no-store'})}catch(e){return{st:'erro',msg:'Não consegui acessar o repositório.'}}
+  let r;
+  for(let t=0;t<3;t++){ // erro 5xx do site (GitHub fora do ar por instantes): tenta de novo antes de desistir
+    try{r=await fetch(IBPT_URL()+'?t='+Date.now(),{cache:'no-store'})}catch(e){r=null}
+    if(r&&r.status<500)break;if(t<2){say('O site demorou a responder; tentando de novo…');await new Promise(k=>setTimeout(k,2500))}
+  }
+  if(!r)return{st:'erro',msg:'Não consegui acessar o repositório.'}
   if(r.status===404)return{st:'vazio',msg:'Ainda não há tabela em ibpt/tabela.csv no repositório.'};
-  if(!r.ok)return{st:'erro',msg:'Repositório respondeu HTTP '+r.status+'.'};
+  if(!r.ok)return{st:'erro',msg:r.status>=500?'O site do repositório está fora do ar por instantes (HTTP '+r.status+'). A tabela que você já carregou continua valendo; tente de novo em alguns minutos.':'Repositório respondeu HTTP '+r.status+'.'};
   let rows,meta;try{({rows,meta}=ibptParse(ibptTexto(await r.arrayBuffer())))}catch(e){return{st:'erro',msg:'Arquivo do repositório: '+e.message}}
   const cur=IBM&&IBM.v;
   if(cur&&cur.versao===meta.versao&&cur.n===rows.length)return{st:'igual',meta};
@@ -2332,7 +2337,7 @@ async function ibptAuto(){
 }
 async function ibptTeste(){
   const el=$('#ibptRes');if(el)el.textContent='consultando…';
-  try{const d=await fisCall({action:'ibpt',ncm:'84796000'});
+  try{const d=(window.mmDesk&&window.mmDesk.ibpt)?await ibptDesk('84796000','Produto','UN',100):await fisCall({action:'ibpt',ncm:'84796000'});
     if(el)el.innerHTML=d.ok?`<b class="ok">funcionou</b>: federal ${d.nacional}% · estadual ${d.estadual}% · tabela ${esc(d.versao||'')} ${esc(d.chave||'')} (vale até ${esc(d.vigencia_fim||'?')})`:`<b class="bad">${esc(d.erro||'não funcionou')}</b>`}
   catch(e){if(el)el.innerHTML=`<b class="bad">${esc(e.message)}</b>`}
 }
@@ -5520,9 +5525,32 @@ async function fisFixItems(id){
     return o});
   if(ch){put('sales',{...s,items});await sync()}
 }
+/* No app do Windows o IBPT é consultado pelo computador da loja (os servidores em nuvem são recusados por ele). */
+const IBX=new Map();
+async function ibptDesk(ncm,nome,un,valor){
+  const t=IBX.get(ncm);if(t&&Date.now()-t.t<6*3600e3)return t.r;
+  const r=await window.mmDesk.ibpt({token:(PRIV()||{}).ibpt_token||'',cnpj:CO().cnpj,uf:CO().uf||'PA',ncm,desc:nome,un,valor});
+  if(r&&r.ok)IBX.set(ncm,{t:Date.now(),r});return r;
+}
+async function ibptExt(saleId){
+  try{
+    if(!(window.mmDesk&&window.mmDesk.ibpt)||!ADM())return null;
+    const modo=(IBM&&IBM.modo)||'auto';if(modo!=='api'&&modo!=='auto')return null;
+    if(!(PRIV()||{}).ibpt_token)return null;
+    const sv=db.sales.find(x=>x.id===saleId);if(!sv)return null;
+    const out={};
+    for(const it of (sv.items||[])){
+      const n=String(it.ncm||'').replace(/\D/g,'');if(n.length!==8||out[n])continue;
+      const r=await ibptDesk(n,it.name||'Produto',it.unit||'UN',+it.price||100);
+      if(r&&r.ok)out[n]={nacional:r.nacional,importado:r.importado,estadual:r.estadual,chave:r.chave,versao:r.versao};
+    }
+    return Object.keys(out).length?out:null;
+  }catch(e){return null}
+}
 async function fisCall(body){
   if(body&&body.action==='emit'&&!LIC.guard('emitir nota fiscal'))throw new Error('Licença vencida: o sistema está em modo somente consulta.');
   if(!sb)throw new Error('Emissão exige conexão com o Supabase.');
+  if(body&&body.action==='emit'&&!body.ibpt_ext){const x=await ibptExt(body.sale_id);if(x)body={...body,ibpt_ext:x}}
   const{data,error}=await sb.functions.invoke('fiscal',{body});
   if(error){let m=error.message;try{const j=await error.context.json();if(j&&j.erro)m=j.erro}catch(e){}throw new Error(m)}
   return data;
