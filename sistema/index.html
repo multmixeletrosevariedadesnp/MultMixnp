@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.23'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.26'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -404,6 +404,18 @@ a.lnk,.lk,footer a,footer button{display:inline-block;padding:10px 6px;min-heigh
 }
 main:has(>.desk){max-width:none;padding:0}
 main:has(>.desk) .desk{border-radius:0;padding:24px max(24px,env(safe-area-inset-right,0px)) 24px max(24px,env(safe-area-inset-left,0px))}
+.desk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(min-content,1fr) auto;padding:64px 28px}
+.desk .dc{display:flex;flex-direction:column;gap:22px;min-width:0}
+.desk .dc.ctl,.desk .dc.cml,.desk .dc.cbl{align-items:flex-start;text-align:left}.desk .dc.ctl .dkc,.desk .dc.cml .dkc,.desk .dc.cbl .dkc{align-items:flex-start}.desk .dc.ctl .dka,.desk .dc.cml .dka,.desk .dc.cbl .dka{justify-content:flex-start}
+.desk .dc.ctr,.desk .dc.cmr,.desk .dc.cbr{align-items:flex-end;text-align:right}.desk .dc.ctr .dkc,.desk .dc.cmr .dkc,.desk .dc.cbr .dkc{align-items:flex-end}.desk .dc.ctr .dka,.desk .dc.cmr .dka,.desk .dc.cbr .dka{justify-content:flex-end}
+.desk .dc.ctc,.desk .dc.cmc,.desk .dc.cbc{align-items:center;text-align:center}
+.desk .dc.ctl,.desk .dc.ctc,.desk .dc.ctr{justify-content:flex-start}.desk .dc.cml,.desk .dc.cmc,.desk .dc.cmr{justify-content:center}.desk .dc.cbl,.desk .dc.cbc,.desk .dc.cbr{justify-content:flex-end}
+.desk .dkt{font-size:calc(clamp(48px,10vw,96px)*var(--dks,1))}.desk .dkd{font-size:calc(16px*var(--dks,1))}
+@media(max-width:700px){.desk{padding:56px 14px}.desk .btn{padding-left:12px;padding-right:12px}}
+.desk.fit{background-image:none!important;overflow:hidden;background-color:#000}
+.desk.fit::before{content:"";position:absolute;inset:-40px;background:var(--wi) center/cover no-repeat;filter:blur(26px) brightness(.75);z-index:0}
+.desk.fit::after{content:"";position:absolute;inset:0;background:var(--wi) center/contain no-repeat;z-index:0}
+.desk .dc{position:relative;z-index:1}.desk .dkv,.desk .dkp{z-index:2}
 </style>
 </head>
 <body>
@@ -4928,19 +4940,26 @@ function wallMenu(){
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
 /* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
-const deskGet=()=>{try{return Object.assign({logo:1,rel:1,atl:1,aviso:1},JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return{logo:1,rel:1,atl:1,aviso:1}}};
+const deskGet=()=>{try{return Object.assign({logo:1,rel:1,atl:1,aviso:1,pl:'mc',pr:'mc',pa:'mc',sz:2,fit:'fit'},JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return{logo:1,rel:1,atl:1,aviso:1,pl:'mc',pr:'mc',pa:'mc',sz:2,fit:'fit'}}};
 function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
+function deskPos(k,v){const d=deskGet();d[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
+const deskEsc=d=>Math.round(d.esc||({1:60,2:100,3:150}[d.sz])||100);
+function deskScale(v){v=Math.max(40,Math.min(300,+v||100));const d=deskGet();d.esc=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const e=document.querySelector('.desk');if(e)e.style.setProperty('--dks',v/100);const l=document.getElementById('dkEv');if(l)l.textContent=v+'%'}
+function deskGrid(k,t){const d=deskGet(),P=['tl','tc','tr','ml','mc','mr','bl','bc','br'];return `<div style="display:flex;align-items:center;gap:12px;margin:8px 0"><div style="flex:1" class="sm"><b>${t}</b></div><div role="radiogroup" aria-label="Posição: ${t}" style="display:grid;grid-template-columns:repeat(3,34px);gap:3px;padding:4px;border:1px solid var(--line);border-radius:8px;background:var(--bg)">${P.map(x=>`<button type="button" role="radio" aria-checked="${d[k]===x}" aria-label="${x}" onclick="deskPos('${k}','${x}')" style="min-height:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--line);background:${d[k]===x?'var(--pri)':'var(--card)'}"></button>`).join('')}</div></div>`}
 function deskOpts(){const d=deskGet(),c=(k,t)=>`<label class="sm" style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" style="width:auto" ${d[k]?'checked':''} onchange="deskSet('${k}',this.checked)"> ${t}</label>`;
-  return `<div style="margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px"><b class="sm">Mostrar na área de trabalho</b>${c('logo','Logo e nome da empresa')}${c('rel','Relógio e data')}${c('atl','Atalhos (Nova venda, Novo cliente, Buscar)')}${c('aviso','Aviso discreto quando houver pendências')}<p class="sm" style="margin:4px 0 0">Para ver só a logo, escolha "Sem papel de parede" abaixo. Para ver só a foto, desmarque a logo.</p></div>`}
+  return `<div style="margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px"><b class="sm">Mostrar na área de trabalho</b>${c('logo','Logo e nome da empresa')}${c('rel','Relógio e data')}${c('atl','Atalhos (Nova venda, Novo cliente, Buscar)')}${c('aviso','Aviso discreto quando houver pendências')}${wallGet().m==='img'?`<div style="margin:8px 0"><b class="sm">Ajuste da foto</b><div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><button type="button" class="btn s ${d.fit==='cover'?'g':''}" onclick="deskPos('fit','fit')">Mostrar inteira</button><button type="button" class="btn s ${d.fit==='cover'?'':'g'}" onclick="deskPos('fit','cover')">Preencher (corta as bordas)</button></div></div>`:''}<b class="sm" style="display:block;margin-top:10px">Posição na tela</b>${deskGrid('pl','Logo e nome')}${deskGrid('pr','Relógio e data')}${deskGrid('pa','Atalhos')}<div style="margin:8px 0"><div class="sm" style="display:flex;justify-content:space-between"><b>Tamanho do relógio e data</b><span id="dkEv">${deskEsc(d)}%</span></div><input type="range" min="40" max="300" step="5" value="${deskEsc(d)}" aria-label="Tamanho do relógio e data" style="padding:0;min-height:32px" oninput="deskScale(this.value)"></div><p class="sm" style="margin:4px 0 0">Para ver só a logo, escolha "Sem papel de parede" abaixo. Para ver só a foto, desmarque a logo.</p></div>`}
 let deskT=null;
 function deskTick(){const t=document.getElementById('dkT'),dd=document.getElementById('dkD');if(!t&&!dd){clearInterval(deskT);deskT=null;return}const n=new Date();if(t)t.textContent=n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(dd)dd.textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});if(!deskT)deskT=setInterval(deskTick,15000)}
 function deskAv(){modal('<h2>Pendências</h2>'+(window.__deskTD||''))}
 function deskBuild(wc,nAv){
   const d=deskGet(),co=CO(),nome=co.trade_name||co.legal_name||'',img=wc?'':'background-image:linear-gradient(135deg,color-mix(in srgb,var(--pri) 20%,var(--bg)),var(--bg))';
-  $('#app').innerHTML=`<div class="desk ${wc?'wp':''}" style="${wc||img}">
-  <div class="dkc">${d.logo?`<img class="dkl" src="${esc(logoIcon())}" alt="${esc(nome)}">${nome?`<div class="dkn">${esc(nome)}</div>`:''}`:''}
-  ${d.rel?`<div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div>`:''}</div>
-  ${d.atl?`<div class="dka"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar</button></div>`:''}
+  const fitImg=wallGet().m==='img'&&wallGet().d&&d.fit!=='cover';
+  const blk={pl:d.logo?`<div class="dkc">${`<img class="dkl" src="${esc(logoIcon())}" alt="${esc(nome)}">${nome?`<div class="dkn">${esc(nome)}</div>`:''}`}</div>`:'',
+   pr:d.rel?`<div class="dkc"><div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div></div>`:'',
+   pa:d.atl?`<div class="dka"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar</button></div>`:''};
+  const cell=c=>['pl','pr','pa'].filter(k=>d[k]===c).map(k=>blk[k]).join('');
+  $('#app').innerHTML=`<div class="desk ${wc?'wp':''} ${fitImg?'fit':''}" style="--dks:${deskEsc(d)/100};${fitImg?'--wi:url('+wallGet().d+');':''}${wc||img}">
+  ${['tl','tc','tr','ml','mc','mr','bl','bc','br'].map(c=>`<div class="dc c${c}">${cell(c)}</div>`).join('')}
   ${d.aviso&&nAv?`<button type="button" class="dkv" onclick="deskAv()">🔔 ${nAv} pendência(s)</button>`:''}
   <button type="button" class="dkp" onclick="wallMenu()" aria-label="Aparência do Início">⚙ Aparência</button></div>`;
   if(d.rel)deskTick();
