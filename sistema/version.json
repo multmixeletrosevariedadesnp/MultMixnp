@@ -1,5 +1,5 @@
 {
- "version": "1.95.22",
+ "version": "1.95.23",
  "date": "2026-11-16",
- "notes": "Celular: iPhone/Android (área segura, zoom de campos, toques maiores)."
+ "notes": "Início em modo Área de trabalho ocupa a tela toda, sem bordas."
 }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.22'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.23'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -402,6 +402,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 input[type=checkbox],input[type=radio]{width:22px;height:22px}
 a.lnk,.lk,footer a,footer button{display:inline-block;padding:10px 6px;min-height:44px}
 }
+main:has(>.desk){max-width:none;padding:0}
+main:has(>.desk) .desk{border-radius:0;padding:24px max(24px,env(safe-area-inset-right,0px)) 24px max(24px,env(safe-area-inset-left,0px))}
 </style>
 </head>
 <body>
@@ -4942,7 +4944,10 @@ function deskBuild(wc,nAv){
   ${d.aviso&&nAv?`<button type="button" class="dkv" onclick="deskAv()">🔔 ${nAv} pendência(s)</button>`:''}
   <button type="button" class="dkp" onclick="wallMenu()" aria-label="Aparência do Início">⚙ Aparência</button></div>`;
   if(d.rel)deskTick();
+  deskFit();
 }
+function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(320,innerHeight-t)+'px'}
+addEventListener('resize',()=>{try{deskFit()}catch(e){}});
 let dashDias=7;
 const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'off'}catch(e){return'off'}};
 function dashSet(m){try{localStorage.setItem('mm_dash',m)}catch(e){}closeM();vIni()}
