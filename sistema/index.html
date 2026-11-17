@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.42'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.43'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -3184,7 +3184,7 @@ function vPdv(){
    <div class="cr" id="s_ctw"><label>Valor total combinado (R$)</label><input id="s_ct" type="number" step="0.01" min="0" oninput="cartView()" placeholder="Ex.: 1.800,00"></div>`:''}
    <div class="cr"><label>Parcelas</label><input id="s_n" type="number" min="1" max="24" value="6" oninput="cartView()"></div>
    <div class="cr"><label>1º vencimento</label><input id="s_d" type="date" value="${new Date(Date.now()+30*864e5).toISOString().slice(0,10)}"></div></div>
-   <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')"></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c');pdvCnpj()"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
+   <div class="f cli"><div class="w"><label>Cliente (busque por nome, CPF/CNPJ ou telefone)</label><input id="c_n" autocomplete="off" oninput="selCli=null;cliSug('c_n')" placeholder="Digite o nome para buscar"><button type="button" class="btn g s" style="margin-top:6px" onclick="cliRapido()">+ Cadastrar cliente novo</button></div><div><label>CPF / CNPJ</label><input id="c_c" inputmode="numeric" autocomplete="off" oninput="selCli=null;cliSug('c_c');pdvCnpj()"></div><div><label>Telefone</label><input id="c_p" inputmode="tel" autocomplete="off" oninput="selCli=null;cliSug('c_p')"></div></div>
    <div id="cs" class="cs" aria-live="polite"></div>
    </section>
   </div>
@@ -3753,7 +3753,7 @@ function cliSug(field){
   if(q.length<2){box.innerHTML='';return}
   const l=cliMatch(q).slice(0,6);
   box.innerHTML=l.length?l.map(c=>{const o=owed(c.id);return`<button type="button" onclick="pickCli('${c.id}')"><span>${esc(c.name)}${c.trade_name?` <small>${esc(c.trade_name)}</small>`:''}</span><small>${esc(c.cpf||c.phone||'')}${o.length?' · <b class="bad">'+o.length+' parc. em aberto</b>':''}</small></button>`}).join('')
-    :'<p class="sm">Nenhum cliente salvo com esse dado. Ele será cadastrado ao finalizar a venda.</p>';
+    :'<p class="sm">Nenhum cliente salvo com esse dado. Use o botão <b>+ Cadastrar cliente novo</b> (ou finalize a venda que ele é cadastrado).</p>';
 }
 let pdvCnpjT=null;
 function pdvCnpj(){ // CNPJ digitado na venda: se ainda não é cliente, busca os dados na Receita
@@ -3768,6 +3768,39 @@ function pdvCnpj(){ // CNPJ digitado na venda: se ainda não é cliente, busca o
     if(!c_n.value.trim())c_n.value=F.name;if(!c_p.value.trim())c_p.value=F.phone||'';
     box.innerHTML=`<p class="sm ok">Dados da Receita: <b>${esc(F.name)}</b>${j.descricao_situacao_cadastral&&j.descricao_situacao_cadastral!=='ATIVA'?' · <b class="bad">'+esc(j.descricao_situacao_cadastral)+'</b>':''}${F.street?' · '+esc(F.street)+', '+esc(F.number||'s/n')+' - '+esc(F.city||'')+'/'+esc(F.uf||''):''}. Serão salvos no cadastro ao finalizar a venda.</p>`;
   },350);
+}
+/* cadastro rápido na tela de venda: não perde o carrinho nem o que já foi digitado */
+function cliRapido(){
+  const nm=($('#c_n')||{}).value||'',cp=($('#c_c')||{}).value||'',ph=($('#c_p')||{}).value||'';
+  const L=(id,l,v,x)=>`<div${x&&x.w?' class="w"':''}><label for="${id}">${l}</label><input id="${id}" value="${esc(v||'')}" autocomplete="off"${x&&x.m?` inputmode="${x.m}"`:''}${x&&x.ev?' '+x.ev:''}></div>`;
+  modal(`<h2>Cadastrar cliente novo</h2><div class="f">
+   ${L('r_nome','Nome completo / razão social *',nm,{w:1})}
+   ${L('r_cpf','CPF ou CNPJ',cp,{m:'numeric'})}
+   ${L('r_tel','Telefone / WhatsApp',ph,{m:'tel'})}
+   ${L('r_cep','CEP (preenche o endereço sozinho)','',{m:'numeric',ev:'onblur="cliRapidoCep()"'})}
+   ${L('r_rua','Rua','',{w:1})}${L('r_num','Número','')}${L('r_bai','Bairro','')}${L('r_cid','Cidade','')}${L('r_uf','UF','')}
+  </div><input type="hidden" id="r_ibge"><p id="r_msg" class="sm" role="status"></p>
+  <p class="sm">Só o nome é obrigatório. Para emitir nota, preencha CPF/CNPJ e endereço. Dados completos (e-mail, inscrição estadual) podem ser editados depois em Clientes.</p>
+  <button class="btn" onclick="cliRapidoSalvar()">Salvar e usar nesta venda</button>`);
+  setTimeout(()=>{const e=$('#r_nome');if(e)e.focus()},50);
+}
+async function cliRapidoCep(){
+  const c=digits($('#r_cep').value);if(c.length!==8)return;
+  try{const d=await(await fetchT('https://viacep.com.br/ws/'+c+'/json/')).json();if(d.erro)return;
+    $('#r_rua').value=d.logradouro||$('#r_rua').value;$('#r_bai').value=d.bairro||$('#r_bai').value;
+    $('#r_cid').value=d.localidade||'';$('#r_uf').value=d.uf||'';$('#r_ibge').value=d.ibge||''}catch(e){}
+}
+function cliRapidoSalvar(){
+  const g=k=>($('#'+k).value||'').trim(),msg=$('#r_msg'),nm=g('r_nome'),cpf=g('r_cpf'),dd=digits(cpf);
+  const bad=t=>{msg.textContent=t;msg.className='sm bad'};
+  if(nm.length<2)return bad('Digite o nome do cliente.');
+  if(dd&&!(dd.length===11?okCpf(dd):dd.length===14?okCnpj(dd):false))return bad('CPF ou CNPJ inválido. Confira os números.');
+  const ex=dd&&db.customers.find(x=>digits(x.cpf)===dd);
+  if(ex){closeM();pickCli(ex.id);const cs=$('#cs');if(cs)cs.insertAdjacentHTML('afterbegin','<p class="sm ok">Esse CPF/CNPJ já estava cadastrado: usei o cadastro que existia.</p>');return}
+  const row={id:uid(),kind:'cliente',person_type:dd.length===14?'PJ':'PF',name:nm,cpf:cpf?fmtDoc(cpf):'',phone:g('r_tel'),cep:g('r_cep'),street:g('r_rua'),number:g('r_num'),district:g('r_bai'),city:g('r_cid'),uf:g('r_uf').toUpperCase(),ibge:g('r_ibge'),email:'',ie:'',trade_name:''};
+  row.address=row.street?`${row.street}, ${row.number||'s/n'} - ${row.district}, ${row.city}/${row.uf}`:'';
+  put('customers',row);closeM();pickCli(row.id);
+  const cs=$('#cs');if(cs)cs.insertAdjacentHTML('afterbegin','<p class="sm ok">Cliente cadastrado e escolhido para esta venda.</p>');
 }
 function pickCli(id){
   const c=db.customers.find(x=>x.id===id);if(!c)return;
