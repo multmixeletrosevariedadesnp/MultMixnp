@@ -2,8 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.21'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.22'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -379,7 +380,30 @@ body.in.L-foco .fbtn:hover{background:rgba(255,255,255,.28)}
 body.in.L-foco .sync{margin:0 0 0 auto;padding:0}
 body:not(.in) .fbtn{display:none!important}
 </style>
-<style>a:not(.btn):not(.skip),a:not(.btn):not(.skip):visited{color:color-mix(in srgb,var(--pri) 55%,var(--ink));text-decoration:underline}a:not(.btn):not(.skip):hover{color:var(--ink)}</style></head>
+<style>a:not(.btn):not(.skip),a:not(.btn):not(.skip):visited{color:color-mix(in srgb,var(--pri) 55%,var(--ink));text-decoration:underline}a:not(.btn):not(.skip):hover{color:var(--ink)}</style><style id="mm-mobile">
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+button,a,.btn,nav button,.chip,select,label{touch-action:manipulation}
+@supports(height:100dvh){
+body.in header{height:100dvh}
+.wall,.desk{min-height:calc(100dvh - 150px)}
+.pdvr{max-height:calc(100dvh - 36px)}
+}
+@media(max-width:900px){
+input,select,textarea{font-size:16px!important}
+header{padding-top:calc(12px + env(safe-area-inset-top,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+#modal{padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.login{padding-top:max(20px,env(safe-area-inset-top,0px));padding-bottom:max(20px,env(safe-area-inset-bottom,0px))}
+body{padding-bottom:env(safe-area-inset-bottom,0px)}
+}
+@media(pointer:coarse){
+.btn,.btn.s,button,.chip,select,input:not([type=checkbox]):not([type=radio]){min-height:44px}
+.btn.s{padding:9px 14px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px}
+a.lnk,.lk,footer a,footer button{display:inline-block;padding:10px 6px;min-height:44px}
+}
+</style>
+</head>
 <body>
 <a class="skip" href="#app">Pular para o conteúdo</a>
 <header>
