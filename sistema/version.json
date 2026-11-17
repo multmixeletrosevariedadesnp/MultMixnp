@@ -1,5 +1,5 @@
 {
- "version": "1.95.41",
+ "version": "1.95.42",
  "date": "2026-11-16",
- "notes": "Início no celular: grade de atalhos grandes."
+ "notes": "Ao abrir o app já logado, abre direto no Início."
 }
