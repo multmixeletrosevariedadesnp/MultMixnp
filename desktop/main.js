@@ -45,7 +45,7 @@ async function refresh(rel) { // baixa a versão publicada e guarda no espelho (
 }
 /* Código (html, js, css, json): tenta primeiro a versão publicada (até 3 s) e guarda no espelho, para o programa abrir sempre
    atualizado sem precisar "forçar atualização". Sem internet (ou lenta), usa a cópia local e o programa funciona igual. */
-const LIVE = /^(html?|js|css|json|webmanifest)$/;
+const LIVE = /^(html?|js|css|json|webmanifest|csv)$/;
 async function fetchLive(rel) {
   try {
     const r = await net.fetch(readCfg().base + rel + (rel.endsWith('.html') || rel.endsWith('.json') ? '?t=' + Date.now() : ''), { cache: 'no-store', signal: AbortSignal.timeout(3000) });

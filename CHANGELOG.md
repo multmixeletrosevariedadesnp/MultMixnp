@@ -1,5 +1,9 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.3 + API fiscal — 17/11/2026
+- Tabela do IBPT no app do Windows: o arquivo `tabela.csv` agora também é buscado na versão publicada ao abrir (antes o app usava a cópia embutida no instalador e a atualização automática da tabela não via o arquivo novo).
+- API fiscal: a consulta ao IBPT espera até 10 s (antes 6 s), porque o serviço do IBPT e o Render acordando às vezes demoram.
+
 ## Instalador Windows 1.3.2 — 17/11/2026
 - O Sistema, o PDV e o Catálogo agora abrem **já atualizados**, sem precisar "Forçar atualização": ao abrir, o programa busca a versão publicada (espera no máximo 3 segundos) e guarda uma cópia. Sem internet ou com internet lenta, usa a cópia guardada e funciona igual. Antes, a versão nova só aparecia depois de abrir duas vezes.
 
