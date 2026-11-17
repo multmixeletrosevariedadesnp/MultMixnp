@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.40'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.41'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -448,6 +448,14 @@ html.cel table.ct td{white-space:normal!important}html.cel table.ct td>div,html.
 html.cel .L-bot nav button{flex:1 1 0;min-width:0}
 @media(orientation:landscape) and (max-height:520px){html.cel .desk{padding:12px 14px 10px}html.cel .desk .dkt{font-size:calc(44px*var(--dks,1))}html.cel .desk .dkd{font-size:calc(13px*var(--dks,1))}html.cel .desk .dka .btn{padding:8px 4px}html.cel .desk .dka{width:auto;min-width:280px}html.cel header{padding-top:6px;padding-bottom:4px}}
 @media(orientation:landscape) and (max-height:520px){html.cel body.in.L-bot:has(.desk) header{padding:0;min-height:0;height:0;border:0;overflow:visible}html.cel body.in.L-bot:has(.desk) header>:not(nav){display:none}html.cel body.in.L-bot{padding-bottom:calc(var(--navh,60px) + 2px)}html.cel .desk{padding-top:10px}}
+.appin{display:flex;flex-direction:column;gap:12px;padding:0 0 12px}
+.appin .apban{position:relative;height:30dvh;min-height:150px;background-size:cover;background-position:center 38%;border-radius:0 0 22px 22px;overflow:hidden}.appin .apban.nw{background-color:var(--pri)}
+.appin .apban .dkp{top:10px;left:10px;bottom:auto;right:auto}.appin .apban .dkv{top:10px;right:10px;bottom:auto;left:auto}
+.appin .aprow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 16px}.appin .aprow .dkt{font-size:34px;font-weight:300;margin:0;line-height:1}.appin .aprow .dkd{font-size:13px;text-align:right}
+.appin .agrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 12px}
+.atile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px 4px;min-height:96px;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-align:center;line-height:1.2}
+.atile:active{transform:scale(.97)}.atile .icw{width:38px;height:38px}.atile .ic{width:22px;height:22px}.atile .bdg{position:absolute;top:6px;right:8px;background:var(--bad);color:#fff;border-radius:999px;padding:0 7px;font-size:11px}
+@media(orientation:landscape) and (max-height:520px){.appin .apban{display:none}.appin .agrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}.atile{min-height:80px}}
 </style>
 </head>
 <body>
@@ -4968,7 +4976,7 @@ function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('p
 /* papel de parede do Início (fica só neste aparelho) */
 const WALK='mm_wall';
 /* padrão de fábrica do Início (vale só enquanto o usuário não escolheu nada em Aparência) */
-const INICIO_IMG='inicio.jpg',INICIO_DESK={logo:0,rel:1,atl:1,aviso:1,pl:'mc',pr:'bl',pa:'bc',sz:2,fit:'fit'},INICIO_DESK_CEL=Object.assign({},INICIO_DESK,{pr:'bc',pa:'bc',sz:2});
+const INICIO_IMG='inicio.jpg',INICIO_DESK={logo:0,rel:1,atl:1,aviso:1,pl:'mc',pr:'bl',pa:'bc',sz:2,fit:'fit',app:0},INICIO_DESK_CEL=Object.assign({},INICIO_DESK,{pr:'bc',pa:'bc',sz:2,app:1});
 const wallGet=()=>{try{return JSON.parse(localStorage.getItem(WALK)||'null')||{m:'img',u:INICIO_IMG}}catch(e){return{m:'img',u:INICIO_IMG}}};
 function wallCss(){
   const w=wallGet();
@@ -4986,19 +4994,29 @@ function wallMenu(){
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
 /* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
-const deskGet=()=>{try{return Object.assign({},CEL()&&!matchMedia('(orientation:landscape)').matches?INICIO_DESK_CEL:INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
-function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
-function deskPos(k,v){const d=deskGet();d[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
+const deskRaw=()=>{try{const r=JSON.parse(localStorage.getItem('mm_desk')||'{}');if(r&&r.pr==='bl'&&r.pa==='bc'&&r.pl==='mc'&&CEL()){delete r.pl;delete r.pr;delete r.pa;delete r.sz;delete r.esc;localStorage.setItem('mm_desk',JSON.stringify(r))}return r||{}}catch(e){return{}}};
+const deskSave=(k,v)=>{const r=deskRaw();r[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(r))}catch(e){}};
+const deskGet=()=>{try{return Object.assign({},CEL()&&!matchMedia('(orientation:landscape)').matches?INICIO_DESK_CEL:INICIO_DESK,deskRaw())}catch(e){return Object.assign({},INICIO_DESK)}};
+function deskSet(k,v){deskSave(k,v?1:0);vIni()}
+function deskPos(k,v){deskSave(k,v);const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
 const deskEsc=d=>Math.round(d.esc||({1:60,2:100,3:150}[d.sz])||100);
-function deskScale(v){v=Math.max(40,Math.min(300,+v||100));const d=deskGet();d.esc=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const e=document.querySelector('.desk');if(e)e.style.setProperty('--dks',v/100);const l=document.getElementById('dkEv');if(l)l.textContent=v+'%'}
+function deskScale(v){v=Math.max(40,Math.min(300,+v||100));deskSave('esc',v);const e=document.querySelector('.desk,.appin');if(e)e.style.setProperty('--dks',v/100);const l=document.getElementById('dkEv');if(l)l.textContent=v+'%'}
 function deskGrid(k,t){const d=deskGet(),P=['tl','tc','tr','ml','mc','mr','bl','bc','br'];return `<div style="display:flex;align-items:center;gap:12px;margin:8px 0"><div style="flex:1" class="sm"><b>${t}</b></div><div role="radiogroup" aria-label="Posição: ${t}" style="display:grid;grid-template-columns:repeat(3,34px);gap:3px;padding:4px;border:1px solid var(--line);border-radius:8px;background:var(--bg)">${P.map(x=>`<button type="button" role="radio" aria-checked="${d[k]===x}" aria-label="${x}" onclick="deskPos('${k}','${x}')" style="min-height:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--line);background:${d[k]===x?'var(--pri)':'var(--card)'}"></button>`).join('')}</div></div>`}
 function deskOpts(){const d=deskGet(),c=(k,t)=>`<label class="sm" style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" style="width:auto" ${d[k]?'checked':''} onchange="deskSet('${k}',this.checked)"> ${t}</label>`;
-  return `<div style="margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px"><b class="sm">Mostrar na área de trabalho</b>${c('logo','Logo e nome da empresa')}${c('rel','Relógio e data')}${c('atl','Atalhos (Nova venda, Novo cliente, Buscar)')}${c('aviso','Aviso discreto quando houver pendências')}${wallGet().m==='img'?`<div style="margin:8px 0"><b class="sm">Ajuste da foto</b><div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><button type="button" class="btn s ${d.fit==='cover'?'g':''}" onclick="deskPos('fit','fit')">Mostrar inteira</button><button type="button" class="btn s ${d.fit==='cover'?'':'g'}" onclick="deskPos('fit','cover')">Preencher (corta as bordas)</button></div></div>`:''}<b class="sm" style="display:block;margin-top:10px">Posição na tela</b>${deskGrid('pl','Logo e nome')}${deskGrid('pr','Relógio e data')}${deskGrid('pa','Atalhos')}<div style="margin:8px 0"><div class="sm" style="display:flex;justify-content:space-between"><b>Tamanho do relógio e data</b><span id="dkEv">${deskEsc(d)}%</span></div><input type="range" min="40" max="300" step="5" value="${deskEsc(d)}" aria-label="Tamanho do relógio e data" style="padding:0;min-height:32px" oninput="deskScale(this.value)"></div><p class="sm" style="margin:4px 0 0">Para ver só a logo, escolha "Sem papel de parede" abaixo. Para ver só a foto, desmarque a logo.</p></div>`}
+  return `<div style="margin:8px 0;padding:8px 12px;border:1px solid var(--line);border-radius:10px"><b class="sm">Mostrar na área de trabalho</b>${c('logo','Logo e nome da empresa')}${c('rel','Relógio e data')}${c('atl','Atalhos (Nova venda, Novo cliente, Buscar)')}${c('aviso','Aviso discreto quando houver pendências')}${c('app','Grade de atalhos grandes (ideal para celular)')}${wallGet().m==='img'?`<div style="margin:8px 0"><b class="sm">Ajuste da foto</b><div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><button type="button" class="btn s ${d.fit==='cover'?'g':''}" onclick="deskPos('fit','fit')">Mostrar inteira</button><button type="button" class="btn s ${d.fit==='cover'?'':'g'}" onclick="deskPos('fit','cover')">Preencher (corta as bordas)</button></div></div>`:''}<b class="sm" style="display:block;margin-top:10px">Posição na tela</b>${deskGrid('pl','Logo e nome')}${deskGrid('pr','Relógio e data')}${deskGrid('pa','Atalhos')}<div style="margin:8px 0"><div class="sm" style="display:flex;justify-content:space-between"><b>Tamanho do relógio e data</b><span id="dkEv">${deskEsc(d)}%</span></div><input type="range" min="40" max="300" step="5" value="${deskEsc(d)}" aria-label="Tamanho do relógio e data" style="padding:0;min-height:32px" oninput="deskScale(this.value)"></div><p class="sm" style="margin:4px 0 0">Para ver só a logo, escolha "Sem papel de parede" abaixo. Para ver só a foto, desmarque a logo.</p></div>`}
 let deskT=null;
 function deskTick(){const t=document.getElementById('dkT'),dd=document.getElementById('dkD');if(!t&&!dd){clearInterval(deskT);deskT=null;return}const n=new Date();if(t)t.textContent=n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(dd)dd.textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});if(!deskT)deskT=setInterval(deskTick,15000)}
 function deskAv(){modal('<h2>Pendências</h2>'+(window.__deskTD||''))}
 function deskBuild(wc,nAv){
   const d=deskGet(),co=CO(),nome=co.trade_name||co.legal_name||'',img=wc?'':'background-image:linear-gradient(135deg,color-mix(in srgb,var(--pri) 20%,var(--bg)),var(--bg))';
+  if(d.app&&ADM()){
+    const nb=NN(),late=db.installments.filter(i=>!i.paid_at&&!i.canceled_at&&String(i.due_date).slice(0,10)<ld(now())).length;
+    const T=[['pdv','Nova venda','cart'],['cli','Clientes','users'],['prod','Produtos','box'],['ped','Pedidos','clipboard',nb],['car','Carnês','ticket'],['cob','Cobrança','chatcoin',late],['cx','Caixa','drawer'],['pag','Contas a pagar','calpay'],['fis','Fiscal','nfok'],['bal','Balcão (PDV)','register'],['rel','Relatórios','bars'],['*busca','Buscar','search'],['*ajuda','Ajuda','help']];
+    $('#app').innerHTML=`<div class="appin"><div class="apban ${wc?'':'nw'}" style="${wc||img}"><button type="button" class="dkp" onclick="wallMenu()" aria-label="Aparência do Início">⚙ Aparência</button>${d.aviso&&nAv?`<button type="button" class="dkv" onclick="deskAv()">🔔 ${nAv} pendência(s)</button>`:''}</div>
+    ${d.rel?`<div class="aprow"><div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div></div>`:''}
+    <div class="agrid">${T.map(([v,l,i,b])=>`<button type="button" class="atile" onclick="${v[0]==='*'?(v==='*busca'?'searchOpen()':'ajudaOpen()'):`go('${v}')`}">${ic(i)}<span>${l}</span>${b?`<b class="bdg">${b}</b>`:''}</button>`).join('')}</div></div>`;
+    if(d.rel)deskTick();return;
+  }
   const fitImg=wallGet().m==='img'&&(wallGet().d||wallGet().u)&&d.fit!=='cover';
   const blk={pl:d.logo?`<div class="dkc">${`<img class="dkl" src="${esc(logoIcon())}" alt="${esc(nome)}">${nome?`<div class="dkn">${esc(nome)}</div>`:''}`}</div>`:'',
    pr:d.rel?`<div class="dkc"><div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div></div>`:'',
