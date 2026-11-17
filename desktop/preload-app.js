@@ -23,6 +23,7 @@ try { Object.defineProperty(window, 'localStorage', { configurable: true, get: (
 window.mmDesk = {
   desktop: true,
   dbStatus: boot && boot.status,
+  ibpt: a => ipcRenderer.invoke('mm-ibpt', a),
   print: html => ipcRenderer.invoke('mm-print', html),
   printers: () => ipcRenderer.invoke('mm-printers'),
   getPrinter: () => ipcRenderer.invoke('mm-get-printer'),

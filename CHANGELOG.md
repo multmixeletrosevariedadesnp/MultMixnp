@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.4 + Sistema 1.95.46 + função fiscal — 17/11/2026
+- **IBPT pelo computador da loja**: o servidor do IBPT recusa as conexões vindas dos servidores em nuvem (Supabase e Render), mas atende o computador comum (testado no navegador: NCM 84796000, PA, tabela 26.2.C, federal 13,45% e estadual 19,00%). No app do Windows, o Sistema agora consulta o IBPT com o token da empresa antes de emitir a nota e envia os percentuais para a função fiscal. Modo "só API": todos os NCMs; modo "automático": só os que a tabela não tem. O botão "Testar consulta" também usa o computador. No navegador, nada muda.
+- Função fiscal: aceita os percentuais enviados pelo app (só do administrador, valores de 0 a 100).
+
+## Função fiscal — 17/11/2026
+- **IBPT direto**: a função `fiscal` agora consulta o "De Olho no Imposto" (apidoni.ibpt.org.br) ela mesma, com o token e o CNPJ/UF da empresa, em vez de depender da API fiscal no Render (que respondia "IBPT não respondeu"). Modo "api": todos os NCMs pela API; "auto": tabela primeiro e API só para o que faltar. Cada NCM fica em memória por 6 horas. O botão "Testar consulta" em Empresa também usa a consulta direta e só tenta o Render como reserva. O Render continua sendo reserva na emissão se a consulta direta falhar.
+
+## Sistema 1.95.45 — 17/11/2026
+- Tabela IBPT: se o repositório responder erro 5xx (site fora do ar por instantes), tenta mais 2 vezes e, se continuar, avisa em português que a tabela já carregada segue valendo.
+
 ## Instalador Windows 1.3.3 + API fiscal — 17/11/2026
 - Tabela do IBPT no app do Windows: o arquivo `tabela.csv` agora também é buscado na versão publicada ao abrir (antes o app usava a cópia embutida no instalador e a atualização automática da tabela não via o arquivo novo).
 - API fiscal: a consulta ao IBPT espera até 10 s (antes 6 s), porque o serviço do IBPT e o Render acordando às vezes demoram.

@@ -184,6 +184,25 @@ function printHtml(html, silent = true) {
 }
 
 ipcMain.handle('mm-print', (e, html) => printHtml(String(html || ''), true));
+/* IBPT (De Olho no Imposto): consulta feita pelo computador da loja. O servidor do IBPT recusa as conexões dos servidores em nuvem
+   (Supabase e Render), mas atende o computador comum; o Sistema usa este resultado ao emitir a nota. */
+ipcMain.handle('mm-ibpt', async (e, a) => {
+  try {
+    const ncm = String(a && a.ncm || '').replace(/\D/g, ''), cnpj = String(a && a.cnpj || '').replace(/\D/g, ''), token = String(a && a.token || '').trim();
+    const uf = String(a && a.uf || 'PA').toUpperCase().slice(0, 2);
+    if (ncm.length !== 8) return { ok: false, erro: 'NCM inválido (precisa de 8 dígitos).' };
+    if (!token) return { ok: false, erro: 'Token do IBPT não cadastrado (Empresa).' };
+    if (cnpj.length !== 14) return { ok: false, erro: 'CNPJ da empresa não cadastrado (Empresa).' };
+    const q = new URLSearchParams({ token, cnpj, codigo: ncm, uf, ex: '0', descricao: String(a.desc || 'Produto').slice(0, 120), unidadeMedida: String(a.un || 'UN'), valor: Math.max(Number(a.valor) || 100, 0.01).toFixed(2), gtin: 'SEM GTIN', codigoInterno: ncm });
+    const r = await net.fetch('https://apidoni.ibpt.org.br/api/v1/produtos?' + q.toString(), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12000) });
+    const txt = await r.text();
+    let k = null;
+    try { let j = JSON.parse(txt); if (Array.isArray(j)) j = j[0]; if (j && typeof j === 'object') k = Object.fromEntries(Object.entries(j).map(([x, y]) => [x.toLowerCase(), y])); } catch (er) { /* talvez XML */ }
+    if (!k) { const g = n => { const m = txt.match(new RegExp('<' + n + '>([^<]*)</' + n + '>', 'i')); return m ? m[1] : undefined; }; if (g('Nacional') !== undefined) k = { nacional: g('Nacional'), estadual: g('Estadual'), importado: g('Importado'), chave: g('Chave'), versao: g('Versao'), fonte: g('Fonte'), vigenciafim: g('VigenciaFim') }; else { const m = txt.match(/<Message>([^<]*)<\/Message>/i); return { ok: false, erro: 'IBPT: ' + (m ? m[1] : txt.replace(token, '***').replace(/<[^>]*>/g, ' ').trim().slice(0, 200)) }; } }
+    if (k.nacional === undefined && k.estadual === undefined) return { ok: false, erro: 'IBPT: ' + String(k.message || k.erro || 'resposta sem percentuais').replace(token, '***').slice(0, 200) };
+    return { ok: true, nacional: Number(k.nacional) || 0, importado: Number(k.importado) || 0, estadual: Number(k.estadual) || 0, chave: String(k.chave || ''), versao: String(k.versao || ''), fonte: String(k.fonte || 'IBPT'), vigencia_fim: String(k.vigenciafim || '') };
+  } catch (er) { return { ok: false, erro: 'Não consegui falar com o IBPT: ' + String(er && er.message || er).replace(/token=[^&\s)]+/gi, 'token=***').slice(0, 200) }; }
+});
 ipcMain.handle('mm-printers', async e => (await e.sender.getPrintersAsync()).map(p => ({ name: p.name, display: p.displayName || p.name, isDefault: !!p.isDefault })));
 ipcMain.handle('mm-get-printer', () => readCfg().printer);
 ipcMain.handle('mm-set-printer', (e, n) => { const c = readCfg(); c.printer = String(n || ''); writeCfg(c); return true; });
