@@ -43,13 +43,34 @@ async function refresh(rel) { // baixa a versão publicada e guarda no espelho (
     fs.writeFileSync(f + '.tmp', buf); fs.renameSync(f + '.tmp', f);
   } catch (e) { /* sem internet: segue com o que tem */ } finally { refreshing.delete(rel); }
 }
-function handleMm(req) {
+/* Código (html, js, css, json): tenta primeiro a versão publicada (até 3 s) e guarda no espelho, para o programa abrir sempre
+   atualizado sem precisar "forçar atualização". Sem internet (ou lenta), usa a cópia local e o programa funciona igual. */
+const LIVE = /^(html?|js|css|json|webmanifest)$/;
+async function fetchLive(rel) {
+  try {
+    const r = await net.fetch(readCfg().base + rel + (rel.endsWith('.html') || rel.endsWith('.json') ? '?t=' + Date.now() : ''), { cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return null;
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (!buf.length) return null;
+    if (/\.html?$/.test(rel) && !/<html|<!doctype/i.test(buf.slice(0, 400).toString('utf8'))) return null;
+    const f = path.join(mirrorDir(), rel); fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f + '.tmp', buf); fs.renameSync(f + '.tmp', f);
+    return buf;
+  } catch (e) { return null; }
+}
+async function handleMm(req) {
   const u = new URL(req.url), rel = safeRel(u.pathname);
   if (!rel) return new Response('Não encontrado', { status: 404 });
-  const f = readLocal(rel), ext = (rel.split('.').pop() || '').toLowerCase();
-  if (f) { refresh(rel); return new Response(fs.readFileSync(f), { headers: { 'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': 'no-store' } }); }
+  const ext = (rel.split('.').pop() || '').toLowerCase(), hdr = { 'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': 'no-store' };
+  if (LIVE.test(ext) && !offlineNow) {
+    const live = await fetchLive(rel);
+    if (live) return new Response(live, { headers: hdr });
+  }
+  const f = readLocal(rel);
+  if (f) { if (!LIVE.test(ext)) refresh(rel); return new Response(fs.readFileSync(f), { headers: hdr }); }
   return net.fetch(readCfg().base + rel).then(async r => { if (r.ok) refresh(rel); return r; }).catch(() => new Response('Sem internet e arquivo ainda não baixado.', { status: 504 }));
 }
+let offlineNow = false; // se a internet caiu, não espera 3 s por arquivo
 
 /* ===== banco local (arquivo, com cópia automática) ===== */
 const stores = {};
@@ -186,7 +207,7 @@ function iniciarAtualizador() {
 }
 app.whenReady().then(() => {
   iniciarAtualizador();
-  prepMirror(); protocol.handle('mm', handleMm);
+  prepMirror(); protocol.handle('mm', handleMm); setInterval(() => { offlineNow = !net.isOnline(); }, 5000); offlineNow = !net.isOnline();
   setTimeout(() => backupAll(false), 20000); setInterval(() => backupAll(false), 30 * 60 * 1000); setInterval(flushAll, 5000);
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'MultMix', submenu: [

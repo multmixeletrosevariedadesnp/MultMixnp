@@ -1,5 +1,27 @@
 # Histórico de versões
 
+## Instalador Windows 1.3.2 — 17/11/2026
+- O Sistema, o PDV e o Catálogo agora abrem **já atualizados**, sem precisar "Forçar atualização": ao abrir, o programa busca a versão publicada (espera no máximo 3 segundos) e guarda uma cópia. Sem internet ou com internet lenta, usa a cópia guardada e funciona igual. Antes, a versão nova só aparecia depois de abrir duas vezes.
+
+## Sistema 1.95.44 — 17/11/2026
+- Menu do topo (Gestão, Vendas…): com ícones em vidro os botões ficam mais altos e o fim da lista (Auditoria, Relatórios, Configurações…) ficava cortado fora da tela. Agora o menu tem a altura limitada à janela e rola, e no estilo vidro os botões ficam um pouco mais compactos.
+
+## Sistema 1.95.43 / PDV 1.33.25 — 17/11/2026
+- **Cadastrar cliente novo direto na venda** (botão "+ Cadastrar cliente novo", no PDV e na tela Venda do Sistema), sem ir em Clientes. Formulário curto: nome (obrigatório), CPF/CNPJ, telefone e endereço (o CEP preenche rua, bairro, cidade e UF). O cliente já fica escolhido na venda. Se o CPF/CNPJ já existe, usa o cadastro existente.
+- No PDV rode `supabase-v55.sql` (o vendedor cria cliente por uma função segura, que só cria e nunca altera cadastros). Sem internet, o PDV usa os dados digitados e o cadastro é criado quando a venda é enviada.
+
+## PDV 1.33.24 — 16/11/2026
+- Busca de cliente: a lista aparece logo abaixo do campo do nome (antes ficava depois de CPF/Telefone) e o campo explica o que fazer.
+
+## PDV 1.33.23 — 16/11/2026
+- Busca de cliente: o resultado (ou a mensagem) fica abaixo de CPF/Telefone e podia ficar fora da tela; agora a tela rola até ele.
+
+## PDV 1.33.22 — 16/11/2026
+- **Todo vendedor pode buscar cliente** (rode `supabase-v54.sql`). O vendedor vê nome e telefone; o CPF só aparece para administrador e quem vende no carnê (os demais veem "cadastro completo"). Ao escolher o cliente, a venda fica ligada ao cadastro completo, e a emissão fiscal usa CPF e endereço sem o vendedor ver. O servidor passou a ligar o cliente escolhido em qualquer forma de pagamento (antes só no carnê).
+
+## PDV 1.33.21 — 16/11/2026
+- Busca de cliente: não depende mais do aviso "online" do navegador (no app do Windows podia ficar travada), mostra "Buscando…", "Nenhum cliente encontrado" e o motivo quando falha (sem permissão de carnê, função não instalada, sem conexão). Admin também pode buscar.
+
 ## Instalador Windows 1.3.1 — 16/11/2026
 - Corrigido: ao abrir o Sistema/PDV/Catálogo pelo instalador, o Windows mostrava "Obter um aplicativo para abrir este 'mm' link" e a janela ficava azul vazia. O endereço interno `mm://` agora é atendido na sessão própria de cada programa. Gere o instalador de novo (GitHub Actions) para valer.
 
