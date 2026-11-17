@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.36'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.38'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -445,6 +445,8 @@ html.cel table.ct td:empty,html.cel table.ct td.vz{display:none}
 html.cel table.ct td[data-l=""]::before{display:none}
 html.cel table.ct td:first-child{font-weight:700}
 html.cel table.ct td{white-space:normal!important}html.cel table.ct td>div,html.cel table.ct td>span:has(.btn){flex-wrap:wrap!important;display:flex;gap:6px}html.cel table.ct td .btn{margin:2px 0}
+html.cel .L-bot nav button{flex:1 1 0;min-width:0}
+@media(orientation:landscape) and (max-height:520px){html.cel .desk{padding:12px 14px 10px}html.cel .desk .dkt{font-size:calc(44px*var(--dks,1))}html.cel .desk .dkd{font-size:calc(13px*var(--dks,1))}html.cel .desk .dka .btn{padding:8px 4px}html.cel .desk .dka{width:auto;min-width:280px}html.cel header{padding-top:6px;padding-bottom:4px}}
 </style>
 </head>
 <body>
@@ -2158,7 +2160,7 @@ const LAYS={side:['Lateral','Menu fixo à esquerda, com os grupos. É o padrão.
 const CEL=()=>{try{const m=localStorage.mm_modo||'auto';if(m==='cel')return true;if(m==='pc')return false;const mm=q=>matchMedia(q).matches;return mm('(max-width:820px)')||(mm('(pointer:coarse)')&&Math.min(screen.width,screen.height)<520)}catch(e){return false}};
 const navH=()=>{const hd=document.querySelector('header');if(hd)document.documentElement.style.setProperty('--hdrh',Math.round(hd.getBoundingClientRect().height)+'px');const n=document.getElementById('nav');if(n&&getComputedStyle(n).position==='fixed')document.documentElement.style.setProperty('--navh',Math.round(n.getBoundingClientRect().height)+'px')};
 const celApply=()=>{const on=CEL();document.documentElement.classList.toggle('cel',on);try{navH()}catch(e){}return on};
-celApply();addEventListener('resize',celApply);addEventListener('orientationchange',()=>setTimeout(celApply,200));
+celApply();addEventListener('resize',celApply);addEventListener('orientationchange',()=>setTimeout(()=>{celApply();try{if(view==='ini')vIni()}catch(e){}},250));
 function celTables(root){if(!document.documentElement.classList.contains('cel'))return;(root||document).querySelectorAll('table:not(.ct):not(.nct)').forEach(t=>{if(t.querySelector('td[colspan],th[colspan]'))return;const hr=[...t.rows].find(r=>r.querySelector('th'));if(!hr)return;const L=[...hr.cells].map(x=>x.textContent.trim());hr.classList.add('hr');[...t.rows].forEach(r=>{if(r===hr||r.querySelector('th'))return;[...r.cells].forEach((c,i)=>{c.setAttribute('data-l',L[i]||'');if(!c.children.length)c.classList.add('tx');if(!c.textContent.trim()&&!c.querySelector('button,input,img,select,a'))c.classList.add('vz')})});t.classList.add('ct')})}
 let __ctq=0;try{new MutationObserver(()=>{if(__ctq)return;__ctq=requestAnimationFrame(()=>{__ctq=0;try{celTables()}catch(e){}})}).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
 function modoSet(v){try{if(v==='auto')localStorage.removeItem('mm_modo');else localStorage.setItem('mm_modo',v)}catch(e){}location.reload()}
@@ -2367,7 +2369,7 @@ function go(v){DUOS=null;__pc=false;if(v!==view||(history.state&&history.state.m
 /* botão Voltar do Android/iPhone: fecha janela aberta ou volta à tela anterior, em vez de sair do sistema */
 let __ign=0,__pc=false;
 try{history.replaceState({mm:view},'')}catch(e){}
-addEventListener('popstate',e=>{if(__ign>0){__ign--;return}const m=document.getElementById('modal');if(m&&m.classList.contains('open')){scanStop();m.classList.remove('open');return}const st=e.state;if(st&&st.mm&&st.mm!=='modal'){DUOS=null;view=st.mm;render()}else if(view!=='ini'){DUOS=null;view='ini';render()}});
+addEventListener('popstate',e=>{if(__ign>0){__ign--;return}const m=document.getElementById('modal');if(m&&m.classList.contains('open')){scanStop();m.classList.remove('open');return}const st=e.state;if(st&&st.mm&&st.mm!=='modal'&&st.mm!=='login'){DUOS=null;view=st.mm;render()}else if(view!=='ini'){DUOS=null;view='ini';render()}});
 function duoSel(i){DUOS=i;render()}
 try{matchMedia('(min-width:900px)').addEventListener('change',()=>{if(LAY()==='duo'&&view!=='login')render()})}catch(e){}
 const NN=()=>db.orders.filter(o=>o.status==='novo'||o.status==='pago').length;
@@ -2547,7 +2549,7 @@ async function afterLogin(){
   if(!role){await sb.auth.signOut();session=null;view='login';render();return setTimeout(()=>{const er=$('#err');if(er)er.textContent=loginMsg||'Seu usuário ainda não tem permissão. Peça ao administrador.'},50)}
   if(OFFPW){offSave(OFFPW.email,OFFPW.pw);OFFPW=null}
   cobLoad().then(()=>{try{render()}catch(e){}});
-  view=ADM()?'prod':'pdv';render();sync();licInit();
+  view=ADM()?'ini':'pdv';try{history.replaceState({mm:view},'')}catch(e){}render();sync();licInit();
 }
 /* ===== Entrada sem internet: a senha fica guardada só como código embaralhado (PBKDF2) neste computador, por 30 dias desde o último acesso com internet ===== */
 const OFF_K='mm_off_users',OFF_DIAS=30;let OFFPW=null;
@@ -2572,7 +2574,7 @@ async function offLogin(email,pw){
   let ok=false;try{ok=await offHash(email,pw,u.salt)===u.hash}catch(e){return 'Este navegador não permite entrar sem internet.'}
   if(!ok)return 'E-mail ou senha incorretos.';
   session={user:{id:u.uid,email:email},offline:true};role=u.role;me=u.me;
-  view=ADM()?'prod':'pdv';render();licInit();
+  view=ADM()?'ini':'pdv';try{history.replaceState({mm:view},'')}catch(e){}render();licInit();
   try{setSync('offline · '+db.outbox.length+' pendente(s)')}catch(e){}
   return '';
 }
@@ -4983,7 +4985,7 @@ function wallMenu(){
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
 /* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
-const deskGet=()=>{try{return Object.assign({},CEL()?INICIO_DESK_CEL:INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
+const deskGet=()=>{try{return Object.assign({},CEL()&&!matchMedia('(orientation:landscape)').matches?INICIO_DESK_CEL:INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
 function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
 function deskPos(k,v){const d=deskGet();d[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
 const deskEsc=d=>Math.round(d.esc||({1:60,2:100,3:150}[d.sz])||100);
@@ -5008,7 +5010,7 @@ function deskBuild(wc,nAv){
   if(d.rel)deskTick();
   deskFit();
 }
-function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(320,innerHeight-t-(parseFloat(getComputedStyle(document.body).paddingBottom)||0))+'px'}
+function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(170,innerHeight-t-(parseFloat(getComputedStyle(document.body).paddingBottom)||0))+'px'}
 addEventListener('resize',()=>{try{deskFit()}catch(e){}});
 let dashDias=7;
 const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'desk'}catch(e){return'desk'}};
