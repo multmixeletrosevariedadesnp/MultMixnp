@@ -1,5 +1,5 @@
 {
- "version": "1.95.26",
+ "version": "1.95.27",
  "date": "2026-11-16",
- "notes": "Área de trabalho: sua foto aparece inteira, sem cortar (ou preencher, se preferir)."
+ "notes": "Início padrão: Área de trabalho com a imagem da MultMix."
 }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.26'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.27'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -4923,10 +4923,12 @@ const lowStock=()=>db.products.filter(p=>p.active!==false&&p.active!==0&&(+p.sto
 function iniProd(id){const p=db.products.find(x=>x.id===id);pq=p?p.name:'';go('prod')}
 /* papel de parede do Início (fica só neste aparelho) */
 const WALK='mm_wall';
-const wallGet=()=>{try{return JSON.parse(localStorage.getItem(WALK)||'null')||{m:'none'}}catch(e){return{m:'none'}}};
+/* padrão de fábrica do Início (vale só enquanto o usuário não escolheu nada em Aparência) */
+const INICIO_IMG='inicio.jpg',INICIO_DESK={logo:0,rel:1,atl:1,aviso:1,pl:'mc',pr:'bl',pa:'bc',sz:2,fit:'fit'};
+const wallGet=()=>{try{return JSON.parse(localStorage.getItem(WALK)||'null')||{m:'img',u:INICIO_IMG}}catch(e){return{m:'img',u:INICIO_IMG}}};
 function wallCss(){
   const w=wallGet();
-  if(w.m==='img'&&w.d)return `background-image:url(${w.d})`;
+  if(w.m==='img'&&(w.d||w.u))return `background-image:url(${w.d||w.u})`;
   if(['auto','dia','tarde','noite'].includes(w.m)){const E=[];artSaudBg(E,{greet:w.m},1600,900);const svg=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">${E.join('')}</svg>`;return `background-image:url(data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))})`}
   return '';
 }
@@ -4940,7 +4942,7 @@ function wallMenu(){
 }
 /* dashboard opcional do Início (fica só neste aparelho) */
 /* Área de trabalho: Início limpo, só papel de parede e/ou logo (fica só neste aparelho) */
-const deskGet=()=>{try{return Object.assign({logo:1,rel:1,atl:1,aviso:1,pl:'mc',pr:'mc',pa:'mc',sz:2,fit:'fit'},JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return{logo:1,rel:1,atl:1,aviso:1,pl:'mc',pr:'mc',pa:'mc',sz:2,fit:'fit'}}};
+const deskGet=()=>{try{return Object.assign({},INICIO_DESK,JSON.parse(localStorage.getItem('mm_desk')||'{}'))}catch(e){return Object.assign({},INICIO_DESK)}};
 function deskSet(k,v){const d=deskGet();d[k]=v?1:0;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}vIni()}
 function deskPos(k,v){const d=deskGet();d[k]=v;try{localStorage.setItem('mm_desk',JSON.stringify(d))}catch(e){}const sc=(document.querySelector('#modal')||{}).scrollTop;vIni();wallMenu();const m=document.querySelector('#modal');if(m&&sc)m.scrollTop=sc}
 const deskEsc=d=>Math.round(d.esc||({1:60,2:100,3:150}[d.sz])||100);
@@ -4953,12 +4955,12 @@ function deskTick(){const t=document.getElementById('dkT'),dd=document.getElemen
 function deskAv(){modal('<h2>Pendências</h2>'+(window.__deskTD||''))}
 function deskBuild(wc,nAv){
   const d=deskGet(),co=CO(),nome=co.trade_name||co.legal_name||'',img=wc?'':'background-image:linear-gradient(135deg,color-mix(in srgb,var(--pri) 20%,var(--bg)),var(--bg))';
-  const fitImg=wallGet().m==='img'&&wallGet().d&&d.fit!=='cover';
+  const fitImg=wallGet().m==='img'&&(wallGet().d||wallGet().u)&&d.fit!=='cover';
   const blk={pl:d.logo?`<div class="dkc">${`<img class="dkl" src="${esc(logoIcon())}" alt="${esc(nome)}">${nome?`<div class="dkn">${esc(nome)}</div>`:''}`}</div>`:'',
    pr:d.rel?`<div class="dkc"><div class="dkt" id="dkT"></div><div class="dkd" id="dkD"></div></div>`:'',
    pa:d.atl?`<div class="dka"><button class="btn" onclick="go('pdv')">Nova venda</button><button class="btn g" onclick="cliForm()">Novo cliente</button><button class="btn g" onclick="searchOpen()">Buscar</button></div>`:''};
   const cell=c=>['pl','pr','pa'].filter(k=>d[k]===c).map(k=>blk[k]).join('');
-  $('#app').innerHTML=`<div class="desk ${wc?'wp':''} ${fitImg?'fit':''}" style="--dks:${deskEsc(d)/100};${fitImg?'--wi:url('+wallGet().d+');':''}${wc||img}">
+  $('#app').innerHTML=`<div class="desk ${wc?'wp':''} ${fitImg?'fit':''}" style="--dks:${deskEsc(d)/100};${fitImg?'--wi:url('+(wallGet().d||wallGet().u)+');':''}${wc||img}">
   ${['tl','tc','tr','ml','mc','mr','bl','bc','br'].map(c=>`<div class="dc c${c}">${cell(c)}</div>`).join('')}
   ${d.aviso&&nAv?`<button type="button" class="dkv" onclick="deskAv()">🔔 ${nAv} pendência(s)</button>`:''}
   <button type="button" class="dkp" onclick="wallMenu()" aria-label="Aparência do Início">⚙ Aparência</button></div>`;
@@ -4968,7 +4970,7 @@ function deskBuild(wc,nAv){
 function deskFit(){const e=document.querySelector('.desk');if(!e)return;const t=e.getBoundingClientRect().top+scrollY;e.style.minHeight=Math.max(320,innerHeight-t)+'px'}
 addEventListener('resize',()=>{try{deskFit()}catch(e){}});
 let dashDias=7;
-const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'off'}catch(e){return'off'}};
+const dashGet=()=>{try{return localStorage.getItem('mm_dash')||'desk'}catch(e){return'desk'}};
 function dashSet(m){try{localStorage.setItem('mm_dash',m)}catch(e){}closeM();vIni()}
 function dashRange(n){dashDias=n;vIni()}
 function dashRing(p0){const p=Math.max(0,Math.min(1,p0||0)),lab=Math.min(999,Math.round((p0||0)*100));const L=2*Math.PI*14;return `<svg viewBox="0 0 36 36" width="40" height="40" role="img" aria-label="${lab} por cento"><circle cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(L*p).toFixed(1)} ${L.toFixed(1)}" transform="rotate(-90 18 18)"/><text x="18" y="21" text-anchor="middle" fill="#fff" font-size="${lab>99?8:9}" font-weight="700">${lab}%</text></svg>`}
