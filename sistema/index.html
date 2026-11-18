@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.52'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.53'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -18,6 +18,7 @@ nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 nav button{background:transparent;border:0;color:#fff;opacity:.75;font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
 nav button.on{opacity:1;background:rgba(255,255,255,.18)}
 main{max-width:1100px;margin:0 auto;padding:18px}
+.etabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin:14px 0 18px}.etabs button{font:inherit;font-size:16px;font-weight:700;color:var(--mut);background:transparent;border:0;border-bottom:4px solid transparent;margin-bottom:-2px;padding:10px 16px;min-height:48px;border-radius:10px 10px 0 0;cursor:pointer;display:inline-flex;gap:8px;align-items:center}.etabs button.on{color:var(--ink);border-bottom-color:var(--tag);background:var(--card)}.mmtab[hidden]{display:none}.esave{position:sticky;bottom:0;z-index:4;background:var(--card);border-top:1px solid var(--line);padding:12px 0;margin-top:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%}
 .bar input{flex:1;min-width:200px;width:auto}
@@ -1952,23 +1953,68 @@ async function ipKeysDel(){
   for(const k of ['INFINITEPAY_HANDLE','INFINITEPAY_WEBHOOK_TOKEN','INFINITEPAY_API_KEY']){const{error}=await sb.rpc('segredo_set',{p_key:k,p_value:''});if(error)return alert(error.message)}
   closeM();
 }
+let EMPTAB='emp';
+function empTab(k){EMPTAB=k;document.querySelectorAll('.mmtab').forEach(x=>{x.hidden=x.dataset.tab!==k});document.querySelectorAll('.etabs button').forEach(b=>{const on=b.dataset.tab===k;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)})}
 function vEmp(){
   const c=CO();
-  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Dados da empresa</h2>
+  $('#app').innerHTML=`<div class="box" style="max-width:none"><h2>Empresa</h2><p class="sm" style="margin:2px 0 0">Escolha uma aba. Tudo é guardado junto pelo botão <b>Salvar dados da empresa</b> no fim da tela.</p>
+<nav class="etabs" role="tablist" aria-label="Seções da empresa"><button type="button" role="tab" data-tab="emp" class="${EMPTAB==='emp'?'on':''}" aria-selected="${EMPTAB==='emp'}" onclick="empTab('emp')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M14 9h5a1 1 0 0 1 1 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/></svg>Empresa</button><button type="button" role="tab" data-tab="fis" class="${EMPTAB==='fis'?'on':''}" aria-selected="${EMPTAB==='fis'}" onclick="empTab('fis')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></svg>Fiscal</button><button type="button" role="tab" data-tab="pre" class="${EMPTAB==='pre'?'on':''}" aria-selected="${EMPTAB==='pre'}" onclick="empTab('pre')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg>Preços e vendas</button><button type="button" role="tab" data-tab="rec" class="${EMPTAB==='rec'?'on':''}" aria-selected="${EMPTAB==='rec'}" onclick="empTab('rec')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l2-3h12M16 14h2"/></svg>Recebimentos</button><button type="button" role="tab" data-tab="apa" class="${EMPTAB==='apa'?'on':''}" aria-selected="${EMPTAB==='apa'}" onclick="empTab('apa')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="11" r="1"/></svg>Aparência</button><button type="button" role="tab" data-tab="bak" class="${EMPTAB==='bak'?'on':''}" aria-selected="${EMPTAB==='bak'}" onclick="empTab('bak')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Backup e sistema</button></nav>
+<div class="mmtab" data-tab="emp" role="tabpanel" ${EMPTAB==='emp'?'':'hidden'}>
   <div class="f"><div class="w" style="display:flex;gap:14px;align-items:center"><img id="lgp" src="${esc(logoUrl())}" alt="Logo" style="width:90px;height:90px;object-fit:contain;border-radius:14px;background:var(--line)">
   <div><label>Logo (PNG ou JPG)</label><input type="file" accept="image/*" onchange="upLogo(this)"><input type="hidden" id="e_logo_url" value="${esc(c.logo_url||'')}"></div></div>
   ${EMP.map(([k,l,w])=>`<div class="${w===1?'w':''}"><label>${l}</label>${w==='sel'?`<select id="e_${k}">${['','Simples Nacional','MEI','Lucro Presumido','Lucro Real'].map(o=>`<option ${c[k]===o?'selected':''}>${o}</option>`).join('')}</select>`
    :`<input id="e_${k}" value="${esc(c[k]||'')}" ${k==='cnpj'?'inputmode="numeric" oninput="this.value=fmtCnpj(this.value)"':''} ${k==='cep'?'inputmode="numeric" onblur="cepFill()"':''} ${k==='uf'?'maxlength="2" style="text-transform:uppercase"':''}>`}</div>`).join('')}</div>
-  <div style="margin:14px 0"><b>Chave Pix da empresa (carnê com QR Code)</b>
-  <p class="sm" style="margin:2px 0 8px">Usada no QR Code de cada parcela do carnê em PDF. Digite a chave exatamente como está cadastrada no seu banco. Ela não aparece no catálogo.</p>
-  <div class="f"><div><label>Tipo da chave</label><select id="e_pix_key_type">${[['','Sem chave'],['cnpj','CNPJ'],['cpf','CPF'],['telefone','Telefone'],['email','E-mail'],['aleatoria','Chave aleatória']].map(([k,l])=>`<option value="${k}" ${(PRIV().pix_key_type||'')===k?'selected':''}>${l}</option>`).join('')}</select></div>
-  <div><label>Chave Pix</label><input id="e_pix_key" value="${esc(PRIV().pix_key||'')}"></div></div></div>
+</div>
+<div class="mmtab" data-tab="fis" role="tabpanel" ${EMPTAB==='fis'?'':'hidden'}>
   <div style="margin:14px 0"><b>Tributos aproximados na nota (IBPT · De Olho no Imposto)</b>
   <p class="sm" style="margin:2px 0 8px">Cole aqui o token que o IBPT gerou para o CNPJ desta empresa. A nota passa a mostrar o valor aproximado de tributos (Lei 12.741) sempre atualizado. O token fica guardado só para o administrador e <b>não aparece no catálogo nem no PDV</b>. Em branco = não muda.</p>
   <div class="f"><div class="w"><label>De onde vêm os percentuais</label><select id="e_tmodo">${[['auto','Automático: tabela do banco e, se o NCM não estiver nela, a API'],['tabela','Só a tabela carregada no banco (Fiscal → Tabela IBPT)'],['api','Só a API do IBPT (precisa do token abaixo)'],['off','Não informar tributos na nota']].map(([k,l])=>`<option value="${k}" ${((IBM&&IBM.modo)||'auto')===k?'selected':''}>${l}</option>`).join('')}</select></div>
   <div class="w"><label>Token do IBPT ${PRIV().ibpt_token?'<span class="tag">cadastrado</span>':''}</label><input id="e_ibpt" type="password" name="mm-ibpt-token" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" data-lpignore="true" data-1p-ignore placeholder="${PRIV().ibpt_token?'•••••••• (deixe em branco para manter)':'cole o token aqui'}"></div>
   ${PRIV().ibpt_token?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="e_ibpt_clr" style="width:auto"> Remover o token</label>':''}</div>
   ${PRIV().ibpt_token&&sb?'<button class="btn g s" type="button" onclick="ibptTeste()">Testar consulta (NCM 84796000)</button> <span id="ibptRes" class="sm"></span>':''}</div>
+  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Contador</b>
+  <p class="sm" style="margin:2px 0 8px">Usado para enviar o pacote fiscal do mês (XMLs e resumo) em Fiscal &gt; Pacote do contador.</p>
+  <div class="f"><div><label>Nome</label><input id="e_ac_name" value="${esc(c.accountant_name||'')}"></div><div><label>E-mail</label><input id="e_ac_email" type="email" value="${esc(c.accountant_email||'')}"></div><div><label>WhatsApp (com DDD)</label><input id="e_ac_phone" inputmode="tel" value="${esc(c.accountant_phone||'')}"></div></div></div>
+</div>
+<div class="mmtab" data-tab="pre" role="tabpanel" ${EMPTAB==='pre'?'':'hidden'}>
+  <div style="margin:14px 0"><b>Preços automáticos (porcentagens padrão)</b>
+  <p class="sm" style="margin:2px 0 8px">Produto novo já vem com estas porcentagens; em cada produto dá para mudar. Cartão e carnê são em cima do preço à vista. Não muda nenhum preço já cadastrado (para isso use Produtos > Recalcular preços).</p>
+  <div class="f" style="margin:0"><div><label>Margem do à vista sobre o custo (%)</label><input id="e_pc_mk" type="number" step="0.1" value="${esc(PCFG().mk)}" placeholder="ex.: 80"></div>
+  <div><label>Cartão: % em cima do à vista</label><input id="e_pc_card" type="number" step="0.1" value="${esc(PCFG().card)}" placeholder="ex.: 12"></div>
+  <div><label>Carnê: % em cima do à vista</label><input id="e_pc_credit" type="number" step="0.1" value="${esc(PCFG().credit)}" placeholder="ex.: 30"></div>
+  <div><label>Arredondar preços calculados</label><select id="e_pc_round">${[['none','Não arredondar (centavos)'],['90','Terminar em ,90 (ex.: 201,90)'],['int','Real inteiro para cima (ex.: 202,00)']].map(([k,l])=>`<option value="${k}" ${PCFG().round===k?'selected':''}>${l}</option>`).join('')}</select></div></div></div>
+  <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
+  <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_card" style="width:auto" ${c.show_card!==false?'checked':''}> Preço no cartão</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_credit" style="width:auto" ${c.show_credit!==false?'checked':''}> Preço no carnê</label></div>
+  <div style="margin:14px 0"><b>Multa e juros por atraso (carnê)</b>
+  <p class="sm" style="margin:2px 0 8px">Valem para todas as parcelas em atraso, no carnê, na Cobrança e no Pix. Limites da lei: multa até <b>2%</b> (cobrada uma vez) e juros de mora até <b>1% ao mês</b> (por dia de atraso). Nunca é cobrado juros sobre juros. Combine os mesmos valores no contrato do carnê.</p>
+  <div class="f"><div><label>Multa (%)</label><input id="e_cob_multa" type="number" step="0.01" min="0" max="2" value="${CFG.MULTA}"></div>
+  <div><label>Juros ao mês (%)</label><input id="e_cob_juro" type="number" step="0.01" min="0" max="1" value="${CFG.JURO_MES}"></div>
+  <div><label>Dias de tolerância</label><input id="e_cob_car" type="number" step="1" min="0" max="10" value="${CFG.CARENCIA||0}"></div></div></div>
+  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Cupom não fiscal</b>
+  <p class="sm" style="margin:2px 0 8px">Escolha o que aparece no cupom (IE, endereço, telefone, dados do cliente, parcelas…), o papel (58 ou 80 mm) e o tamanho da letra.</p>
+  <button class="btn g" type="button" onclick="cupomCfg()">Configurar cupom</button></div>
+</div>
+<div class="mmtab" data-tab="rec" role="tabpanel" ${EMPTAB==='rec'?'':'hidden'}>
+  <div style="margin:14px 0"><b>Chave Pix da empresa (carnê com QR Code)</b>
+  <p class="sm" style="margin:2px 0 8px">Usada no QR Code de cada parcela do carnê em PDF. Digite a chave exatamente como está cadastrada no seu banco. Ela não aparece no catálogo.</p>
+  <div class="f"><div><label>Tipo da chave</label><select id="e_pix_key_type">${[['','Sem chave'],['cnpj','CNPJ'],['cpf','CPF'],['telefone','Telefone'],['email','E-mail'],['aleatoria','Chave aleatória']].map(([k,l])=>`<option value="${k}" ${(PRIV().pix_key_type||'')===k?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div><label>Chave Pix</label><input id="e_pix_key" value="${esc(PRIV().pix_key||'')}"></div></div></div>
+  <div style="margin:14px 0"><b>Cobrança automática (InfinitePay)</b>
+  <p class="sm" style="margin:2px 0 8px">Gera um link de pagamento da InfinitePay (Pix ou cartão) e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até cadastrar as chaves abaixo, publicar a função <code>mp-pix</code> e fazer um teste de R$ 1,00. Escolha o provedor <b>InfinitePay</b> na lista.</p>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_cat_pix_on" style="width:auto" ${c.cat_pix_on?'checked':''}> Mostrar <b>“Pagar agora com Pix”</b> no catálogo (Mercado Pago, preço à vista)</label>
+  <p class="sm" style="margin:0 0 8px">O cliente paga pelo catálogo, o pedido chega aqui como <b>PAGO</b> e a Central de avisos pede para separar e entregar. Precisa do SQL v47 e da cobrança automática ligada.</p>
+  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_cli_portal_on" style="width:auto" ${c.cli_portal_on?'checked':''}> Mostrar <b>“Meu carnê”</b> no catálogo (cliente entra com CPF ou CNPJ + senha e paga as parcelas por Pix do Mercado Pago)</label>
+  <p class="sm" style="margin:0 0 8px">No 1º acesso o cliente usa o <b>código do carnê</b> (sai impresso no carnê) para criar a senha. A parcela é baixada na hora, mesmo com o sistema fechado. Precisa do SQL v49.</p>
+  <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'&&c.pix_provider!=='both'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option><option value="both" ${c.pix_provider==='both'?'selected':''}>Os dois (escolher na hora: Gerar com Mercado Pago ou com InfinitePay)</option></select></div></div></div>
+  ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
+  <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
+  <button class="btn g s" onclick="unlockUntil=0;master(ipKeys)">Abrir chaves (pede senha)</button></div>`:''}
+</div>
+<div class="mmtab" data-tab="apa" role="tabpanel" ${EMPTAB==='apa'?'':'hidden'}>
   <div style="margin:14px 0"><b>Tema do sistema e do catálogo</b>
   <p class="sm" style="margin:2px 0 8px">Muda as cores e a faixa de campanha do catálogo. <b>Automático</b> usa Black Friday de 2 semanas antes até 3 dias depois e Natal de 1 a 26 de dezembro. Use <b>Personalizado</b> para escolher suas próprias cores.</p>
   <div class="f"><div class="w"><label>Tema</label><select id="e_theme" onchange="temaPrev()"><option value="auto" ${(c.theme||'auto')==='auto'?'selected':''}>Automático por data</option>${Object.entries(TEMAS).map(([k,t])=>`<option value="${k}" ${c.theme===k?'selected':''}>${t.n}</option>`).join('')}<option value="custom" ${c.theme==='custom'?'selected':''}>Personalizado (minhas cores)</option></select></div>
@@ -1982,56 +2028,25 @@ function vEmp(){
   <div><label>até (opcional)</label><input id="e_tto" type="date" value="${esc((c.theme_cfg||{}).to||'')}"></div></div>
   <p class="sm">Com datas preenchidas, o tema só vale dentro do período; depois volta sozinho ao padrão. Para um visual mais sóbrio, digite um traço (-) no campo do emoji.</p>
   <button class="btn g s" type="button" onclick="temaPrev()">Pré-visualizar neste aparelho</button></div>
-  <div style="margin:14px 0"><b>Multa e juros por atraso (carnê)</b>
-  <p class="sm" style="margin:2px 0 8px">Valem para todas as parcelas em atraso, no carnê, na Cobrança e no Pix. Limites da lei: multa até <b>2%</b> (cobrada uma vez) e juros de mora até <b>1% ao mês</b> (por dia de atraso). Nunca é cobrado juros sobre juros. Combine os mesmos valores no contrato do carnê.</p>
-  <div class="f"><div><label>Multa (%)</label><input id="e_cob_multa" type="number" step="0.01" min="0" max="2" value="${CFG.MULTA}"></div>
-  <div><label>Juros ao mês (%)</label><input id="e_cob_juro" type="number" step="0.01" min="0" max="1" value="${CFG.JURO_MES}"></div>
-  <div><label>Dias de tolerância</label><input id="e_cob_car" type="number" step="1" min="0" max="10" value="${CFG.CARENCIA||0}"></div></div></div>
-  <div style="margin:14px 0"><b>Cobrança automática (InfinitePay)</b>
-  <p class="sm" style="margin:2px 0 8px">Gera um link de pagamento da InfinitePay (Pix ou cartão) e dá baixa sozinho quando o cliente paga. <b>Deixe desligado</b> até cadastrar as chaves abaixo, publicar a função <code>mp-pix</code> e fazer um teste de R$ 1,00. Escolha o provedor <b>InfinitePay</b> na lista.</p>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_mp_pix_on" style="width:auto" ${c.mp_pix_on?'checked':''}> Ligar cobrança automática</label>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_cat_pix_on" style="width:auto" ${c.cat_pix_on?'checked':''}> Mostrar <b>“Pagar agora com Pix”</b> no catálogo (Mercado Pago, preço à vista)</label>
-  <p class="sm" style="margin:0 0 8px">O cliente paga pelo catálogo, o pedido chega aqui como <b>PAGO</b> e a Central de avisos pede para separar e entregar. Precisa do SQL v47 e da cobrança automática ligada.</p>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_cli_portal_on" style="width:auto" ${c.cli_portal_on?'checked':''}> Mostrar <b>“Meu carnê”</b> no catálogo (cliente entra com CPF ou CNPJ + senha e paga as parcelas por Pix do Mercado Pago)</label>
-  <p class="sm" style="margin:0 0 8px">No 1º acesso o cliente usa o <b>código do carnê</b> (sai impresso no carnê) para criar a senha. A parcela é baixada na hora, mesmo com o sistema fechado. Precisa do SQL v49.</p>
-  <div class="f"><div><label>Provedor</label><select id="e_pix_provider"><option value="mp" ${c.pix_provider!=='ip'&&c.pix_provider!=='both'?'selected':''}>Mercado Pago (QR Pix)</option><option value="ip" ${c.pix_provider==='ip'?'selected':''}>InfinitePay (link de pagamento: Pix ou cartão)</option><option value="both" ${c.pix_provider==='both'?'selected':''}>Os dois (escolher na hora: Gerar com Mercado Pago ou com InfinitePay)</option></select></div></div></div>
-  ${sb&&ADM()?`<div style="margin:14px 0"><b>Chaves da InfinitePay</b>
-  <p class="sm" style="margin:2px 0 8px">Ficam guardadas no servidor e <b>nunca são mostradas de volta</b>. Para abrir, o administrador digita a senha dele.</p>
-  <button class="btn g s" onclick="unlockUntil=0;master(ipKeys)">Abrir chaves (pede senha)</button></div>`:''}
-  <div style="margin:14px 0"><b>Preços automáticos (porcentagens padrão)</b>
-  <p class="sm" style="margin:2px 0 8px">Produto novo já vem com estas porcentagens; em cada produto dá para mudar. Cartão e carnê são em cima do preço à vista. Não muda nenhum preço já cadastrado (para isso use Produtos > Recalcular preços).</p>
-  <div class="f" style="margin:0"><div><label>Margem do à vista sobre o custo (%)</label><input id="e_pc_mk" type="number" step="0.1" value="${esc(PCFG().mk)}" placeholder="ex.: 80"></div>
-  <div><label>Cartão: % em cima do à vista</label><input id="e_pc_card" type="number" step="0.1" value="${esc(PCFG().card)}" placeholder="ex.: 12"></div>
-  <div><label>Carnê: % em cima do à vista</label><input id="e_pc_credit" type="number" step="0.1" value="${esc(PCFG().credit)}" placeholder="ex.: 30"></div>
-  <div><label>Arredondar preços calculados</label><select id="e_pc_round">${[['none','Não arredondar (centavos)'],['90','Terminar em ,90 (ex.: 201,90)'],['int','Real inteiro para cima (ex.: 202,00)']].map(([k,l])=>`<option value="${k}" ${PCFG().round===k?'selected':''}>${l}</option>`).join('')}</select></div></div></div>
-  <div style="margin:14px 0"><b>Preços mostrados no catálogo</b>
-  <p class="sm" style="margin:2px 0 8px">Desmarque o que você não quer exibir aos clientes. Vale para todos os produtos. Para esconder só em um produto, deixe o preço dele em branco.</p>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_cash" style="width:auto" ${c.show_cash!==false?'checked':''}> Preço à vista</label>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_card" style="width:auto" ${c.show_card!==false?'checked':''}> Preço no cartão</label>
-  <label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" id="e_show_credit" style="width:auto" ${c.show_credit!==false?'checked':''}> Preço no carnê</label></div>
-  <button class="btn" onclick="saveEmp()">Salvar dados da empresa</button>
-  <p class="sm">Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê. O WhatsApp daqui é o que recebe os pedidos. Não coloque senhas nem certificado digital aqui.</p>
-  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Contador</b>
-  <p class="sm" style="margin:2px 0 8px">Usado para enviar o pacote fiscal do mês (XMLs e resumo) em Fiscal &gt; Pacote do contador.</p>
-  <div class="f"><div><label>Nome</label><input id="e_ac_name" value="${esc(c.accountant_name||'')}"></div><div><label>E-mail</label><input id="e_ac_email" type="email" value="${esc(c.accountant_email||'')}"></div><div><label>WhatsApp (com DDD)</label><input id="e_ac_phone" inputmode="tel" value="${esc(c.accountant_phone||'')}"></div></div></div>
-  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Cupom não fiscal</b>
-  <p class="sm" style="margin:2px 0 8px">Escolha o que aparece no cupom (IE, endereço, telefone, dados do cliente, parcelas…), o papel (58 ou 80 mm) e o tamanho da letra.</p>
-  <button class="btn g" type="button" onclick="cupomCfg()">Configurar cupom</button></div>
+</div>
+<div class="mmtab" data-tab="bak" role="tabpanel" ${EMPTAB==='bak'?'':'hidden'}>
+  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup dos dados</b>
+  <p class="sm" style="margin:2px 0 8px">Baixa um arquivo com produtos, clientes, vendas, parcelas, pedidos e contas a pagar. Guarde em local seguro (pendrive, Google Drive pessoal). O arquivo tem dados de clientes: não publique nem envie a terceiros. ${bkLast()?`Último backup: <b>${fmtD(bkLast())}</b>.`:'<b class="bad">Nenhum backup feito neste aparelho.</b>'}</p>
+  <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button> <button class="btn g" onclick="restoreOpen()">Restaurar backup</button></div>
+  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup completo da nuvem (Supabase)</b>
+  <p class="sm" style="margin:2px 0 8px">Copia <b>tudo</b> o que está guardado na nuvem: produtos, clientes, vendas, parcelas, caixa, notas fiscais (XML), documentos cadastrados, usuários e histórico. É o que protege você se o Supabase perder dados, já que o plano gratuito não faz cópia automática. ${nbkLast()?`Último: <b>${fmtD(nbkLast())}</b>.`:'<b class="bad">Ainda não foi feito.</b>'} ${window.mmDesk&&window.mmDesk.salvarBackup?'No programa de Windows, uma cópia também é guardada sozinha na pasta dos backups uma vez por dia.':''} O arquivo contém dados de clientes e dados privados da empresa: não envie a terceiros.</p>
+  <button class="btn" onclick="nbkBaixar()">Fazer backup da nuvem agora</button> <button class="btn g" onclick="nbkConferir()">Conferir um backup</button> <button class="btn g" onclick="nbkRestaurar()">Restaurar da nuvem</button>
+  <p class="sm">Os arquivos enviados (fotos de produtos, imagens de documentos) não entram neste arquivo; só o cadastro deles.</p></div>`:''}
+  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Google Drive (documentos dos clientes)</b>
+  <div id="gd_box" class="sm" style="margin:6px 0">${gdHtml()}</div><img alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" style="display:none" onload="gdPaint()"></div>`:''}
   ${LIC_URL?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Licença</b>
   <p class="sm" style="margin:2px 0 8px">Situação: <b>${esc(({off:'desligada',ok:'ativa',teste:'período de teste',aviso:'ativa (vence em breve)',carencia:'vencida, em carência',consulta:'vencida (somente consulta)',bloqueada:'bloqueada',isenta:'isenta',sem_chave:'sem chave',sem_verif:'não conferida ainda',chave_invalida:'chave não reconhecida'})[LIC.state().st]||'')}</b>${LIC.state().ate?' · válida até '+LIC.state().ate.split('-').reverse().join('/'):''}. Aqui você informa a chave, confere a validade e paga a mensalidade por Pix.</p>
   <button class="btn g" type="button" onclick="LIC.open()">Ver licença / pagar</button></div>`:''}
   <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Versão do sistema: ${esc(window.APP_VERSION)}</b>
   <p class="sm" style="margin:2px 0 8px">Se algo não apareceu depois de uma atualização, verifique ou force a atualização. Seus dados e vendas não são apagados.</p>
   <button class="btn g" type="button" onclick="appCheck()">Verificar atualização</button> <button class="btn g" type="button" onclick="appForce()">Forçar atualização</button></div>
-  <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup dos dados</b>
-  <p class="sm" style="margin:2px 0 8px">Baixa um arquivo com produtos, clientes, vendas, parcelas, pedidos e contas a pagar. Guarde em local seguro (pendrive, Google Drive pessoal). O arquivo tem dados de clientes: não publique nem envie a terceiros. ${bkLast()?`Último backup: <b>${fmtD(bkLast())}</b>.`:'<b class="bad">Nenhum backup feito neste aparelho.</b>'}</p>
-  <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button> <button class="btn g" onclick="restoreOpen()">Restaurar backup</button></div>
-  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Google Drive (documentos dos clientes)</b>
-  <div id="gd_box" class="sm" style="margin:6px 0">${gdHtml()}</div><img alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" style="display:none" onload="gdPaint()"></div>`:''}
-  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup completo da nuvem (Supabase)</b>
-  <p class="sm" style="margin:2px 0 8px">Copia <b>tudo</b> o que está guardado na nuvem: produtos, clientes, vendas, parcelas, caixa, notas fiscais (XML), documentos cadastrados, usuários e histórico. É o que protege você se o Supabase perder dados, já que o plano gratuito não faz cópia automática. ${nbkLast()?`Último: <b>${fmtD(nbkLast())}</b>.`:'<b class="bad">Ainda não foi feito.</b>'} ${window.mmDesk&&window.mmDesk.salvarBackup?'No programa de Windows, uma cópia também é guardada sozinha na pasta dos backups uma vez por dia.':''} O arquivo contém dados de clientes e dados privados da empresa: não envie a terceiros.</p>
-  <button class="btn" onclick="nbkBaixar()">Fazer backup da nuvem agora</button> <button class="btn g" onclick="nbkConferir()">Conferir um backup</button> <button class="btn g" onclick="nbkRestaurar()">Restaurar da nuvem</button>
-  <p class="sm">Os arquivos enviados (fotos de produtos, imagens de documentos) não entram neste arquivo; só o cadastro deles.</p></div>`:''}</div>`;
+</div>
+<div class="esave"><button class="btn" onclick="saveEmp()">Salvar dados da empresa</button><span class="sm" style="margin:0">Guarda todas as abas de uma vez. Estes dados aparecem no catálogo (nome, endereço, telefone, WhatsApp) e no carnê; o WhatsApp daqui recebe os pedidos. Não coloque senhas nem certificado digital aqui.</span></div></div>`;
 }
 const bkLast=()=>{try{return localStorage.mmbk||''}catch(e){return''}};
 function bkJson(){const o={app:'MultMix',versao:window.APP_VERSION,gerado_em:now()};T.forEach(t=>{o[t]=db[t]||[]});return JSON.stringify(o)}
