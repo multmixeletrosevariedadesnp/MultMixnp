@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.47'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.48'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2026,6 +2026,8 @@ function vEmp(){
   <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup dos dados</b>
   <p class="sm" style="margin:2px 0 8px">Baixa um arquivo com produtos, clientes, vendas, parcelas, pedidos e contas a pagar. Guarde em local seguro (pendrive, Google Drive pessoal). O arquivo tem dados de clientes: não publique nem envie a terceiros. ${bkLast()?`Último backup: <b>${fmtD(bkLast())}</b>.`:'<b class="bad">Nenhum backup feito neste aparelho.</b>'}</p>
   <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button> <button class="btn g" onclick="restoreOpen()">Restaurar backup</button></div>
+  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Google Drive (documentos dos clientes)</b>
+  <div id="gd_box" class="sm" style="margin:6px 0">Verificando…</div><img alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" style="display:none" onload="gdPaint()"></div>`:''}
   ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup completo da nuvem (Supabase)</b>
   <p class="sm" style="margin:2px 0 8px">Copia <b>tudo</b> o que está guardado na nuvem: produtos, clientes, vendas, parcelas, caixa, notas fiscais (XML), documentos cadastrados, usuários e histórico. É o que protege você se o Supabase perder dados, já que o plano gratuito não faz cópia automática. ${nbkLast()?`Último: <b>${fmtD(nbkLast())}</b>.`:'<b class="bad">Ainda não foi feito.</b>'} ${window.mmDesk&&window.mmDesk.salvarBackup?'No programa de Windows, uma cópia também é guardada sozinha na pasta dos backups uma vez por dia.':''} O arquivo contém dados de clientes e dados privados da empresa: não envie a terceiros.</p>
   <button class="btn" onclick="nbkBaixar()">Fazer backup da nuvem agora</button> <button class="btn g" onclick="nbkConferir()">Conferir um backup</button> <button class="btn g" onclick="nbkRestaurar()">Restaurar da nuvem</button>
@@ -3591,10 +3593,10 @@ function docsBox(id){
 async function cliDocsLoad(id){
   const box=$('#cdocs');if(!box)return;
   if(!sb||!navigator.onLine){box.textContent='Sem internet: os documentos aparecem quando voltar a conexão.';return}
-  const{data,error}=await sb.from('customer_docs').select('id,kind,path,mime,size,created_at').eq('customer_id',id).order('created_at',{ascending:false});
+  const{data,error}=await sb.from('customer_docs').select('id,kind,path,mime,size,created_at,drive_id').eq('customer_id',id).order('created_at',{ascending:false});
   if(!$('#cdocs'))return;
   if(error){box.innerHTML=`<span class="bad">Não foi possível ler os documentos${/relation|does not exist|schema cache/i.test(error.message)?' (rode o SQL v35 no Supabase)':''}.</span>`;return}
-  box.innerHTML=data.length?`<table>${data.map(d=>`<tr><td><b>${esc(docKind(d.kind))}</b><div class="sm">${fmtD(d.created_at)} · ${Math.max(1,Math.round((d.size||0)/1024))} KB</div></td><td style="white-space:nowrap"><button type="button" class="btn g s" onclick="cliDocVer('${d.path}')">Ver</button> <button type="button" class="btn g s" onclick="cliDocDel('${d.id}','${d.path}','${id}')">Excluir</button></td></tr>`).join('')}</table>`:'Nenhum documento anexado.';
+  box.innerHTML=data.length?`<table>${data.map(d=>`<tr><td><b>${esc(docKind(d.kind))}</b><div class="sm">${fmtD(d.created_at)} · ${Math.max(1,Math.round((d.size||0)/1024))} KB${d.drive_id?' · <span class="ok">✓ no Drive</span>':''}</div></td><td style="white-space:nowrap"><button type="button" class="btn g s" onclick="cliDocVer('${d.path}')">Ver</button> <button type="button" class="btn g s" onclick="cliDocDel('${d.id}','${d.path}','${id}')">Excluir</button></td></tr>`).join('')}</table>`:'Nenhum documento anexado.';
 }
 async function cliDocVer(path){
   const w=window.open('','_blank');
@@ -3619,9 +3621,9 @@ async function cliDocUp(cid){
       const blob=pdf?f:await docShrink(f),path=cid+'/'+uid()+(pdf?'.pdf':'.jpg'),mime=pdf?'application/pdf':'image/jpeg';
       const up=await sb.storage.from('cliente-docs').upload(path,blob,{contentType:mime});
       if(up.error)throw new Error(up.error.message);
-      const ins=await sb.from('customer_docs').insert({customer_id:cid,kind,path,mime,size:blob.size});
+      const ins=await sb.from('customer_docs').insert({customer_id:cid,kind,path,mime,size:blob.size}).select('id').single();
       if(ins.error){await sb.storage.from('cliente-docs').remove([path]);throw new Error(/foreign key|violates/i.test(ins.error.message)?'O cadastro ainda não chegou ao servidor. Aguarde sincronizar e tente de novo.':ins.error.message)}
-      ok++;
+      ok++;gdAuto(ins.data&&ins.data.id);
     }catch(e){erro=e.message;break}
   }
   $('#cd_file').value='';cliDocsLoad(cid);
@@ -6316,6 +6318,86 @@ async function restoreGo(){
   });
 }
 
+
+
+/* ========= Google Drive: cópia dos documentos dos clientes ========= */
+let GD={ok:false,configurado:false,conectado:false,conta:''};
+const gdUrl=()=>location.origin+location.pathname;
+async function gdStatus(){
+  try{const d=await fisCall({action:'drive_status'});GD={ok:true,configurado:!!d.configurado,conectado:!!d.conectado,conta:d.conta||''}}catch(e){GD.ok=false;GD.err=e.message}
+  return GD;
+}
+async function gdPaint(){
+  const b=$('#gd_box');if(!b)return;
+  await gdStatus();if(!$('#gd_box'))return;
+  if(!GD.ok){b.innerHTML='<span class="bad">Não consegui falar com o servidor ('+esc(GD.err||'')+'). Publique a função "fiscal" atualizada e o SQL v56.</span>';return}
+  const pend=await gdPendentes();
+  if(GD.conectado){
+    b.innerHTML=`<p style="margin:0 0 8px"><b class="ok">Conectado</b>${GD.conta?' à conta <b>'+esc(GD.conta)+'</b>':''}. Cada documento anexado ao cliente também vai para a pasta <b>MultMix - Documentos de clientes</b> do seu Drive, com uma subpasta por cliente. ${pend===null?'':pend?`<b>${pend}</b> documento(s) ainda não foram enviados.`:'Todos os documentos já estão no Drive.'}</p>
+    ${pend?'<button class="btn" onclick="gdEnviarTodos()">Enviar os pendentes agora</button> ':''}<button class="btn g" onclick="gdDesconectar()">Desconectar</button>`;
+    return;
+  }
+  const red=gdUrl(),https=/^https:/.test(red);
+  b.innerHTML=`<p style="margin:0 0 8px">O Drive recebe uma <b>cópia</b> dos documentos; o original continua no Supabase. Precisa fazer uma vez só, com a conta Google da loja (Gmail).</p>
+  <details ${GD.configurado?'':'open'}><summary><b>Passo a passo (cerca de 10 minutos)</b></summary><ol class="sm" style="margin:6px 0 8px 18px;padding:0;line-height:1.6">
+  <li>Abra <b>console.cloud.google.com</b> com o Gmail da loja e crie um projeto (nome: MultMix).</li>
+  <li>Menu <b>APIs e serviços &gt; Biblioteca</b>: procure <b>Google Drive API</b> e clique em <b>Ativar</b>.</li>
+  <li><b>Tela de permissão OAuth</b> (ou "Google Auth Platform"): tipo <b>Externo</b>, nome MultMix, seu e-mail. Depois clique em <b>Publicar app</b> (para a conexão não vencer em 7 dias).</li>
+  <li><b>Credenciais &gt; Criar credenciais &gt; ID do cliente OAuth</b>, tipo <b>Aplicativo da Web</b>. Em <b>URIs de redirecionamento autorizados</b> cole exatamente: <br><code style="user-select:all;word-break:break-all">${esc(red)}</code>${https?'':'<br><b class="bad">Abra o Sistema pelo endereço da internet (https), não pelo programa de Windows, para conectar.</b>'}</li>
+  <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta</b> para os campos abaixo.</li></ol></details>
+  <div class="f" style="margin:6px 0"><div class="w"><label>ID do cliente</label><input id="gd_id" autocomplete="off" placeholder="…apps.googleusercontent.com"></div><div class="w"><label>Chave secreta</label><input id="gd_sc" type="password" autocomplete="off"></div></div>
+  <button class="btn" onclick="gdConectar()">${GD.configurado?'Salvar de novo e conectar':'Salvar e conectar'}</button>${GD.configurado?' <button class="btn g" onclick="gdIr()">Só conectar</button>':''}
+  <p class="sm">O Google vai mostrar um aviso de "app não verificado" porque o aplicativo é seu: clique em <b>Avançado</b> e depois em <b>Acessar MultMix</b>. O sistema só enxerga as pastas e arquivos que ele mesmo cria, nunca o resto do seu Drive.</p>`;
+}
+async function gdIr(){
+  try{const d=await fisCall({action:'drive_url',redirect:gdUrl()});location.href=d.url}catch(e){alert('Não foi possível: '+e.message)}
+}
+async function gdConectar(){
+  const id=($('#gd_id').value||'').trim(),sc=($('#gd_sc').value||'').trim();
+  try{
+    if(id||sc){await fisCall({action:'drive_config',client_id:id,client_secret:sc})}
+    else if(!GD.configurado)return alert('Preencha o ID do cliente e a chave secreta.');
+    await gdIr();
+  }catch(e){alert('Não foi possível: '+e.message)}
+}
+async function gdDesconectar(){
+  if(!confirm('Desconectar o Google Drive? Os arquivos que já estão lá continuam. Novos documentos deixam de ser copiados.'))return;
+  try{await fisCall({action:'drive_desconectar'});gdPaint()}catch(e){alert(e.message)}
+}
+async function gdPendentes(){
+  try{const r=await sb.from('customer_docs').select('id',{count:'exact',head:true}).is('drive_id',null);return r.error?null:(r.count||0)}catch(e){return null}
+}
+async function gdAuto(docId){ // melhor esforço: se o Drive falhar, o documento continua seguro no Supabase
+  if(!docId||!sb)return;
+  try{if(!GD.ok)await gdStatus();if(!GD.conectado)return;await fisCall({action:'drive_enviar',doc_id:docId});0}catch(e){}
+}
+async function gdEnviarTodos(){
+  const b=$('#gd_box');let ok=0,erro='';
+  try{
+    const{data,error}=await sb.from('customer_docs').select('id').is('drive_id',null).limit(500);if(error)throw error;
+    for(let i=0;i<data.length;i++){
+      if(b)b.innerHTML=`<p>Enviando para o Drive… ${i+1} de ${data.length}</p><p class="sm">Pode continuar usando o sistema; não feche esta aba.</p>`;
+      try{await fisCall({action:'drive_enviar',doc_id:data[i].id});ok++}catch(e){erro=e.message;break}
+    }
+  }catch(e){erro=e.message||String(e)}
+  await gdPaint();
+  if(erro)alert((ok?ok+' enviado(s). ':'')+'Parou: '+erro);else alert(ok?ok+' documento(s) enviado(s) ao Drive.':'Nada a enviar.');
+}
+// volta do Google depois de autorizar: o endereço traz ?code=…&state=mmdrive
+(function(){try{
+  const q=new URLSearchParams(location.search);
+  if(q.get('state')==='mmdrive'&&(q.get('code')||q.get('error'))){
+    window.__gdcb={code:q.get('code'),erro:q.get('error')};
+    history.replaceState(null,'',location.pathname+location.hash);
+    const t=setInterval(async()=>{
+      if(!(sb&&session&&role))return;clearInterval(t);
+      const c=window.__gdcb;window.__gdcb=null;
+      if(c.erro||!c.code)return alert('O Google não liberou a conexão ('+(c.erro||'cancelado')+').');
+      if(role!=='admin')return alert('Só o administrador conecta o Google Drive.');
+      try{const d=await fisCall({action:'drive_conectar',code:c.code,redirect:gdUrl()});alert('Google Drive conectado'+(d.conta?' na conta '+d.conta:'')+'. Os documentos novos já vão para lá; em Empresa > Google Drive você envia os que já existiam.');try{go('emp')}catch(e){}}catch(e){alert('Não foi possível conectar: '+e.message)}
+    },700);
+  }
+}catch(e){}})();
 
 /* ========= Backup completo da nuvem (Supabase) ========= */
 const NBK_N={app_settings:'Configurações',company:'Dados da empresa',company_private:'Dados privados da empresa',customers:'Clientes e fornecedores',products:'Produtos',product_codes_used:'Códigos de produto usados',stock_locations:'Locais de estoque',stock_points:'Estoque por local',stock_moves:'Movimentos de estoque',sales:'Vendas',installments:'Parcelas',parcel_payments:'Recebimentos de parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',sale_returns:'Devoluções',cash_terminals:'Caixas (PDV)',cash_sessions:'Sessões de caixa',cash_moves:'Movimentos de caixa',cash_checks:'Conferências de caixa',fiscal_series:'Séries fiscais',fiscal_docs:'Notas fiscais (XML)',fiscal_inut:'Numerações inutilizadas',dfe_state:'Notas recebidas (controle)',dfe_notas:'Notas recebidas',customer_docs:'Documentos de clientes (cadastro)',contract_sign:'Contratos assinados',customer_access:'Acesso de clientes',pix_charges:'Cobranças Pix',pdv_events:'Eventos do PDV',audit_log:'Histórico de auditoria',profiles:'Usuários (perfis)'};
