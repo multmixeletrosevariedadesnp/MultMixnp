@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.49'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.51'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -6332,8 +6332,9 @@ function gdHtml(){
   if(!GD.ok&&!GD.err)return'Verificando…';
   if(!GD.ok)return'<span class="bad">Não consegui falar com o servidor ('+esc(GD.err||'')+'). Publique a função "fiscal" atualizada e o SQL v56.</span>';
   const pend=GDP;
-  if(GD.conectado)return`<p style="margin:0 0 8px"><b class="ok">Conectado</b>${GD.conta?' à conta <b>'+esc(GD.conta)+'</b>':''}. Cada documento anexado ao cliente também vai para a pasta <b>MultMix - Documentos de clientes</b> do seu Drive, com uma subpasta por cliente. ${pend===null?'':pend?`<b>${pend}</b> documento(s) ainda não foram enviados.`:'Todos os documentos já estão no Drive.'}</p>
-    ${pend?'<button class="btn" onclick="gdEnviarTodos()">Enviar os pendentes agora</button> ':''}<button class="btn g" onclick="gdDesconectar()">Desconectar</button>`;
+  if(GD.conectado)return`<p style="margin:0 0 8px"><b class="ok">Conectado</b>${GD.conta?' à conta <b>'+esc(GD.conta)+'</b>':''}. Cada documento anexado ao cliente e cada contrato assinado também vai para a pasta <b>MultMix - Documentos de clientes</b> do seu Drive, com uma subpasta por cliente. ${pend===null?'':pend?`<b>${pend}</b> documento(s)/contrato(s) ainda não foram enviados.`:'Todos os documentos já estão no Drive.'}</p>
+    ${pend?'<button class="btn" onclick="gdEnviarTodos()">Enviar os pendentes agora</button> ':''}<button class="btn" onclick="gdBackup(true)">Enviar backup da nuvem ao Drive agora</button> <button class="btn g" onclick="gdDesconectar()">Desconectar</button>
+    <p class="sm" style="margin:8px 0 0">O backup completo também vai sozinho ao Drive uma vez por dia (pasta <b>MultMix - Backups</b>, ficam os 14 mais recentes) enquanto o administrador estiver com o Sistema aberto. ${nbkDLast()?'Último: <b>'+fmtD(nbkDLast())+'</b>.':'<b class="bad">Ainda não foi enviado.</b>'}</p>`;
   const red=gdUrl(),https=/^https:/.test(red);
   return`<p style="margin:0 0 8px">O Drive recebe uma <b>cópia</b> dos documentos; o original continua no Supabase. Precisa fazer uma vez só, com a conta Google da loja (Gmail).</p>
   <details ${GD.configurado?'':'open'}><summary><b>Passo a passo (cerca de 10 minutos)</b></summary><ol class="sm" style="margin:6px 0 8px 18px;padding:0;line-height:1.6">
@@ -6358,6 +6359,34 @@ async function gdPaint(){
   await gdStatus();GDP=GD.ok&&GD.conectado?await gdPendentes():null;
   pinta();
 }
+
+const nbkDLast=()=>{try{return localStorage.mmnbkd||''}catch(e){return''}};
+async function gdBackup(manual){
+  if(!sb||role!=='admin')return;
+  const b=$('#gd_box');
+  if(manual&&b)b.innerHTML='<p>Gerando o backup e enviando ao Drive… pode levar um minuto.</p>';
+  try{
+    const d=await fisCall({action:'drive_backup',versao:window.APP_VERSION});
+    try{localStorage.mmnbkd=now()}catch(e){}
+    if(manual){GDSIG='';await gdPaint();alert('Backup enviado ao Drive: '+d.nome+' ('+d.kb+' KB).')}
+  }catch(e){if(manual){GDSIG='';await gdPaint();alert('Não foi possível enviar o backup: '+e.message)}}
+}
+// uma vez por dia, sozinho, em qualquer computador onde o administrador esteja com o Sistema aberto
+setInterval(async()=>{try{
+  if(!sb||role!=='admin'||navigator.onLine===false)return;
+  if(Date.now()-(Date.parse(nbkDLast())||0)<23*3600e3)return;
+  if(!GD.ok)await gdStatus();
+  if(GD.conectado)await gdBackup(false);
+}catch(e){}},12*60000);
+
+// contratos que o cliente assinou pelo link: vão sozinhos para a pasta dele no Drive (confere a cada 2 minutos com o Sistema aberto)
+setInterval(async()=>{try{
+  if(!sb||role!=='admin'||navigator.onLine===false)return;
+  if(!GD.ok)await gdStatus();
+  if(!GD.conectado)return;
+  const{data}=await sb.from('contract_sign').select('id').eq('status','assinado').is('drive_id',null).limit(5);
+  for(const k of (data||[])){await fisCall({action:'drive_contrato',contrato_id:k.id})}
+}catch(e){}},120000);
 async function gdIr(){
   try{const d=await fisCall({action:'drive_url',redirect:gdUrl()});location.href=d.url}catch(e){alert('Não foi possível: '+e.message)}
 }
@@ -6374,7 +6403,11 @@ async function gdDesconectar(){
   try{await fisCall({action:'drive_desconectar'});GDT=0;GDSIG='';gdPaint()}catch(e){alert(e.message)}
 }
 async function gdPendentes(){
-  try{const r=await sb.from('customer_docs').select('id',{count:'exact',head:true}).is('drive_id',null);return r.error?null:(r.count||0)}catch(e){return null}
+  try{
+    const r=await sb.from('customer_docs').select('id',{count:'exact',head:true}).is('drive_id',null);
+    const k=await sb.from('contract_sign').select('id',{count:'exact',head:true}).eq('status','assinado').is('drive_id',null);
+    if(r.error)return null;return (r.count||0)+(k.error?0:(k.count||0));
+  }catch(e){return null}
 }
 async function gdAuto(docId){ // melhor esforço: se o Drive falhar, o documento continua seguro no Supabase
   if(!docId||!sb)return;
@@ -6384,13 +6417,15 @@ async function gdEnviarTodos(){
   const b=$('#gd_box');let ok=0,erro='';
   try{
     const{data,error}=await sb.from('customer_docs').select('id').is('drive_id',null).limit(500);if(error)throw error;
-    for(let i=0;i<data.length;i++){
-      if(b)b.innerHTML=`<p>Enviando para o Drive… ${i+1} de ${data.length}</p><p class="sm">Pode continuar usando o sistema; não feche esta aba.</p>`;
-      try{await fisCall({action:'drive_enviar',doc_id:data[i].id});ok++}catch(e){erro=e.message;break}
+    const kk=await sb.from('contract_sign').select('id').eq('status','assinado').is('drive_id',null).limit(500);
+    const fila=[...data.map(x=>({action:'drive_enviar',doc_id:x.id})),...((kk.data)||[]).map(x=>({action:'drive_contrato',contrato_id:x.id}))];
+    for(let i=0;i<fila.length;i++){
+      if(b)b.innerHTML=`<p>Enviando para o Drive… ${i+1} de ${fila.length}</p><p class="sm">Pode continuar usando o sistema; não feche esta aba.</p>`;
+      try{await fisCall(fila[i]);ok++}catch(e){erro=e.message;break}
     }
   }catch(e){erro=e.message||String(e)}
   GDT=0;GDSIG='';await gdPaint();
-  if(erro)alert((ok?ok+' enviado(s). ':'')+'Parou: '+erro);else alert(ok?ok+' documento(s) enviado(s) ao Drive.':'Nada a enviar.');
+  if(erro)alert((ok?ok+' enviado(s). ':'')+'Parou: '+erro);else alert(ok?ok+' arquivo(s) enviado(s) ao Drive.':'Nada a enviar.');
 }
 // volta do Google depois de autorizar: o endereço traz ?code=…&state=mmdrive
 (function(){try{
