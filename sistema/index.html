@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.46'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.47'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -2025,7 +2025,11 @@ function vEmp(){
   <button class="btn g" type="button" onclick="appCheck()">Verificar atualização</button> <button class="btn g" type="button" onclick="appForce()">Forçar atualização</button></div>
   <div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup dos dados</b>
   <p class="sm" style="margin:2px 0 8px">Baixa um arquivo com produtos, clientes, vendas, parcelas, pedidos e contas a pagar. Guarde em local seguro (pendrive, Google Drive pessoal). O arquivo tem dados de clientes: não publique nem envie a terceiros. ${bkLast()?`Último backup: <b>${fmtD(bkLast())}</b>.`:'<b class="bad">Nenhum backup feito neste aparelho.</b>'}</p>
-  <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button> <button class="btn g" onclick="restoreOpen()">Restaurar backup</button></div></div>`;
+  <button class="btn g" onclick="backupNow()">Baixar backup agora</button> <button class="btn" onclick="backupNow(true)">Enviar para o Google Drive</button> <button class="btn g" onclick="restoreOpen()">Restaurar backup</button></div>
+  ${(sb&&ADM())?`<div style="margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--line)"><b>Backup completo da nuvem (Supabase)</b>
+  <p class="sm" style="margin:2px 0 8px">Copia <b>tudo</b> o que está guardado na nuvem: produtos, clientes, vendas, parcelas, caixa, notas fiscais (XML), documentos cadastrados, usuários e histórico. É o que protege você se o Supabase perder dados, já que o plano gratuito não faz cópia automática. ${nbkLast()?`Último: <b>${fmtD(nbkLast())}</b>.`:'<b class="bad">Ainda não foi feito.</b>'} ${window.mmDesk&&window.mmDesk.salvarBackup?'No programa de Windows, uma cópia também é guardada sozinha na pasta dos backups uma vez por dia.':''} O arquivo contém dados de clientes e dados privados da empresa: não envie a terceiros.</p>
+  <button class="btn" onclick="nbkBaixar()">Fazer backup da nuvem agora</button> <button class="btn g" onclick="nbkConferir()">Conferir um backup</button> <button class="btn g" onclick="nbkRestaurar()">Restaurar da nuvem</button>
+  <p class="sm">Os arquivos enviados (fotos de produtos, imagens de documentos) não entram neste arquivo; só o cadastro deles.</p></div>`:''}</div>`;
 }
 const bkLast=()=>{try{return localStorage.mmbk||''}catch(e){return''}};
 function bkJson(){const o={app:'MultMix',versao:window.APP_VERSION,gerado_em:now()};T.forEach(t=>{o[t]=db[t]||[]});return JSON.stringify(o)}
@@ -6311,6 +6315,133 @@ async function restoreGo(){
     }catch(e){alert('A restauração não terminou: '+e.message)}
   });
 }
+
+
+/* ========= Backup completo da nuvem (Supabase) ========= */
+const NBK_N={app_settings:'Configurações',company:'Dados da empresa',company_private:'Dados privados da empresa',customers:'Clientes e fornecedores',products:'Produtos',product_codes_used:'Códigos de produto usados',stock_locations:'Locais de estoque',stock_points:'Estoque por local',stock_moves:'Movimentos de estoque',sales:'Vendas',installments:'Parcelas',parcel_payments:'Recebimentos de parcelas',payables:'Contas a pagar',orders:'Pedidos do catálogo',sale_returns:'Devoluções',cash_terminals:'Caixas (PDV)',cash_sessions:'Sessões de caixa',cash_moves:'Movimentos de caixa',cash_checks:'Conferências de caixa',fiscal_series:'Séries fiscais',fiscal_docs:'Notas fiscais (XML)',fiscal_inut:'Numerações inutilizadas',dfe_state:'Notas recebidas (controle)',dfe_notas:'Notas recebidas',customer_docs:'Documentos de clientes (cadastro)',contract_sign:'Contratos assinados',customer_access:'Acesso de clientes',pix_charges:'Cobranças Pix',pdv_events:'Eventos do PDV',audit_log:'Histórico de auditoria',profiles:'Usuários (perfis)'};
+// ordem em que as tabelas voltam (quem depende de outra vem depois); usuários e histórico só são guardados
+const NBK_ORDER=['app_settings','company','company_private','customers','products','product_codes_used','stock_locations','stock_points','sales','installments','parcel_payments','payables','orders','stock_moves','sale_returns','cash_terminals','cash_sessions','cash_moves','cash_checks','fiscal_series','fiscal_docs','fiscal_inut','dfe_state','dfe_notas','customer_docs','contract_sign','customer_access','pix_charges','pdv_events'];
+const nbkLast=()=>{try{return localStorage.mmnbk||''}catch(e){return''}};
+let NBK=null;
+function nbkTela(titulo,html){modal(`<h2>${titulo}</h2><div id="nbk_b">${html}</div>`)}
+function nbkMsg(html){const b=$('#nbk_b');if(b)b.innerHTML=html}
+function nbkBaixarArq(nome,txt){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=nome;document.body.appendChild(a);a.click();a.remove()}
+async function nbkColetar(prog){
+  const inf=await fisCall({action:'bk_info'});
+  if(!inf||!inf.ok||!inf.tabelas)throw new Error('A nuvem não respondeu. Publique a função "fiscal" atualizada no Supabase.');
+  const out={app:'MultMix-nuvem',versao:window.APP_VERSION,gerado_em:now(),esperado:{},contagem:{},tabelas:{}};
+  for(const t of Object.keys(inf.tabelas)){
+    if(inf.tabelas[t]===null)continue; // tabela que não existe nesta instalação
+    let de=0;const rows=[];
+    for(;;){
+      if(prog)prog(t,rows.length,inf.tabelas[t]);
+      const d=await fisCall({action:'bk_ler',tabela:t,de});
+      if(!d.existe)break;
+      rows.push(...d.linhas);de+=d.linhas.length;
+      if(d.fim||!d.linhas.length)break;
+    }
+    out.tabelas[t]=rows;out.contagem[t]=rows.length;out.esperado[t]=inf.tabelas[t];
+  }
+  return out;
+}
+function nbkProg(t,n,tot){const b=$('#nbk_b');if(b)b.innerHTML=`<p>Copiando <b>${esc(NBK_N[t]||t)}</b>… ${n} de ${tot}</p><p class="sm">Não feche esta janela.</p>`}
+async function nbkFazer(manual){
+  const o=await nbkColetar(manual?nbkProg:null);
+  const txt=JSON.stringify(o),d=new Date(),nome='nuvem_'+ld(now())+'_'+d.toTimeString().slice(0,5).replace(':','h')+'.json';
+  let salvo='';
+  if(window.mmDesk&&window.mmDesk.salvarBackup){const r=await window.mmDesk.salvarBackup(nome,txt);if(r&&r.ok)salvo=r.path;else if(manual)salvo='ERRO:'+(r&&r.error||'')}
+  if(manual&&!(salvo&&salvo.indexOf('ERRO:')!==0))nbkBaixarArq(nome,txt);
+  try{localStorage.mmnbk=now()}catch(e){}
+  auditClient('backup_gerado','Backup completo da nuvem: '+Object.keys(o.contagem).map(t=>t+' '+o.contagem[t]).join(', '));
+  return{o,nome,salvo,bytes:txt.length};
+}
+function nbkResumo(o){
+  const falt=Object.keys(o.contagem).filter(t=>o.contagem[t]<o.esperado[t]);
+  return`<table><tr><th>O quê</th><th>Registros</th></tr>${Object.keys(o.contagem).map(t=>`<tr><td>${esc(NBK_N[t]||t)}</td><td>${o.contagem[t]}${o.contagem[t]<o.esperado[t]?' <b class="bad">(esperado '+o.esperado[t]+')</b>':''}</td></tr>`).join('')}</table>${falt.length?'<p class="bad">Algumas tabelas vieram com menos registros do que a nuvem tinha. Faça o backup de novo.</p>':''}`;
+}
+async function nbkBaixar(){
+  nbkTela('Backup da nuvem','<p>Preparando…</p>');
+  try{
+    const r=await nbkFazer(true);
+    nbkMsg(`<p><b>Backup pronto</b> (${(r.bytes/1048576).toFixed(1).replace('.',',')} MB).</p><p class="sm">${r.salvo&&r.salvo.indexOf('ERRO:')!==0?'Guardado em: '+esc(r.salvo):r.salvo?'Não deu para guardar na pasta dos backups ('+esc(r.salvo.slice(5))+'); o arquivo foi baixado.':'Arquivo <b>'+esc(r.nome)+'</b> baixado. Guarde em local seguro, fora deste aparelho.'}</p>${nbkResumo(r.o)}<div class="bar"><button class="btn" onclick="closeM();vEmp()">Fechar</button></div>`);
+  }catch(e){nbkMsg('<p class="bad">Não foi possível fazer o backup: '+esc(e.message||e)+'</p>')}
+}
+function nbkLerArq(titulo,fn){
+  NBK=null;
+  nbkTela(titulo,`<input type="file" accept=".json,application/json" onchange="nbkArq(this,${fn})"><div id="nbk_r"></div>`);
+}
+async function nbkArq(inp,fn){
+  const f=inp.files[0];if(!f)return;const box=$('#nbk_r');box.innerHTML='<p class="sm">Lendo o arquivo…</p>';
+  try{
+    const o=JSON.parse(await f.text());
+    if(o.app!=='MultMix-nuvem'||!o.tabelas)throw new Error('Este arquivo não é um backup da nuvem. Use "Fazer backup da nuvem agora" para gerar um (nome nuvem_….json).');
+    NBK=o;await fn(o,box);
+  }catch(e){NBK=null;box.innerHTML='<p class="bad">'+esc(e.message||'Arquivo inválido.')+'</p>'}
+}
+async function nbkContagem(){const inf=await fisCall({action:'bk_info'});return inf.tabelas||{}}
+function nbkConferir(){nbkLerArq('Conferir backup da nuvem','nbkConfGo')}
+async function nbkConfGo(o,box){
+  box.innerHTML='<p class="sm">Comparando com a nuvem…</p>';
+  const nu=await nbkContagem();let ok=0,dif=0;
+  const lin=Object.keys(o.tabelas).map(t=>{
+    const a=o.tabelas[t].length,n=nu[t];const igual=a===n;igual?ok++:dif++;
+    const txt=igual?'<span class="ok">igual</span>':n===null?'<b class="bad">não existe na nuvem</b>':a>n?`<b class="bad">faltam ${a-n} na nuvem</b>`:`<span class="sm">${n-a} a mais na nuvem (feitos depois do backup)</span>`;
+    return`<tr><td>${esc(NBK_N[t]||t)}</td><td>${a}</td><td>${n===null?'—':n}</td><td>${txt}</td></tr>`}).join('');
+  const bytesOk=Object.values(o.tabelas).every(x=>Array.isArray(x));
+  box.innerHTML=`<p class="sm">Backup gerado em <b>${esc(fmtD(o.gerado_em))}</b> · versão ${esc(o.versao||'?')}. O arquivo está ${bytesOk?'<b>íntegro e legível</b>':'<b class="bad">danificado</b>'}. Nada foi alterado na nuvem.</p>
+  <table><tr><th>O quê</th><th>No arquivo</th><th>Na nuvem agora</th><th>Situação</th></tr>${lin}</table>
+  <p class="sm">${dif?'Diferenças são normais se houve vendas e cadastros depois do backup. "Faltam na nuvem" significa que o arquivo tem registros que a nuvem não tem mais: é o caso em que a restauração ajuda.':'Tudo igual à nuvem.'}</p>`;
+}
+function nbkRestaurar(){nbkLerArq('Restaurar da nuvem','nbkRestPlano')}
+async function nbkRestPlano(o,box){
+  box.innerHTML='<p class="sm">Comparando com a nuvem…</p>';
+  const nu=await nbkContagem(),vazia=!(nu.sales>0),modo=(document.querySelector('input[name=nbk_m]:checked')||{}).value||'faltantes';
+  const falta=t=>Math.max(0,o.tabelas[t].length-(nu[t]||0));
+  box.innerHTML=`<p class="sm">Backup gerado em <b>${esc(fmtD(o.gerado_em))}</b>. Antes de gravar, o sistema faz e guarda um backup do estado atual da nuvem. A restauração <b>nunca apaga</b> nada.</p>
+  <div style="display:grid;gap:6px;margin:8px 0">
+   <label class="sm"><input type="radio" name="nbk_m" value="faltantes" ${modo==='faltantes'?'checked':''} onchange="nbkRestPlano(NBK,$('#nbk_r'))" style="width:auto"> <b>Só recolocar o que sumiu.</b> Não mexe no que já está na nuvem. <i>Recomendado.</i></label>
+   <label class="sm"><input type="radio" name="nbk_m" value="tudo" ${modo==='tudo'?'checked':''} onchange="nbkRestPlano(NBK,$('#nbk_r'))" style="width:auto"> <b>Recolocar o que sumiu e voltar os registros alterados</b> para a versão do backup (preços, cadastros…). Use só se souber que dados foram estragados.</label></div>
+  <table><tr><th>O quê</th><th>No arquivo</th><th>Na nuvem</th><th>Podem voltar</th></tr>${NBK_ORDER.filter(t=>o.tabelas[t]).map(t=>`<tr><td>${esc(NBK_N[t]||t)}</td><td>${o.tabelas[t].length}</td><td>${nu[t]===null||nu[t]===undefined?'—':nu[t]}</td><td>${t==='sales'&&!vazia?'<span class="sm">não (já há vendas)</span>':falta(t)}</td></tr>`).join('')}</table>
+  <p class="sm">As <b>vendas</b> só voltam se a nuvem estiver sem nenhuma venda, porque cada venda gravada baixa o estoque de novo (depois o estoque do backup é recolocado). Usuários e histórico de auditoria ficam só no arquivo.</p>
+  <label class="sm">Para confirmar, digite <b>RESTAURAR</b>:</label><input id="nbk_ok" autocomplete="off" style="max-width:200px"><div class="bar"><button class="btn" onclick="nbkRestGo()">Restaurar agora</button></div>`;
+}
+async function nbkRestGo(){
+  const o=NBK;if(!o)return;if(($('#nbk_ok').value||'').trim().toUpperCase()!=='RESTAURAR')return alert('Digite RESTAURAR para confirmar.');
+  const modo=(document.querySelector('input[name=nbk_m]:checked')||{}).value||'faltantes';
+  master(async()=>{
+    nbkTela('Restaurando','<p>Guardando o estado atual antes de começar…</p>');
+    try{
+      await nbkFazer(true); // cópia de segurança do que está na nuvem agora
+      const nu=await nbkContagem(),vazia=!(nu.sales>0),res=[];let erro='';
+      const enviar=async(t,m)=>{
+        const L=o.tabelas[t]||[],tam=(t==='fiscal_docs'||t==='dfe_notas')?40:300;let gr=0;
+        for(let i=0;i<L.length;i+=tam){
+          nbkMsg(`<p>Restaurando <b>${esc(NBK_N[t]||t)}</b>… ${Math.min(i+tam,L.length)} de ${L.length}</p><p class="sm">Não feche esta janela.</p>`);
+          const d=await fisCall({action:'bk_gravar',tabela:t,linhas:L.slice(i,i+tam),modo:m});
+          gr+=d.gravadas||0;
+        }
+        return gr;
+      };
+      for(const t of NBK_ORDER){
+        if(!(o.tabelas[t]||[]).length)continue;
+        if(t==='sales'&&!vazia){res.push([t,'não restaurada (já há vendas na nuvem)']);continue}
+        try{const g=await enviar(t,modo);res.push([t,g+' gravado(s)'])}catch(e){erro=NBK_N[t]+': '+e.message;res.push([t,'ERRO: '+e.message]);break}
+      }
+      if(!erro&&vazia&&(o.tabelas.sales||[]).length){ // as vendas baixaram o estoque de novo: recoloca o estoque do backup
+        try{await enviar('products','tudo');await enviar('stock_points','tudo');res.push(['estoque','estoque do backup recolocado'])}catch(e){erro='Estoque: '+e.message}
+      }
+      auditClient('backup_restaurado','Restauração da nuvem ('+(modo==='tudo'?'sumiu + reverter':'só o que sumiu')+'): '+res.map(r=>r[0]+' '+r[1]).join('; '),{backup:o.gerado_em});
+      try{await sync()}catch(e){}
+      nbkMsg(`<p>${erro?'<b class="bad">A restauração parou: '+esc(erro)+'</b><br><span class="sm">O que já foi gravado fica; nada foi apagado. Mande esta mensagem para o suporte.</span>':'<b>Restauração concluída.</b>'}</p><table><tr><th>O quê</th><th>Resultado</th></tr>${res.map(r=>`<tr><td>${esc(NBK_N[r[0]]||r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table><div class="bar"><button class="btn" onclick="closeM();render()">Fechar</button></div>`);
+    }catch(e){nbkMsg('<p class="bad">A restauração não começou: '+esc(e.message||e)+'</p>')}
+  });
+}
+// no programa de Windows: uma cópia da nuvem por dia, sozinha, enquanto o administrador estiver com o Sistema aberto
+setInterval(async()=>{try{
+  if(!sb||role!=='admin'||!(window.mmDesk&&window.mmDesk.salvarBackup)||navigator.onLine===false)return;
+  if(Date.now()-(Date.parse(nbkLast())||0)<23*3600e3)return;
+  await nbkFazer(false);
+}catch(e){}},10*60000);
 
 /* ========= Auditoria ========= */
 const AUD_N={mfa_ativado:'2 etapas ativada',mfa_desativado:'2 etapas desativada',produto_alterado:'Produto alterado',produto_excluido:'Produto excluído',venda_cancelada:'Venda cancelada',venda_excluida:'Venda excluída',venda_valor:'Valor da venda',nota_situacao:'Situação da nota',nota_emitida:'Nota emitida',nota_cancelada:'Nota cancelada',nota_inutilizada:'Numeração inutilizada',
