@@ -1,5 +1,13 @@
 # Histórico de versões
 
+## Sistema 1.95.47 + Instalador Windows 1.3.8 + função fiscal — 17/11/2026
+- **Backup completo da nuvem (Supabase)**: Empresa > "Backup completo da nuvem". O backup anterior cobria 9 tabelas; este copia todas (vendas, parcelas, caixa, notas fiscais em XML, documentos cadastrados, usuários, histórico). Botões: **Fazer backup da nuvem agora**, **Conferir um backup** (compara o arquivo com a nuvem, sem alterar nada) e **Restaurar da nuvem** (só recoloca o que sumiu, nunca apaga; antes faz um backup do estado atual; digitar RESTAURAR). Vendas só voltam com a nuvem sem vendas (cada venda baixa estoque), e depois o estoque do backup é recolocado.
+- Programa de Windows: uma cópia da nuvem é guardada sozinha por dia na pasta dos backups (guarda as 14 mais recentes, arquivos `nuvem_AAAA-MM-DD_HHhMM.json`).
+- Função `fiscal`: ações `bk_info`, `bk_ler`, `bk_gravar` (só administrador). Chaves de integração, sessões e códigos temporários ficam fora do backup de propósito.
+
+## Instalador Windows 1.3.7 — 17/11/2026
+- **Backups no Google Drive**: novo item MultMix > Banco local > "Escolher a pasta dos backups…". Escolha uma pasta dentro do Google Drive para computador e os backups (a cada 30 minutos e ao fechar) passam a ser salvos lá e sincronizados com a nuvem. A escolha vale na hora, sem reiniciar.
+
 ## Instalador Windows 1.3.6 — 17/11/2026
 - IBPT: a consulta passou a ser feita por uma janela escondida (como o navegador faz), pois a chamada direta do Electron continuava dando `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. A resposta é lida em JSON ou XML.
 

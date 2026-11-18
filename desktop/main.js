@@ -98,6 +98,17 @@ async function restoreBackup() {
   if (wins[name] && !wins[name].isDestroyed()) wins[name].loadURL(appUrl(name));
   dialog.showMessageBox({ message: 'Backup restaurado.' });
 }
+/* escolher a pasta dos backups (por exemplo, uma pasta dentro do Google Drive para computador) */
+async function chooseBackupDir() {
+  const r = await dialog.showOpenDialog({ title: 'Escolha a pasta onde guardar os backups (pode ser uma pasta do Google Drive)', defaultPath: backupDir(), properties: ['openDirectory', 'createDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return;
+  const dir = r.filePaths[0];
+  try { fs.mkdirSync(dir, { recursive: true }); fs.accessSync(dir, fs.constants.W_OK); } catch (e) { return dialog.showErrorBox('Pasta dos backups', 'Não consegui gravar nessa pasta. Escolha outra.'); }
+  const c = readCfg(); c.backupDir = dir; writeCfg(c);
+  Object.values(stores).forEach(st => { st.backupDir = dir; }); // vale já para os programas abertos
+  const out = backupAll(false).filter(Boolean);
+  dialog.showMessageBox({ message: 'Pasta dos backups alterada.', detail: dir + '\n\n' + (out.length ? 'Um backup foi feito agora nessa pasta.' : 'O primeiro backup será feito em instantes.') + '\nSe ela fica no Google Drive, confira que o ícone do Drive mostra o arquivo sincronizado.' });
+}
 function verifyDb() {
   const t = Object.keys(APPS).map(k => { const c = storeOf(k).check(); return APPS[k].nome + ': ' + (c.ok ? 'íntegro' : 'COM ERRO') + ' · ' + c.chaves + ' registros' + (c.aviso ? '\n   ' + c.aviso : ''); }).join('\n');
   dialog.showMessageBox({ message: 'Banco local', detail: t + '\n\nPasta: ' + dataDir() + '\nBackups: ' + backupDir() });
@@ -223,6 +234,16 @@ ipcMain.handle('mm-ibpt', async (e, a) => {
     return { ok: true, nacional: Number(k.nacional) || 0, importado: Number(k.importado) || 0, estadual: Number(k.estadual) || 0, chave: String(k.chave || ''), versao: String(k.versao || ''), fonte: String(k.fonte || 'IBPT'), vigencia_fim: String(k.vigenciafim || '') };
   } catch (er) { return { ok: false, erro: 'Não consegui falar com o IBPT: ' + String(er && er.message || er).replace(/token=[^&\s)]+/gi, 'token=***').slice(0, 200) }; }
 });
+ipcMain.handle('mm-save-backup', (e, nome, txt) => { // cópia da nuvem na pasta dos backups (guarda as 14 mais recentes)
+  try {
+    const dir = backupDir(); fs.mkdirSync(dir, { recursive: true });
+    const n = path.basename(String(nome || 'nuvem.json')).replace(/[^\w.\-]/g, '_'); const f = path.join(dir, n);
+    fs.writeFileSync(f + '.tmp', String(txt)); fs.renameSync(f + '.tmp', f);
+    const old = fs.readdirSync(dir).filter(x => /^nuvem_.*\.json$/.test(x)).sort();
+    while (old.length > 14) { try { fs.unlinkSync(path.join(dir, old.shift())); } catch (x) { break; } }
+    return { ok: true, path: f };
+  } catch (x) { return { ok: false, error: String(x && x.message || x) }; }
+});
 ipcMain.handle('mm-printers', async e => (await e.sender.getPrintersAsync()).map(p => ({ name: p.name, display: p.displayName || p.name, isDefault: !!p.isDefault })));
 ipcMain.handle('mm-get-printer', () => readCfg().printer);
 ipcMain.handle('mm-set-printer', (e, n) => { const c = readCfg(); c.printer = String(n || ''); writeCfg(c); return true; });
@@ -257,6 +278,7 @@ app.whenReady().then(() => {
         { label: 'Verificar banco', click: verifyDb },
         { label: 'Fazer backup agora', click: () => backupAll(true) },
         { label: 'Restaurar um backup…', click: restoreBackup },
+        { label: 'Escolher a pasta dos backups…', click: chooseBackupDir },
         { label: 'Abrir pasta dos backups', click: () => { fs.mkdirSync(backupDir(), { recursive: true }); shell.openPath(backupDir()); } },
         { label: 'Trazer dados da versão anterior…', click: () => importAllOld(true) } ] },
       { label: 'Recarregar', accelerator: 'CmdOrCtrl+R', click: (m, w) => w && w.webContents.reloadIgnoringCache && w.webContents.reload() },
