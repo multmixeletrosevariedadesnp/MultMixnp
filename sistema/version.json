@@ -1,5 +1,5 @@
 {
- "version": "1.95.54",
+ "version": "1.95.55",
  "date": "2026-11-25",
- "notes": "Gestão > Fiscal: Devolver ao fornecedor (nota fiscal de devolução de compra)."
+ "notes": "Devolver ao fornecedor: busca de notas com prévia dos produtos e baixa automática do estoque."
 }

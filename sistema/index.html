@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.54'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.55'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -5585,22 +5585,37 @@ async function fisEmit(id){
   vFis();
 }
 /* ========= Devolver mercadoria ao fornecedor (NF-e de devolução de compra) — só administrador ========= */
-let DEV={xml:'',chave:'',nota:null,ja:{}};
+let DEV={xml:'',chave:'',nota:null,ja:{},notas:[],sel:'',map:{}};
 async function devOpen(){
-  DEV={xml:'',chave:'',nota:null,ja:{}};
+  DEV={xml:'',chave:'',nota:null,ja:{},notas:[],sel:'',map:{}};
   modal(`<h3>Devolver mercadoria ao fornecedor</h3>
-  <p class="sm">Use quando a mercadoria que você comprou chegou com defeito e o fornecedor pede a nota de devolução. Escolha abaixo a nota de compra dele.</p>
+  <p class="sm">Use quando a mercadoria que você comprou chegou com defeito e o fornecedor pede a nota de devolução.</p>
+  <label>Buscar a nota de compra (fornecedor, número ou produto)</label><input id="dvQ" placeholder="Ex.: bebedouro" oninput="devFiltra()" autocomplete="off">
   <div id="dvL" class="sm" style="margin:10px 0">Buscando as notas de compra…</div>
-  <label>Não achou? Envie o arquivo XML da nota do fornecedor</label><input type="file" id="dvF" accept=".xml,text/xml" onchange="devArquivo()">
+  <div class="bar"><button class="btn" id="dvGo" onclick="devNota(DEV.sel)" style="display:none">Escolher a nota selecionada</button></div>
+  <details style="margin-top:10px"><summary class="sm" style="cursor:pointer">Não achou? Envie o arquivo XML da nota do fornecedor</summary><input type="file" id="dvF" accept=".xml,text/xml" onchange="devArquivo()" style="margin-top:6px"></details>
   <div id="dvH" style="margin-top:14px"></div>`);
   try{
     const [n,h]=await Promise.all([fisCall({action:'dev_notas'}),fisCall({action:'dev_listar'})]);
-    const L=n.notas||[];
-    $('#dvL').innerHTML=L.length?`<b>Notas de compra recebidas</b><div style="max-height:220px;overflow:auto;margin-top:6px">${L.map(x=>`<button class="btn g" style="display:block;width:100%;text-align:left;margin:0 0 6px" onclick="devNota('${esc(x.chave)}')">${esc(x.emit_nome||'Fornecedor')} · nota ${esc(x.numero||'')} · ${fmtD(x.dh_emi)} · ${R(x.valor)}</button>`).join('')}</div>`:'Nenhuma nota de compra com XML foi baixada ainda. Envie o arquivo XML do fornecedor abaixo.';
+    DEV.notas=n.notas||[];devFiltra();
     const H=h.devolucoes||[];
     $('#dvH').innerHTML=H.length?`<b>Devoluções já feitas</b><table class="dtb" style="width:100%;margin-top:6px"><tr><th>Data</th><th>Fornecedor</th><th>Nota</th><th>Valor</th><th></th></tr>${H.map(x=>`<tr><td>${fmtD(x.created_at)}</td><td>${esc(x.fornecedor_nome||'')}</td><td>${x.status==='emitida'?'nº '+esc(x.numero):'<span class="bad">não autorizada</span>'}</td><td>${R(x.valor)}</td><td>${x.status==='emitida'?`<button class="btn g" onclick="devArq('${x.id}','danfe')">DANFE</button> <button class="btn g" onclick="devArq('${x.id}','xml')">XML</button>`:''}</td></tr>`).join('')}</table>`:'';
-  }catch(e){$('#dvL').innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+  }catch(e){const l=$('#dvL');if(l)l.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
 }
+function devFiltra(){
+  const l=$('#dvL');if(!l)return;
+  const q=norm($('#dvQ')?$('#dvQ').value:''),ts=q.split(' ').filter(Boolean);
+  const hit=x=>!ts.length||ts.every(t=>norm((x.emit_nome||'')+' '+(x.numero||'')+' '+(x.itens||[]).map(i=>i.nome).join(' ')).includes(t));
+  const marca=t=>{let h=esc(t);ts.forEach(w=>{if(w.length<2)return;h=h.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>')});return h};
+  const L=DEV.notas.filter(hit).slice(0,25);
+  if(!DEV.notas.length){l.innerHTML='Nenhuma nota de compra com XML foi baixada ainda. Envie o arquivo XML do fornecedor abaixo.';return}
+  if(!L.length){l.innerHTML='Nenhuma nota encontrada com esse texto.';return}
+  l.innerHTML=`<div style="max-height:300px;overflow:auto">${L.map(x=>`<div onclick="devSel('${esc(x.chave)}')" style="cursor:pointer;border:${DEV.sel===x.chave?'2px solid var(--pri)':'1px solid var(--line)'};border-radius:12px;padding:10px 12px;margin:0 0 8px">
+    <b>${esc(x.emit_nome||'Fornecedor')}</b>${x.entrada_at?`<span class="sm"> · entrada no estoque em ${fmtD(x.entrada_at)}</span>`:'<span class="sm bad"> · entrada no estoque não feita</span>'}${x.devolvido>0?`<span class="sm bad"> · ${x.devolvido} já devolvido(s)</span>`:''}
+    <div class="sm">Nota ${esc(x.numero||'')} · ${fmtD(x.dh_emi)} · ${R(x.valor)}</div>
+    ${(x.itens||[]).slice(0,6).map(i=>`<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0;border-top:1px solid var(--line)"><span>${marca(i.nome)}</span><span>${i.qtd} ${esc(i.un)}</span></div>`).join('')}${(x.itens||[]).length>6?`<div class="sm">e mais ${x.itens.length-6} item(ns)</div>`:''}</div>`).join('')}</div>`;
+}
+function devSel(ch){DEV.sel=ch;devFiltra();const b=$('#dvGo');if(b)b.style.display=''}
 async function devArquivo(){
   const f=$('#dvF').files[0];if(!f)return;
   if(f.size>3000000){$('#dvL').innerHTML='<span class="bad">Arquivo grande demais para ser uma nota.</span>';return}
@@ -5608,23 +5623,35 @@ async function devArquivo(){
   devNota('',t);
 }
 async function devNota(chave,xml){
+  if(!chave&&!xml)return;
   $('#dvL')&&($('#dvL').innerHTML='Lendo a nota…');
   try{
     const d=await fisCall({action:'dev_ler',chave:chave||undefined,xml:xml||undefined});
-    DEV={xml:xml||'',chave:chave||'',nota:d.nota,ja:d.ja_devolvido||{}};
+    DEV={...DEV,xml:xml||'',chave:chave||'',nota:d.nota,ja:d.ja_devolvido||{},map:{}};
+    d.nota.itens.forEach(i=>{const p=devAcha(i);DEV.map[i.n]=p?p.id:''});
     devTela();
   }catch(e){const l=$('#dvL');if(l)l.innerHTML=`<span class="bad">${esc(e.message)}</span>`;else alert(e.message)}
 }
+// mesmo critério da entrada de notas: código de barras, depois código do fornecedor, depois nome
+function devAcha(i){
+  return (i.ean&&/^\d{8,14}$/.test(i.ean)&&db.products.find(x=>x.ean===i.ean))||(i.cProd&&db.products.find(x=>x.supplier_code&&x.supplier_code===i.cProd))||db.products.find(x=>norm(x.name)===norm(i.xProd))||null;
+}
 function devTela(){
   const n=DEV.nota,f=n.fornecedor,uf=f.endereco.uf;
+  const aberto=db.payables.filter(x=>x.nfe_key===n.chave&&!x.paid_at);
   const linhas=n.itens.map(i=>{const ja=+(DEV.ja[String(i.n)]||0),resta=+(i.qtd-ja).toFixed(4);
-    return `<tr><td>${esc(i.xProd)}<div class="sm">comprado ${i.qtd} ${esc(i.un)} · ${R(i.vUnit)} cada${ja?' · já devolvido '+ja:''}</div></td>
-    <td style="width:110px"><input type="number" class="dvq" data-n="${i.n}" data-p="${i.vUnit}" data-max="${resta}" min="0" max="${resta}" step="any" value="0" ${resta<=0?'disabled':''} oninput="devSoma()" style="width:90px"></td></tr>`}).join('');
+    return `<div style="border-top:1px solid var(--line);padding:10px 0">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div style="min-width:0">${esc(i.xProd)}<div class="sm">comprado ${i.qtd} ${esc(i.un)} · ${R(i.vUnit)} cada${ja?' · já devolvido '+ja:''}</div></div>
+    <input type="number" class="dvq" data-n="${i.n}" data-p="${i.vUnit}" data-max="${resta}" min="0" max="${resta}" step="any" value="0" ${resta<=0?'disabled':''} oninput="devSoma()" style="width:90px;flex:none"></div>
+    <div class="sm" id="dvE${i.n}" style="margin-top:6px"></div></div>`}).join('');
   modal(`<h3>Devolver ao fornecedor</h3>
   <p><b>${esc(f.nome)}</b> · ${uf}<br><span class="sm">Nota de compra nº ${esc(n.numero)} de ${fmtD(n.data)} · ${R(n.valor)}${n.mesmoEstado?'':' · outro estado (CFOP 6202)'}</span></p>
   ${(n.avisos||[]).map(a=>`<p class="bad" style="margin:6px 0">⚠ ${esc(a)}</p>`).join('')}
   <p class="sm" style="margin-top:10px">Digite a <b>quantidade que vai voltar</b> de cada produto (deixe 0 nos que não voltam).</p>
-  <table class="dtb" style="width:100%">${linhas}</table>
+  ${linhas}
+  <label style="display:flex;gap:8px;align-items:center;margin:12px 0 4px;font-weight:400"><input type="checkbox" id="dvX" checked style="width:auto"> Dar baixa no estoque ao emitir a nota</label>
+  ${aberto.length?`<p class="sm bad" style="margin:4px 0">Esta compra ainda tem ${aberto.length} parcela(s) em Contas a pagar (${R(aberto.reduce((t,x)=>t+(+x.amount||0),0))}). Acerte com o fornecedor: crédito ou reembolso.</p>`:''}
+  ${n.icmsDestacado>0?`<div style="margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:10px"><label style="display:flex;gap:8px;align-items:flex-start;margin:0"><input type="checkbox" id="dvI" ${n.fornecedorCrt===3?'checked':''} style="margin-top:3px"><span><b>Devolver também o ICMS da nota</b> (${R(n.icmsDestacado)} na compra inteira)<br><span class="sm">${n.fornecedorCrt===3?'Esse fornecedor é do Regime Normal: precisa do ICMS na nota de devolução para recuperar o crédito. Deixe marcado, e confirme com o contador.':'Marque só se o contador mandou destacar o ICMS.'}</span></span></label></div>`:''}
   <label>Motivo da devolução</label><input id="dvM" value="Produto com avaria" maxlength="200">
   <details style="margin-top:8px"><summary class="sm" style="cursor:pointer">Ajuste do contador (opcional)</summary>
     <label>Tributação do ICMS (CSOSN)</label><select id="dvC"><option value="900">900 — Outros (padrão)</option><option value="102">102 — Sem crédito</option></select>
@@ -5632,24 +5659,43 @@ function devTela(){
   <div id="dvT" style="font-size:18px;font-weight:700;margin:12px 0">Total da devolução: ${R(0)}</div>
   <div id="dvR" class="sm"></div>
   <div class="bar"><button class="btn g" onclick="devOpen()">Voltar</button><button class="btn" id="dvB" onclick="devEmitir()">Emitir nota de devolução</button></div>`);
+  devSoma();
 }
+function devQtd(){const o={};document.querySelectorAll('.dvq').forEach(i=>{o[i.dataset.n]=+i.value||0});return o}
 function devSoma(){
   let t=0;document.querySelectorAll('.dvq').forEach(i=>{let q=+i.value||0;const mx=+i.dataset.max;if(q>mx){q=mx;i.value=mx}if(q<0){q=0;i.value=0}t+=Math.round(q*+i.dataset.p*100)/100});
   $('#dvT').textContent='Total da devolução: '+R(t);
+  const Q=devQtd();
+  DEV.nota.itens.forEach(i=>{
+    const e=$('#dvE'+i.n);if(!e)return;
+    const p=db.products.find(x=>x.id===DEV.map[i.n]),q=Q[i.n]||0;
+    const sel=`<select onchange="DEV.map[${i.n}]=this.value;devSoma()" style="max-width:100%;margin-top:4px"><option value="">Não dar baixa deste item</option>${[...db.products].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(x=>`<option value="${x.id}" ${x.id===DEV.map[i.n]?'selected':''}>${esc(x.name)} (estoque ${x.stock})</option>`).join('')}</select>`;
+    e.innerHTML=(p?`No seu estoque: <b>${esc(p.name)}</b> · ${+p.stock||0}${q>0?` → <b>${Math.max(0,+((+p.stock||0)-q).toFixed(4))}</b>`:''}${kitArr(p).length?' <span class="bad">(é kit: não dá baixa sozinho)</span>':''}`:'<span class="bad">Não achei esse produto no seu estoque.</span>')+`<details style="margin-top:2px"><summary style="cursor:pointer">${p?'Trocar o produto':'Escolher o produto'}</summary>${sel}</details>`;
+  });
 }
 async function devEmitir(){
   const itens=[...document.querySelectorAll('.dvq')].map(i=>({n:+i.dataset.n,qtd:+i.value||0})).filter(x=>x.qtd>0);
   const R2=$('#dvR');
   if(!itens.length){R2.innerHTML='<span class="bad">Digite a quantidade de pelo menos um produto.</span>';return}
   const tot=[...document.querySelectorAll('.dvq')].reduce((t,i)=>t+Math.round((+i.value||0)*+i.dataset.p*100)/100,0);
-  if(!confirm('Emitir a nota de devolução de '+R(tot)+' para '+DEV.nota.fornecedor.nome+'?\n\nDepois de autorizada pela SEFAZ ela não pode ser apagada.'))return;
+  const baixa=!!$('#dvX').checked;
+  if(!confirm('Emitir a nota de devolução de '+R(tot)+' para '+DEV.nota.fornecedor.nome+'?\n\nDepois de autorizada pela SEFAZ ela não pode ser apagada.'+(baixa?'\nO estoque será baixado depois que a SEFAZ autorizar.':'')))return;
   $('#dvB').disabled=true;R2.textContent='Enviando para a SEFAZ… pode levar alguns segundos.';
   try{
-    const d=await fisCall({action:'dev_emitir',chave:DEV.chave||undefined,xml:DEV.xml||undefined,itens,motivo:$('#dvM').value,csosn:$('#dvC').value});
+    const d=await fisCall({action:'dev_emitir',chave:DEV.chave||undefined,xml:DEV.xml||undefined,itens,motivo:$('#dvM').value,csosn:$('#dvC').value,destacarIcms:!!($('#dvI')&&$('#dvI').checked)});
+    // baixa do estoque só depois de autorizada
+    let bx=[];
+    if(baixa){
+      itens.forEach(it=>{const p=db.products.find(x=>x.id===DEV.map[it.n]);if(!p||kitArr(p).length)return;
+        const ant=+p.stock||0,novo=Math.max(0,+(ant-it.qtd).toFixed(4));
+        put('products',{...p,stock:novo});bx.push(`${esc(p.name)}: ${ant} → ${novo}`)});
+      if(bx.length&&typeof sync==='function')try{sync()}catch(e){}
+    }
     modal(`<h3>Nota de devolução emitida</h3>
     <p><b>Nota nº ${esc(d.numero)}</b> · ${R(d.valor)}<br><span class="sm">Protocolo ${esc(d.protocolo||'')} · CFOP ${esc(d.cfop||'')}${d.ambiente===2?' · <b>homologação: sem valor fiscal</b>':''}</span></p>
     <div class="bar"><button class="btn" onclick="devArq('${esc(d.id)}','danfe')">Baixar DANFE (PDF)</button><button class="btn g" onclick="devArq('${esc(d.id)}','xml')">Baixar XML</button></div>
-    <p class="sm" style="margin-top:12px"><b>Próximos passos:</b> envie o DANFE e o XML ao fornecedor e mande a mercadoria junto com a nota. Depois dê baixa do produto avariado no estoque.</p>`);
+    ${baixa?`<p class="sm" style="margin-top:12px"><b>Estoque baixado:</b><br>${bx.length?bx.join('<br>'):'nenhum item foi baixado (produto não encontrado ou kit): ajuste à mão.'}</p>`:''}
+    <p class="sm" style="margin-top:12px"><b>Próximos passos:</b> envie o DANFE e o XML ao fornecedor e mande a mercadoria junto com a nota.${baixa?'':' Dê baixa do produto avariado no estoque.'} Acerte o contas a pagar dessa compra, se houver.</p>`);
   }catch(e){$('#dvB').disabled=false;R2.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
 }
 async function devArq(id,kind){
