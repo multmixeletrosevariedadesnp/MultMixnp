@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.53'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
+<script>try{var _t=localStorage.mm_tema_ui;if(_t==="dark"||_t==="light"||_t==="graphite")document.documentElement.setAttribute("data-theme",_t);var _a=localStorage.mm_acc;if(_a)document.documentElement.setAttribute("data-acc",_a)}catch(e){}</script><script>window.APP_VERSION='1.95.54'</script><link rel="icon" href="favicon.png"><meta name="application-name" content="MultMix Sistema"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#00468f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="MultMix Sistema"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>MultMix · Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f1f3f7;--card:#fff;--ink:#101828;--mut:#667085;--line:#e4e7ec;--pri:#1f4fff;--tag:#ffc93c;--ok:#12805c;--bad:#c4321f}
@@ -5457,7 +5457,7 @@ function vFis(){
   <div class="prices"><div class="pr"><span>Pendentes de emissão</span><b>${pend.length}</b></div><div class="pr"><span>Prontas para emitir</span><b class="ok">${prontas}</b></div><div class="pr"><span>Com pendências de dados</span><b class="${pend.length-prontas?'bad':''}">${pend.length-prontas}</b></div></div>
   <div class="fchips">${[['todas','Todas'],['pronta','Prontas'],['pend','Com pendência'],['emit','Emitidas'],['canc','Canceladas']].map(([k,l])=>`<button class="chip ${fisFl===k?'on':''}" onclick="fisFl='${k}';vFis()">${l} <b>${cnt[k]}</b></button>`).join('')}</div>
   <div class="pr" id="fisSt" style="margin:8px 0"><span>Emissão (API fiscal e SEFAZ)</span><b class="sm">verificando…</b></div>
-  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="ibptOpen()">Tabela IBPT</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button><button class="btn g" onclick="certTroca()">Trocar certificado</button>':''}</div>
+  <div class="bar"><button class="btn" onclick="csvFis()">Exportar pendentes (CSV)</button>${prontas&&sb?`<button class="btn" onclick="fisEmitAll()">Emitir todas as prontas (${prontas})</button>`:''}<button class="btn g" onclick="fisStatus(true)">Verificar SEFAZ</button>${ADM()?'<button class="btn g" onclick="fisNumOpen()">Numeração</button><button class="btn g" onclick="ibptOpen()">Tabela IBPT</button><button class="btn g" onclick="pacoteOpen()">Pacote do contador</button><button class="btn g" onclick="devOpen()">Devolver ao fornecedor</button><button class="btn g" onclick="certTroca()">Trocar certificado</button>':''}</div>
   <div style="overflow:auto"><table><tr><th>Data</th><th>Cliente</th><th>Total</th><th>Documento</th><th>Situação</th><th></th></tr>${vis.map(({s,p})=>{const c=db.customers.find(x=>x.id===s.customer_id)||{},em=s.fiscal_status==='emitida';return`<tr>
   <td>${fmtDH(s.created_at)}</td><td>${esc(c.name||'Balcão')}</td><td>${R(s.total)}</td><td>${DOC[s.doc_type]||DOC.nfe}</td>
   <td>${s.canceled_at?'<span class="pill bad">Venda cancelada</span><div class="sm">Cancele esta nota na SEFAZ</div>':s.fiscal_status==='cancelada'?'<span class="pill mut">Nota cancelada</span>':em?`<span class="pill ok">Emitida</span>${s.fiscal_env===2?' <span class="tag">homologação</span>':''}<div class="sm">Nº ${esc(s.fiscal_number||'')}</div>`:p.length?`<span class="pill warn">${p.length} pendência(s)</span><ul class="pend">${p.map(t=>`<li><span>${esc(t)}</span>${fisFix(t,s)}</li>`).join('')}</ul>`:'<span class="pill ok">Pronta para emitir</span>'}</td>
@@ -5569,7 +5569,7 @@ async function ibptExt(saleId){
   }catch(e){return null}
 }
 async function fisCall(body){
-  if(body&&body.action==='emit'&&!LIC.guard('emitir nota fiscal'))throw new Error('Licença vencida: o sistema está em modo somente consulta.');
+  if(body&&(body.action==='emit'||body.action==='dev_emitir')&&!LIC.guard('emitir nota fiscal'))throw new Error('Licença vencida: o sistema está em modo somente consulta.');
   if(!sb)throw new Error('Emissão exige conexão com o Supabase.');
   if(body&&body.action==='emit'&&!body.ibpt_ext){const x=await ibptExt(body.sale_id);if(x)body={...body,ibpt_ext:x}}
   const{data,error}=await sb.functions.invoke('fiscal',{body});
@@ -5583,6 +5583,83 @@ async function fisEmit(id){
   try{await sync();await fisFixItems(id);const d=await fisCall({action:'emit',sale_id:id});await sync();alert((d.recuperada?'A SEFAZ já tinha autorizado esta nota; o sistema recuperou o XML sem emitir de novo':'Nota emitida')+(d.ambiente===2?' em HOMOLOGAÇÃO (sem valor fiscal)':'')+'.\nNº '+d.numero+'\nChave: '+d.chave)}
   catch(e){await sync();alert('Não foi possível emitir:\n'+e.message)}
   vFis();
+}
+/* ========= Devolver mercadoria ao fornecedor (NF-e de devolução de compra) — só administrador ========= */
+let DEV={xml:'',chave:'',nota:null,ja:{}};
+async function devOpen(){
+  DEV={xml:'',chave:'',nota:null,ja:{}};
+  modal(`<h3>Devolver mercadoria ao fornecedor</h3>
+  <p class="sm">Use quando a mercadoria que você comprou chegou com defeito e o fornecedor pede a nota de devolução. Escolha abaixo a nota de compra dele.</p>
+  <div id="dvL" class="sm" style="margin:10px 0">Buscando as notas de compra…</div>
+  <label>Não achou? Envie o arquivo XML da nota do fornecedor</label><input type="file" id="dvF" accept=".xml,text/xml" onchange="devArquivo()">
+  <div id="dvH" style="margin-top:14px"></div>`);
+  try{
+    const [n,h]=await Promise.all([fisCall({action:'dev_notas'}),fisCall({action:'dev_listar'})]);
+    const L=n.notas||[];
+    $('#dvL').innerHTML=L.length?`<b>Notas de compra recebidas</b><div style="max-height:220px;overflow:auto;margin-top:6px">${L.map(x=>`<button class="btn g" style="display:block;width:100%;text-align:left;margin:0 0 6px" onclick="devNota('${esc(x.chave)}')">${esc(x.emit_nome||'Fornecedor')} · nota ${esc(x.numero||'')} · ${fmtD(x.dh_emi)} · ${R(x.valor)}</button>`).join('')}</div>`:'Nenhuma nota de compra com XML foi baixada ainda. Envie o arquivo XML do fornecedor abaixo.';
+    const H=h.devolucoes||[];
+    $('#dvH').innerHTML=H.length?`<b>Devoluções já feitas</b><table class="dtb" style="width:100%;margin-top:6px"><tr><th>Data</th><th>Fornecedor</th><th>Nota</th><th>Valor</th><th></th></tr>${H.map(x=>`<tr><td>${fmtD(x.created_at)}</td><td>${esc(x.fornecedor_nome||'')}</td><td>${x.status==='emitida'?'nº '+esc(x.numero):'<span class="bad">não autorizada</span>'}</td><td>${R(x.valor)}</td><td>${x.status==='emitida'?`<button class="btn g" onclick="devArq('${x.id}','danfe')">DANFE</button> <button class="btn g" onclick="devArq('${x.id}','xml')">XML</button>`:''}</td></tr>`).join('')}</table>`:'';
+  }catch(e){$('#dvL').innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+}
+async function devArquivo(){
+  const f=$('#dvF').files[0];if(!f)return;
+  if(f.size>3000000){$('#dvL').innerHTML='<span class="bad">Arquivo grande demais para ser uma nota.</span>';return}
+  const t=await f.text();
+  devNota('',t);
+}
+async function devNota(chave,xml){
+  $('#dvL')&&($('#dvL').innerHTML='Lendo a nota…');
+  try{
+    const d=await fisCall({action:'dev_ler',chave:chave||undefined,xml:xml||undefined});
+    DEV={xml:xml||'',chave:chave||'',nota:d.nota,ja:d.ja_devolvido||{}};
+    devTela();
+  }catch(e){const l=$('#dvL');if(l)l.innerHTML=`<span class="bad">${esc(e.message)}</span>`;else alert(e.message)}
+}
+function devTela(){
+  const n=DEV.nota,f=n.fornecedor,uf=f.endereco.uf;
+  const linhas=n.itens.map(i=>{const ja=+(DEV.ja[String(i.n)]||0),resta=+(i.qtd-ja).toFixed(4);
+    return `<tr><td>${esc(i.xProd)}<div class="sm">comprado ${i.qtd} ${esc(i.un)} · ${R(i.vUnit)} cada${ja?' · já devolvido '+ja:''}</div></td>
+    <td style="width:110px"><input type="number" class="dvq" data-n="${i.n}" data-p="${i.vUnit}" data-max="${resta}" min="0" max="${resta}" step="any" value="0" ${resta<=0?'disabled':''} oninput="devSoma()" style="width:90px"></td></tr>`}).join('');
+  modal(`<h3>Devolver ao fornecedor</h3>
+  <p><b>${esc(f.nome)}</b> · ${uf}<br><span class="sm">Nota de compra nº ${esc(n.numero)} de ${fmtD(n.data)} · ${R(n.valor)}${n.mesmoEstado?'':' · outro estado (CFOP 6202)'}</span></p>
+  ${(n.avisos||[]).map(a=>`<p class="bad" style="margin:6px 0">⚠ ${esc(a)}</p>`).join('')}
+  <p class="sm" style="margin-top:10px">Digite a <b>quantidade que vai voltar</b> de cada produto (deixe 0 nos que não voltam).</p>
+  <table class="dtb" style="width:100%">${linhas}</table>
+  <label>Motivo da devolução</label><input id="dvM" value="Produto com avaria" maxlength="200">
+  <details style="margin-top:8px"><summary class="sm" style="cursor:pointer">Ajuste do contador (opcional)</summary>
+    <label>Tributação do ICMS (CSOSN)</label><select id="dvC"><option value="900">900 — Outros (padrão)</option><option value="102">102 — Sem crédito</option></select>
+    <p class="sm">Se o contador orientar outro código, ele precisa ser informado a mim para eu incluir.</p></details>
+  <div id="dvT" style="font-size:18px;font-weight:700;margin:12px 0">Total da devolução: ${R(0)}</div>
+  <div id="dvR" class="sm"></div>
+  <div class="bar"><button class="btn g" onclick="devOpen()">Voltar</button><button class="btn" id="dvB" onclick="devEmitir()">Emitir nota de devolução</button></div>`);
+}
+function devSoma(){
+  let t=0;document.querySelectorAll('.dvq').forEach(i=>{let q=+i.value||0;const mx=+i.dataset.max;if(q>mx){q=mx;i.value=mx}if(q<0){q=0;i.value=0}t+=Math.round(q*+i.dataset.p*100)/100});
+  $('#dvT').textContent='Total da devolução: '+R(t);
+}
+async function devEmitir(){
+  const itens=[...document.querySelectorAll('.dvq')].map(i=>({n:+i.dataset.n,qtd:+i.value||0})).filter(x=>x.qtd>0);
+  const R2=$('#dvR');
+  if(!itens.length){R2.innerHTML='<span class="bad">Digite a quantidade de pelo menos um produto.</span>';return}
+  const tot=[...document.querySelectorAll('.dvq')].reduce((t,i)=>t+Math.round((+i.value||0)*+i.dataset.p*100)/100,0);
+  if(!confirm('Emitir a nota de devolução de '+R(tot)+' para '+DEV.nota.fornecedor.nome+'?\n\nDepois de autorizada pela SEFAZ ela não pode ser apagada.'))return;
+  $('#dvB').disabled=true;R2.textContent='Enviando para a SEFAZ… pode levar alguns segundos.';
+  try{
+    const d=await fisCall({action:'dev_emitir',chave:DEV.chave||undefined,xml:DEV.xml||undefined,itens,motivo:$('#dvM').value,csosn:$('#dvC').value});
+    modal(`<h3>Nota de devolução emitida</h3>
+    <p><b>Nota nº ${esc(d.numero)}</b> · ${R(d.valor)}<br><span class="sm">Protocolo ${esc(d.protocolo||'')} · CFOP ${esc(d.cfop||'')}${d.ambiente===2?' · <b>homologação: sem valor fiscal</b>':''}</span></p>
+    <div class="bar"><button class="btn" onclick="devArq('${esc(d.id)}','danfe')">Baixar DANFE (PDF)</button><button class="btn g" onclick="devArq('${esc(d.id)}','xml')">Baixar XML</button></div>
+    <p class="sm" style="margin-top:12px"><b>Próximos passos:</b> envie o DANFE e o XML ao fornecedor e mande a mercadoria junto com a nota. Depois dê baixa do produto avariado no estoque.</p>`);
+  }catch(e){$('#dvB').disabled=false;R2.innerHTML=`<span class="bad">${esc(e.message)}</span>`}
+}
+async function devArq(id,kind){
+  try{
+    const d=await fisCall({action:'dev_arquivo',id,kind});
+    const a=document.createElement('a');
+    if(kind==='xml')a.href=URL.createObjectURL(new Blob([d.xml],{type:'text/xml'}));
+    else{const bin=atob(d.pdf_base64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);a.href=URL.createObjectURL(new Blob([u],{type:'application/pdf'}))}
+    a.download=d.nome;a.click();
+  }catch(e){alert(e.message)}
 }
 async function fisFile(id,kind){
   try{
